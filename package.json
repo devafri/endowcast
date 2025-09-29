@@ -2,7 +2,7 @@
   "name": "endowment-commerical",
   "version": "1.0.0",
   "description": "",
-  "main": "test-api.js",
+  "main": "tools/test-scripts/test-api.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

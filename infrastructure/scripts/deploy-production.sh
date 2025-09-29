@@ -38,14 +38,14 @@ fi
 print_status "AWS CLI is configured"
 
 # Check if we're in the right directory
-if [ ! -f "client/package.json" ]; then
+if [ ! -f "apps/client/package.json" ]; then
     print_error "Please run this script from the project root directory"
     exit 1
 fi
 
 # Build the application
 print_status "Building Vue.js application..."
-cd client
+cd apps/client
 
 # Install dependencies if node_modules doesn't exist
 if [ ! -d "node_modules" ]; then
@@ -176,5 +176,5 @@ echo "   2. Configure DNS records in GoDaddy"
 echo "   3. Request and validate SSL certificate"
 echo
 
-cd ..
+cd ../..
 print_status "Deployment script completed!"
