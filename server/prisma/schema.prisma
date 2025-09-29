@@ -1,0 +1,271 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Organization model - the central tenant in our multi-tenant architecture
+model Organization {
+  id           String   @id @default(cuid())
+  name         String
+  domain       String?
+  contactEmail String
+  industry     String?
+  size         String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  users        User[]
+  subscription Subscription?
+  simulations  Simulation[]
+  
+  @@map("organizations")
+}
+
+// Subscription model - handles billing and plan limits per organization
+model Subscription {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  planType       PlanType @default(FREE)
+  billingCycle   BillingCycle @default(MONTHLY)
+  status         SubscriptionStatus @default(ACTIVE)
+  
+  // Usage tracking
+  userLimit              Int      @default(1)
+  simulationsPerMonth    Int      @default(10)
+  simulationsUsed        Int      @default(0)
+  simulationsReset       DateTime @default(now())
+  
+  // Billing cycle
+  currentPeriodStart DateTime @default(now())
+  currentPeriodEnd   DateTime
+  trialEnds          DateTime?
+  
+  // Stripe integration
+  stripeCustomerId       String? @unique
+  stripeSubscriptionId   String? @unique
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payments     Payment[]
+  
+  @@map("subscriptions")
+}
+
+// Updated plan types for multi-tenant billing
+enum PlanType {
+  FREE           // 10 simulations/month
+  ANALYST_PRO    // 100 simulations/month  
+  FOUNDATION     // 500 simulations/month
+  FOUNDATION_PRO // Unlimited simulations
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  TRIAL
+  SUSPENDED
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  VIEWER
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+// User model - now belongs to an organization
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  firstName      String
+  lastName       String
+  password       String
+  organizationId String
+  role           UserRole @default(USER)
+  
+  // Profile information
+  jobTitle       String?
+  department     String?
+  
+  // Account status
+  isActive       Boolean  @default(true)
+  emailVerified  Boolean  @default(false)
+  
+  // Security fields
+  verificationToken   String?
+  verificationExpiry  DateTime?
+  resetToken         String?
+  resetExpiry        DateTime?
+  loginAttempts      Int      @default(0)
+  lockedUntil        DateTime?
+  
+  // Preferences
+  notifications Boolean @default(true)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLogin DateTime?
+  
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  simulations  Simulation[]
+  portfolios   Portfolio[]
+  
+  @@map("users")
+}
+
+// Simulation model - now belongs to organization for proper isolation
+model Simulation {
+  id             String @id @default(cuid())
+  name           String
+  userId         String
+  organizationId String
+  
+  // Simulation parameters
+  years         Int
+  startYear     Int
+  initialValue  Float
+  
+  // Spending policy
+  spendingRate   Float
+  spendingGrowth Float @default(0)
+  
+  // Asset class assumptions
+  equityReturn       Float
+  equityVolatility   Float
+  bondReturn         Float
+  bondVolatility     Float
+  correlation        Float
+  
+  // Shock testing parameters
+  equityShock        Float?
+  cpiShift          Float?
+  
+  // Grant targets (JSON array of yearly targets)
+  grantTargets Json?
+  
+  // Results data (stored as JSON for flexibility)
+  results Json?
+  
+  // Metadata
+  isCompleted Boolean @default(false)
+  runCount    Int     @default(0)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  portfolio    Portfolio?
+  
+  @@map("simulations")
+}
+
+// Portfolio allocation model
+model Portfolio {
+  id           String @id @default(cuid())
+  name         String
+  userId       String
+  simulationId String? @unique
+  
+  // Asset allocations (must sum to 100)
+  equityAllocation      Float
+  bondAllocation        Float
+  alternativeAllocation Float? @default(0)
+  cashAllocation        Float? @default(0)
+  
+  // Portfolio metadata
+  description String?
+  isDefault   Boolean @default(false)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  simulation Simulation? @relation(fields: [simulationId], references: [id])
+  
+  @@map("portfolios")
+}
+
+// Payment model - tracks organization payments
+model Payment {
+  id                String   @id @default(cuid())
+  subscriptionId    String
+  paymentIntentId   String   @unique
+  stripeSessionId   String?
+  stripeInvoiceId   String?
+  amount            Int      // Amount in cents
+  currency          String   @default("usd")
+  status            PaymentStatus @default(PENDING)
+  planType          PlanType
+  billingCycle      BillingCycle
+  periodStart       DateTime
+  periodEnd         DateTime
+  paymentMethod     String?
+  description       String?
+  processedAt       DateTime?
+  refundedAt        DateTime?
+  refundAmount      Int?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  
+  @@map("payments")
+}
+
+// Session model for JWT token blacklisting (optional)
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@map("sessions")
+}
+
+// Contact submissions from the website
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  createdAt DateTime @default(now())
+
+  @@map("contact_submissions")
+}

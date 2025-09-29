@@ -1,0 +1,335 @@
+service: endowcast-backend
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  
+  # Lambda function configuration
+  timeout: 30
+  memorySize: 512
+  
+  # Environment variables
+  environment:
+    DATABASE_URL: ${ssm:/endowcast/${self:provider.stage}/database-url}
+    JWT_SECRET: ${ssm:/endowcast/${self:provider.stage}/jwt-secret}
+    JWT_EXPIRES_IN: 7d
+    FRONTEND_URL: ${ssm:/endowcast/${self:provider.stage}/frontend-url}
+    EMAIL_FROM: ${ssm:/endowcast/${self:provider.stage}/email-from}
+    SES_REGION: ${self:provider.region}
+    RECAPTCHA_SECRET_KEY: ${ssm:/endowcast/${self:provider.stage}/recaptcha-secret}
+    STRIPE_SECRET_KEY: ${ssm:/endowcast/${self:provider.stage}/stripe-secret-key}
+    STRIPE_PUBLISHABLE_KEY: ${ssm:/endowcast/${self:provider.stage}/stripe-publishable-key}
+    STRIPE_WEBHOOK_SECRET: ${ssm:/endowcast/${self:provider.stage}/stripe-webhook-secret}
+    CLIENT_URL: ${ssm:/endowcast/${self:provider.stage}/client-url}
+    NODE_ENV: production
+  
+  # IAM permissions
+  iamRoleStatements:
+    # RDS permissions
+    - Effect: Allow
+      Action:
+        - rds-data:ExecuteStatement
+        - rds-data:BatchExecuteStatement
+        - rds-data:BeginTransaction
+        - rds-data:CommitTransaction
+        - rds-data:RollbackTransaction
+      Resource: "*"
+    
+    # SES permissions for email sending
+    - Effect: Allow
+      Action:
+        - ses:SendEmail
+        - ses:SendRawEmail
+        - ses:GetSendQuota
+        - ses:GetSendStatistics
+      Resource: "*"
+    
+    # SSM Parameter Store permissions
+    - Effect: Allow
+      Action:
+        - ssm:GetParameter
+        - ssm:GetParameters
+      Resource: "arn:aws:ssm:${self:provider.region}:*:parameter/endowcast/${self:provider.stage}/*"
+    
+    # CloudWatch permissions
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "arn:aws:logs:${self:provider.region}:*:*"
+
+# Package configuration - exclude unnecessary files
+package:
+  exclude:
+    - node_modules/aws-sdk/**
+    - .git/**
+    - README.md
+    - .env*
+    - test/**
+    - coverage/**
+    - "*.md"
+
+# Lambda functions
+functions:
+    # Health check endpoint
+  health:
+    handler: src/lambda/health.handler
+    events:
+      - httpApi:
+          path: /health
+          method: get
+          cors: true
+
+  # Payment processing endpoints  
+  createPaymentIntent:
+    handler: src/lambda/payments.createPaymentIntent
+    timeout: 30
+    events:
+      - httpApi:
+          path: /payments/create-intent
+          method: post
+          cors: true
+
+  confirmPayment:
+    handler: src/lambda/payments.confirmPayment
+    timeout: 30
+    events:
+      - httpApi:
+          path: /payments/confirm
+          method: post
+          cors: true
+
+  getPaymentHistory:
+    handler: src/lambda/payments.getPaymentHistory  
+    timeout: 30
+    events:
+      - httpApi:
+          path: /payments/history
+          method: get
+          cors: true
+
+  cancelSubscription:
+    handler: src/lambda/payments.cancelSubscription
+    timeout: 30
+    events:
+      - httpApi:
+          path: /payments/cancel
+          method: post
+          cors: true
+  
+  # Authentication functions
+  login:
+    handler: src/lambda/auth.login
+    events:
+      - http:
+          path: auth/login
+          method: post
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+  
+  register:
+    handler: src/lambda/auth.register
+    timeout: 60  # Email sending might take longer
+    events:
+      - http:
+          path: auth/register
+          method: post
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+  
+  verifyEmail:
+    handler: src/lambda/auth.verifyEmail
+    events:
+      - http:
+          path: auth/verify-email
+          method: post
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+  
+  resendVerification:
+    handler: src/lambda/auth.resendVerification
+    timeout: 60
+    events:
+      - http:
+          path: auth/resend-verification
+          method: post
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+  
+  forgotPassword:
+    handler: src/lambda/auth.forgotPassword
+    timeout: 60
+    events:
+      - http:
+          path: auth/forgot-password
+          method: post
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+  
+  resetPassword:
+    handler: src/lambda/auth.resetPassword
+    events:
+      - http:
+          path: auth/reset-password
+          method: post
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+  
+  # User management functions
+  getUserProfile:
+    handler: src/lambda/users.getProfile
+    events:
+      - http:
+          path: users/profile
+          method: get
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+  
+  updateUserProfile:
+    handler: src/lambda/users.updateProfile
+    events:
+      - http:
+          path: users/profile
+          method: put
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+  
+  # Simulation functions
+  createSimulation:
+    handler: src/lambda/simulations.create
+    timeout: 120  # Longer timeout for Monte Carlo calculations
+    memorySize: 1024  # More memory for calculations
+    events:
+      - http:
+          path: simulations
+          method: post
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+  
+  getSimulations:
+    handler: src/lambda/simulations.list
+    events:
+      - http:
+          path: simulations
+          method: get
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+  
+  getSimulation:
+    handler: src/lambda/simulations.get
+    events:
+      - http:
+          path: simulations/{id}
+          method: get
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+  
+  updateSimulation:
+    handler: src/lambda/simulations.update
+    events:
+      - http:
+          path: simulations/{id}
+          method: put
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+  
+  deleteSimulation:
+    handler: src/lambda/simulations.delete
+    events:
+      - http:
+          path: simulations/{id}
+          method: delete
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+
+# CloudFormation resources
+resources:
+  Resources:
+    # RDS Serverless V2 Cluster
+    DatabaseCluster:
+      Type: AWS::RDS::DBCluster
+      Properties:
+        DatabaseName: endowcast
+        Engine: aurora-postgresql
+        EngineVersion: 15.4
+        EngineMode: provisioned
+        ServerlessV2ScalingConfiguration:
+          MinCapacity: 0.5  # Auto-pauses when not used
+          MaxCapacity: 16   # Scales up under load
+        MasterUsername: endowcast_admin
+        MasterUserPassword: ${ssm:/endowcast/${self:provider.stage}/db-password}
+        BackupRetentionPeriod: 7
+        DeletionProtection: ${self:custom.deletionProtection.${self:provider.stage}, false}
+        StorageEncrypted: true
+        VpcSecurityGroupIds:
+          - Ref: DatabaseSecurityGroup
+        DBSubnetGroupName: default
+        EnableCloudwatchLogsExports:
+          - postgresql
+    
+    # Database instance
+    DatabaseInstance:
+      Type: AWS::RDS::DBInstance
+      Properties:
+        DBInstanceClass: db.serverless
+        DBClusterIdentifier:
+          Ref: DatabaseCluster
+        Engine: aurora-postgresql
+        PubliclyAccessible: false
+    
+    # Security group for database
+    DatabaseSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Security group for EndowCast RDS database
+        VpcId: 
+          Ref: AWS::EC2::VPC::Default
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 5432
+            ToPort: 5432
+            CidrIp: 10.0.0.0/8
+            Description: Allow PostgreSQL access from private subnets
+        Tags:
+          - Key: Name
+            Value: endowcast-db-sg-${self:provider.stage}
+
+# Plugins
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+  - serverless-prune-plugin
+
+# Custom configuration
+custom:
+  # Enable deletion protection for production
+  deletionProtection:
+    prod: true
+    dev: false
+  
+  # Prune old versions to save storage costs
+  prune:
+    automatic: true
+    number: 5
+  
+  # Serverless offline configuration for local development
+  serverless-offline:
+    httpPort: 3001
+    host: 0.0.0.0
+    stage: local

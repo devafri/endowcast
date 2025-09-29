@@ -1,0 +1,66 @@
+{
+    "CallerReference": "endowcast-1727407200",
+    "Comment": "EndowCast Production Distribution",
+    "DefaultCacheBehavior": {
+        "TargetOriginId": "S3-endowcast.com",
+        "ViewerProtocolPolicy": "redirect-to-https",
+        "AllowedMethods": {
+            "Quantity": 7,
+            "Items": ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
+            "CachedMethods": {
+                "Quantity": 2,
+                "Items": ["GET", "HEAD"]
+            }
+        },
+        "ForwardedValues": {
+            "QueryString": false,
+            "Cookies": {
+                "Forward": "none"
+            },
+            "Headers": {
+                "Quantity": 0
+            }
+        },
+        "MinTTL": 0,
+        "DefaultTTL": 86400,
+        "MaxTTL": 31536000,
+        "Compress": true
+    },
+    "Origins": {
+        "Quantity": 1,
+        "Items": [
+            {
+                "Id": "S3-endowcast.com",
+                "DomainName": "endowcast.com.s3-website-us-east-1.amazonaws.com",
+                "CustomOriginConfig": {
+                    "HTTPPort": 80,
+                    "HTTPSPort": 443,
+                    "OriginProtocolPolicy": "http-only"
+                }
+            }
+        ]
+    },
+    "Aliases": {
+        "Quantity": 2,
+        "Items": ["endowcast.com", "www.endowcast.com"]
+    },
+    "DefaultRootObject": "index.html",
+    "CustomErrorResponses": {
+        "Quantity": 1,
+        "Items": [
+            {
+                "ErrorCode": 404,
+                "ResponsePagePath": "/index.html",
+                "ResponseCode": "200",
+                "ErrorCachingMinTTL": 300
+            }
+        ]
+    },
+    "Enabled": true,
+    "PriceClass": "PriceClass_100",
+    "ViewerCertificate": {
+        "ACMCertificateArn": "arn:aws:acm:us-east-1:273545363146:certificate/a723ebd5-be5d-46f2-af21-1c9d20389eb4",
+        "SSLSupportMethod": "sni-only",
+        "MinimumProtocolVersion": "TLSv1.2_2021"
+    }
+}
