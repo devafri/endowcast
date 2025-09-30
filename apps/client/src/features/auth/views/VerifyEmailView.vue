@@ -84,8 +84,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { useToastStore } from '@/stores/toast'
+import { useAuthStore } from '@/features/auth/stores/auth'
+import { useToastStore } from '@/shared/stores/toast'
 
 const route = useRoute()
 const router = useRouter()

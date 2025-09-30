@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/auth';
-import { exportSimulationResults } from '@/utils/pdfExport';
+import { useAuthStore } from '@/features/auth/stores/auth';
+import { exportSimulationResults } from '@/shared/utils/pdfExport';
 
 interface Props {
   disabled?: boolean;

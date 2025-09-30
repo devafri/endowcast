@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useSimulationStore } from '../stores/simulation';
-import { useAuthStore } from '../stores/auth';
-import GrantTargets from '../components/inputs/GrantTargets.vue';
-import CorrelationMatrix from '../components/inputs/CorrelationMatrix.vue';
-import { assetClasses } from '../lib/monteCarlo';
+import { useSimulationStore } from '../../simulation/stores/simulation';
+import { useAuthStore } from '../../auth/stores/auth';
+import GrantTargets from '../../simulation/components/inputs/GrantTargets.vue';
+import CorrelationMatrix from '../../simulation/components/inputs/CorrelationMatrix.vue';
+import { assetClasses } from '../../simulation/lib/monteCarlo';
 
 const sim = useSimulationStore();
 const auth = useAuthStore();

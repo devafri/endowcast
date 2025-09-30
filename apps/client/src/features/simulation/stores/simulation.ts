@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
 import { reactive, ref, watch } from 'vue';
 import type { EngineOptions, SimulationOutputs } from '../lib/monteCarlo';
-import { useAuthStore } from './auth';
-import { apiService } from '@/services/api';
+import { useAuthStore } from '../../auth/stores/auth';
+import { apiService } from '@/shared/services/api';
 
 export const useSimulationStore = defineStore('simulation', () => {
   const inputs = reactive({

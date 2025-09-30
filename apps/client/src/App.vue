@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute } from 'vue-router';
 import { onMounted } from 'vue';
-import TheHeader from './components/layout/TheHeader.vue';
-import { useAuthStore } from '@/stores/auth';
+import TheHeader from './shared/components/layout/TheHeader.vue';
+import { useAuthStore } from '@/features/auth/stores/auth';
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -95,5 +95,5 @@ async function handleLogout() {
 <style>
 /* You can place global styles here or import a main CSS file */
 /* For example, import the styles from your original project */
-@import './assets/main.css'; 
+@import './shared/assets/main.css'; 
 </style>

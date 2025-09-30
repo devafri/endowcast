@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useSimulationStore } from '../stores/simulation';
+import { useSimulationStore } from '../../simulation/stores/simulation';
 import PortfolioWeights from '../components/inputs/PortfolioWeights.vue';
 
 const sim = useSimulationStore();

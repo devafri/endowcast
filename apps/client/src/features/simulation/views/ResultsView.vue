@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useSimulationStore } from '../stores/simulation';
-import { useAuthStore } from '@/stores/auth';
+import { useSimulationStore } from '../../simulation/stores/simulation';
+import { useAuthStore } from '@/features/auth/stores/auth';
 import SummaryCards from '../components/results/SummaryCards.vue';
 import SimulationSummary from '../components/results/SimulationSummary.vue';
 import StatisticalSummary from '../components/results/StatisticalSummary.vue';

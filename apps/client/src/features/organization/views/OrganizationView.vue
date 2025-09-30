@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-import { apiService, ApiError } from '@/services/api';
+import { useAuthStore } from '@/features/auth/stores/auth';
+import { apiService, ApiError } from '@/shared/services/api';
 
 const authStore = useAuthStore();
 const loading = ref(false);

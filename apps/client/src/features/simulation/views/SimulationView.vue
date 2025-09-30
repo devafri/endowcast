@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive, onBeforeUnmount, onMounted, computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import TheHeader from '../components/layout/TheHeader.vue';
-import PageHeader from '../components/layout/PageHeader.vue';
+import TheHeader from '../../shared/components/layout/TheHeader.vue';
+import PageHeader from '../../shared/components/layout/PageHeader.vue';
 import InputCard from '../components/inputs/InputCard.vue';
 import PortfolioWeights from '../components/inputs/PortfolioWeights.vue';
 import GrantTargets from '../components/inputs/GrantTargets.vue';
@@ -13,8 +13,8 @@ import SimulationChart from '../components/results/SimulationChart.vue';
 import ResultsDataTable from '../components/results/ResultsDataTable.vue';
 import { runMonteCarlo, type EngineOptions, type SimulationOutputs } from '../lib/monteCarlo';
 import { assetClasses } from '../lib/monteCarlo';
-import { useAuthStore } from '@/stores/auth';
-import { apiService } from '@/services/api';
+import { useAuthStore } from '@/features/auth/stores/auth';
+import { apiService } from '@/shared/services/api';
 
 const authStore = useAuthStore();
 

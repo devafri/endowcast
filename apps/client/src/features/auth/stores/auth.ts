@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { apiService, ApiError } from '@/services/api';
+import { apiService, ApiError } from '@/shared/services/api';
 
 export interface User {
   id: string;

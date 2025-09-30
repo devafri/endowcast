@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-import { apiService } from '@/services/api';
+import { useAuthStore } from '@/features/auth/stores/auth';
+import { apiService } from '@/shared/services/api';
 
 const authStore = useAuthStore();
 const savedSimulations = ref<any[]>([]);

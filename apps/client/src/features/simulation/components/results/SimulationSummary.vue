@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Tooltip from '@/components/ui/Tooltip.vue';
+import Tooltip from '@/shared/components/ui/Tooltip.vue';
 
 const props = defineProps<{ results: any }>();
 
