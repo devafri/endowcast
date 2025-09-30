@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken } = require('../../auth/middleware/auth');
 
 // Create checkout session for plan purchase
 router.post('/create-checkout-session', authenticateToken, async (req, res) => {

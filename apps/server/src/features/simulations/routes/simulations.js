@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { authenticateToken, prisma } = require('../middleware/auth');
-const { trackSimulationUsage } = require('../middleware/usage');
+const { authenticateToken, prisma } = require('../../auth/middleware/auth');
+const { trackSimulationUsage } = require('../../../shared/middleware/usage');
 
 const router = express.Router();
 

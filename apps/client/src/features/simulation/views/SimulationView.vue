@@ -63,7 +63,7 @@ const options = reactive<EngineOptions>({
   cpiShifts: [],
   },
   assets: { overrides: {} },
-  corpus: { enabled: true, initialValue: 246900000 }
+  corpus: { enabled: false, initialValue: 246900000 }
 });
 
 // State for simulation results

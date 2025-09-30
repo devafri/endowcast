@@ -5,13 +5,13 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/users');
-const simulationRoutes = require('./routes/simulations');
-const contactRoutes = require('./routes/contact');
-const paymentRoutes = require('./routes/payments');
-const webhookRoutes = require('./routes/webhooks');
-const organizationRoutes = require('./routes/organization');
+const authRoutes = require('../features/auth/routes/auth');
+const userRoutes = require('../features/users/routes/users');
+const simulationRoutes = require('../features/simulations/routes/simulations');
+const contactRoutes = require('../features/notifications/routes/contact');
+const paymentRoutes = require('../features/billing/routes/payments');
+const webhookRoutes = require('../features/billing/routes/webhooks');
+const organizationRoutes = require('../features/organizations/routes/organization');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
