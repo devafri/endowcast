@@ -24,8 +24,14 @@ async function handleLogin() {
     );
     
     if (result.success) {
-      // Redirect to simulation view after successful login (organization context is now available)
-      router.push('/simulation');
+      // Check if there's a redirect query parameter
+      const redirectTo = router.currentRoute.value.query.redirect as string;
+      if (redirectTo) {
+        router.push(redirectTo);
+      } else {
+        // Default redirect to settings for authenticated users
+        router.push('/settings');
+      }
     } else {
       errorMessage.value = result.error || 'Login failed. Please try again.';
     }

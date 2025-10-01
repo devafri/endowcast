@@ -15,10 +15,11 @@ app.use(router)
 
 app.mount('#app')
 
-// Initialize stores after app is mounted
+// Initialize auth after the app is fully mounted
 import { useAuthStore } from './features/auth/stores/auth'
-import { useSimulationStore } from './features/simulation/stores/simulation'
 
-// Initialize auth
-const authStore = useAuthStore()
-authStore.initializeAuth()
+// Initialize auth asynchronously - don't block app startup
+setTimeout(async () => {
+  const authStore = useAuthStore()
+  await authStore.initializeAuth()
+}, 0)

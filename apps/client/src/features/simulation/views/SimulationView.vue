@@ -11,7 +11,8 @@ import SimulationSummary from '../components/results/SimulationSummary.vue';
 import StatisticalSummary from '../components/results/StatisticalSummary.vue';
 import SimulationChart from '../components/results/SimulationChart.vue';
 import ResultsDataTable from '../components/results/ResultsDataTable.vue';
-import { runMonteCarlo, type EngineOptions, type SimulationOutputs } from '../lib/monteCarlo';
+import EnhancedRiskAnalysis from '../components/results/EnhancedRiskAnalysis.vue';
+import { runMonteCarlo, type EngineOptions, type SimulationOutputs, calculateRiskMetrics, generateNarrativeInsights } from '../lib/monteCarlo';
 import { assetClasses } from '../lib/monteCarlo';
 import { useAuthStore } from '@/features/auth/stores/auth';
 import { apiService } from '@/shared/services/api';
@@ -239,6 +240,12 @@ async function runSimulation() {
     const stressApplied = eqCount + cpiCount > 0;
     const stressSummary = stressApplied ? `Equity shocks: ${eqCount}${cpiCount ? `, CPI shifts: ${cpiCount}` : ''}` : '';
 
+    // Calculate enhanced risk metrics
+    const riskMetrics = calculateRiskMetrics(out.simulations, initial);
+    
+    // Generate narrative insights
+    const narrativeInsights = generateNarrativeInsights(out, payload, riskMetrics);
+
     const simulationResults = {
       ...out,
       stress: { applied: stressApplied, summary: stressSummary, counts: { equity: eqCount, cpi: cpiCount } },
@@ -246,7 +253,9 @@ async function runSimulation() {
         medianFinalValue: medianFinal,
         probabilityOfLoss: lossProb,
         annualizedReturn: medianCagr * 100,
-      }
+      },
+      riskMetrics,
+      narrativeInsights
     };
 
     results.value = simulationResults;
@@ -610,9 +619,19 @@ onMounted(() => { loadFromURL(); });
 
     <!-- Results Section (conditionally rendered) -->
     <div v-if="results" class="space-y-8 pt-8 border-t border-border">
-  <SummaryCards :results="results" />
-  <SimulationSummary :results="results" />
-  <StatisticalSummary :results="results" />
+      <SummaryCards :results="results" />
+      <SimulationSummary :results="results" />
+      <StatisticalSummary :results="results" />
+      
+      <!-- Enhanced Risk Analysis -->
+      <EnhancedRiskAnalysis 
+        v-if="results.riskMetrics && results.narrativeInsights"
+        :riskMetrics="results.riskMetrics"
+        :narrativeInsights="results.narrativeInsights"
+        :results="results"
+        :inputs="inputs"
+      />
+      
       <SimulationChart :results="results" />
       <ResultsDataTable :results="results" />
     </div>

@@ -17,16 +17,31 @@ router.get('/profile', async (req, res) => {
         email: true,
         firstName: true,
         lastName: true,
-        planType: true,
-        planExpires: true,
-        planStarted: true,
-        organization: true,
+        role: true,
         jobTitle: true,
-        simulationsUsed: true,
-        simulationsReset: true,
+        department: true,
+        isActive: true,
         emailVerified: true,
         createdAt: true,
         lastLogin: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            domain: true,
+            subscription: {
+              select: {
+                planType: true,
+                status: true,
+                simulationsPerMonth: true,
+                simulationsUsed: true,
+                simulationsReset: true,
+                currentPeriodStart: true,
+                currentPeriodEnd: true,
+              }
+            }
+          }
+        }
       }
     });
 
@@ -36,20 +51,30 @@ router.get('/profile', async (req, res) => {
       });
     }
 
-    // Calculate simulation limits
+    // Extract subscription info
+    const subscription = user.organization?.subscription;
+    const planType = subscription?.planType || 'FREE';
+    
+    // Calculate simulation limits based on plan
     const limits = {
-      FREE_TRIAL: 3,
-      PROFESSIONAL: 50,
-      INSTITUTION: 200
+      FREE: 10,
+      ANALYST_PRO: 100,
+      FOUNDATION: 500,
+      FOUNDATION_PRO: -1 // Unlimited
     };
 
-    const simulationLimit = limits[user.planType] || 0;
-    const simulationsRemaining = Math.max(0, simulationLimit - user.simulationsUsed);
+    const simulationLimit = limits[planType];
+    const simulationsUsed = subscription?.simulationsUsed || 0;
+    const simulationsRemaining = simulationLimit === -1 ? -1 : Math.max(0, simulationLimit - simulationsUsed);
 
     res.json({
       ...user,
+      planType,
       simulationLimit,
-      simulationsRemaining
+      simulationsUsed,
+      simulationsRemaining,
+      subscriptionStatus: subscription?.status,
+      currentPeriodEnd: subscription?.currentPeriodEnd,
     });
   } catch (error) {
     console.error('Get profile error:', error);
@@ -63,8 +88,8 @@ router.get('/profile', async (req, res) => {
 router.put('/profile', [
   body('firstName').optional().trim().isLength({ min: 1 }),
   body('lastName').optional().trim().isLength({ min: 1 }),
-  body('organization').optional().trim(),
   body('jobTitle').optional().trim(),
+  body('department').optional().trim(),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -75,27 +100,34 @@ router.put('/profile', [
       });
     }
 
-    const { firstName, lastName, organization, jobTitle } = req.body;
+    const { firstName, lastName, jobTitle, department } = req.body;
 
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: {
         ...(firstName && { firstName }),
         ...(lastName && { lastName }),
-        ...(organization !== undefined && { organization }),
         ...(jobTitle !== undefined && { jobTitle }),
+        ...(department !== undefined && { department }),
       },
       select: {
         id: true,
         email: true,
         firstName: true,
         lastName: true,
-        planType: true,
-        planExpires: true,
-        organization: true,
         jobTitle: true,
-        simulationsUsed: true,
+        department: true,
         updatedAt: true,
+        organization: {
+          select: {
+            name: true,
+            subscription: {
+              select: {
+                planType: true
+              }
+            }
+          }
+        }
       }
     });
 
@@ -114,13 +146,36 @@ router.put('/profile', [
 // GET /api/users/usage
 router.get('/usage', async (req, res) => {
   try {
-    const user = req.user;
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        organization: {
+          select: {
+            subscription: {
+              select: {
+                planType: true,
+                simulationsPerMonth: true,
+                simulationsUsed: true,
+                simulationsReset: true,
+                currentPeriodEnd: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!user?.organization?.subscription) {
+      return res.status(404).json({ error: 'Subscription not found' });
+    }
+
+    const subscription = user.organization.subscription;
     
-    // Get simulation counts
+    // Get simulation counts for this month
     const simulationCounts = await prisma.simulation.groupBy({
       by: ['createdAt'],
       where: {
-        userId: user.id,
+        userId: req.user.id,
         createdAt: {
           gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) // This month
         }
@@ -130,27 +185,28 @@ router.get('/usage', async (req, res) => {
 
     // Get plan limits
     const limits = {
-      FREE_TRIAL: 3,
-      PROFESSIONAL: 50,
-      INSTITUTION: 200
+      FREE: 10,
+      ANALYST_PRO: 100,
+      FOUNDATION: 500,
+      FOUNDATION_PRO: -1 // Unlimited
     };
 
-    const simulationLimit = limits[user.planType] || 0;
-    const simulationsRemaining = Math.max(0, simulationLimit - user.simulationsUsed);
+    const simulationLimit = limits[subscription.planType];
+    const simulationsUsed = subscription.simulationsUsed;
+    const simulationsRemaining = simulationLimit === -1 ? -1 : Math.max(0, simulationLimit - simulationsUsed);
 
     // Calculate days until reset
-    const nextReset = new Date(user.simulationsReset);
-    nextReset.setMonth(nextReset.getMonth() + 1);
+    const nextReset = new Date(subscription.currentPeriodEnd);
     const daysUntilReset = Math.ceil((nextReset - new Date()) / (1000 * 60 * 60 * 24));
 
     res.json({
-      planType: user.planType,
+      planType: subscription.planType,
       simulationLimit,
-      simulationsUsed: user.simulationsUsed,
+      simulationsUsed,
       simulationsRemaining,
       daysUntilReset: Math.max(0, daysUntilReset),
       nextResetDate: nextReset,
-      planExpires: user.planExpires,
+      currentPeriodEnd: subscription.currentPeriodEnd,
       monthlyUsage: simulationCounts.length
     });
   } catch (error) {
@@ -163,7 +219,7 @@ router.get('/usage', async (req, res) => {
 
 // POST /api/users/upgrade-plan
 router.post('/upgrade-plan', [
-  body('planType').isIn(['PROFESSIONAL', 'INSTITUTION']).withMessage('Invalid plan type'),
+  body('planType').isIn(['ANALYST_PRO', 'FOUNDATION', 'FOUNDATION_PRO']).withMessage('Invalid plan type'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -177,66 +233,101 @@ router.post('/upgrade-plan', [
     const { planType } = req.body;
     const userId = req.user.id;
 
-    // Check current plan
-    const currentUser = await prisma.user.findUnique({
+    // Get current subscription
+    const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { planType: true, planExpires: true }
+      select: {
+        organizationId: true,
+        organization: {
+          select: {
+            subscription: {
+              select: {
+                id: true,
+                planType: true,
+                currentPeriodEnd: true
+              }
+            }
+          }
+        }
+      }
     });
 
-    if (!currentUser) {
-      return res.status(404).json({ error: 'User not found' });
+    if (!user?.organization?.subscription) {
+      return res.status(404).json({ error: 'Subscription not found' });
     }
 
+    const currentSubscription = user.organization.subscription;
+
     // Prevent downgrading
-    const planHierarchy = { FREE_TRIAL: 0, PROFESSIONAL: 1, INSTITUTION: 2 };
-    if (planHierarchy[currentUser.planType] >= planHierarchy[planType]) {
+    const planHierarchy = { FREE: 0, ANALYST_PRO: 1, FOUNDATION: 2, FOUNDATION_PRO: 3 };
+    if (planHierarchy[currentSubscription.planType] >= planHierarchy[planType]) {
       return res.status(400).json({ 
         error: 'Cannot downgrade or stay on the same plan' 
       });
     }
 
-    // Set plan expiration (1 year from now for paid plans)
-    const planExpires = new Date();
-    planExpires.setFullYear(planExpires.getFullYear() + 1);
+    // Set new plan limits
+    const planLimits = {
+      ANALYST_PRO: 100,
+      FOUNDATION: 500,
+      FOUNDATION_PRO: -1 // Unlimited
+    };
 
-    // Update user plan
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
+    // Set plan expiration (1 year from now for paid plans)
+    const currentPeriodEnd = new Date();
+    currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1);
+
+    // Update subscription
+    const updatedSubscription = await prisma.subscription.update({
+      where: { id: currentSubscription.id },
       data: {
         planType,
-        planExpires,
-        planStarted: new Date(),
+        simulationsPerMonth: planLimits[planType],
+        currentPeriodEnd,
         // Reset simulations for new plan
         simulationsUsed: 0,
         simulationsReset: new Date()
       },
       select: {
+        planType: true,
+        simulationsPerMonth: true,
+        simulationsUsed: true,
+        currentPeriodEnd: true,
+      }
+    });
+
+    // Get updated user info
+    const updatedUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
         id: true,
         email: true,
         firstName: true,
         lastName: true,
-        planType: true,
-        planExpires: true,
-        planStarted: true,
-        simulationsUsed: true,
-        simulationsReset: true,
+        organization: {
+          select: {
+            name: true,
+            subscription: {
+              select: {
+                planType: true,
+                simulationsPerMonth: true,
+                simulationsUsed: true,
+                currentPeriodEnd: true,
+              }
+            }
+          }
+        }
       }
     });
 
-    // Calculate new limits
-    const limits = {
-      FREE_TRIAL: 3,
-      PROFESSIONAL: 50,
-      INSTITUTION: 200
-    };
-
-    const simulationLimit = limits[updatedUser.planType];
-    const simulationsRemaining = simulationLimit - updatedUser.simulationsUsed;
+    const simulationLimit = updatedSubscription.simulationsPerMonth;
+    const simulationsRemaining = simulationLimit === -1 ? -1 : simulationLimit - updatedSubscription.simulationsUsed;
 
     res.json({
       message: 'Plan upgraded successfully',
       user: {
         ...updatedUser,
+        planType: updatedSubscription.planType,
         simulationLimit,
         simulationsRemaining
       }

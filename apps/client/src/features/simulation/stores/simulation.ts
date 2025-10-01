@@ -39,7 +39,8 @@ export const useSimulationStore = defineStore('simulation', () => {
     rebalancing: { bandPct: 0, frequency: 'annual' },
     stress: { equityShocks: [], cpiShifts: [] },
     assets: { overrides: {}, limits: {} },
-    corpus: { enabled: true, initialValue: 246900000 },
+    corpus: { enabled: false, initialValue: 246900000 }, // Default to false, can be toggled in settings
+    benchmark: { enabled: false, type: 'cpi_plus', value: 0.06, label: 'CPI + 6%' }, // Benchmark comparison settings
     years: 10,
     startYear: new Date().getFullYear(),
   });
@@ -68,6 +69,7 @@ export const useSimulationStore = defineStore('simulation', () => {
       },
       assets: { overrides: options.assets?.overrides ?? {} },
       corpus: { enabled: options.corpus?.enabled !== false, initialValue: options.corpus?.initialValue },
+      benchmark: { ...options.benchmark },
     };
     return norm;
   }
@@ -158,11 +160,14 @@ export const useSimulationStore = defineStore('simulation', () => {
       const initial = payload.initialEndowment;
       const medianFinal = [...lastValues].sort((a:number,b:number)=>a-b)[Math.floor(lastValues.length/2)];
       const lossProb = lastValues.filter((v:number) => v < initial).length / lastValues.length;
+      // Both Median Annualized Return and Annualized Return: median of per-simulation CAGRs (industry standard)
       const perSimGeo = (out.portfolioReturns ?? []).map((rets: number[]) => {
         if (!rets?.length) return NaN; let prod = 1; for (const r of rets) prod *= (1 + r); return Math.pow(prod, 1 / rets.length) - 1;
       }).filter((x: number) => isFinite(x));
       const sortedGeo = perSimGeo.sort((a: number,b: number)=>a-b);
-      const medianCagr = sortedGeo.length ? sortedGeo[Math.floor(sortedGeo.length/2)] : 0;
+      const medianAnnualizedReturn = sortedGeo.length ? sortedGeo[Math.floor(sortedGeo.length/2)] : 0;
+      // Use the same calculation for both - median of CAGRs is the industry standard
+      const annualizedReturn = medianAnnualizedReturn;
       const eqCount = normOpts.stress?.equityShocks?.length ?? 0;
       const cpiCount = normOpts.stress?.cpiShifts?.length ?? 0;
       const stressApplied = eqCount + cpiCount > 0;
@@ -179,7 +184,8 @@ export const useSimulationStore = defineStore('simulation', () => {
         summary: {
           medianFinalValue: medianFinal,
           probabilityOfLoss: lossProb,
-          annualizedReturn: medianCagr * 100,
+          medianAnnualizedReturn: medianAnnualizedReturn * 100, // Median of per-simulation CAGRs
+          annualizedReturn: annualizedReturn * 100, // Now also median of per-simulation CAGRs (industry standard)
         }
       };
 

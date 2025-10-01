@@ -32,18 +32,26 @@ function buildChart() {
   const corpusEnabled = props.results.corpus?.enabled !== false;
   const Y = years.value;
 
-  // Build percentile "paths" by selecting representative simulations based on final values
-  const finals = sims.map(s => s[Y - 1]);
-  const sortedIdx = finals
-    .map((v, i) => ({ v, i }))
-    .sort((a, b) => a.v - b.v)
-    .map(x => x.i);
-  const idx50 = sortedIdx[Math.floor(0.50 * (sortedIdx.length - 1))] ?? 0;
-  const idx25 = sortedIdx[Math.floor(0.25 * (sortedIdx.length - 1))] ?? 0;
-  const idx75 = sortedIdx[Math.floor(0.75 * (sortedIdx.length - 1))] ?? 0;
-  const median = sims[idx50];
-  const p25 = sims[idx25];
-  const p75 = sims[idx75];
+  // Build percentile "paths" for fan chart
+  function getPercentile(arrs: number[][], pct: number) {
+    // arrs: [sim][year], pct: 0-100
+    const n = arrs.length;
+    if (!n) return [];
+    const Y = arrs[0].length;
+    const out = [];
+    for (let y = 0; y < Y; ++y) {
+      const vals = arrs.map(a => a[y]).sort((a, b) => a - b);
+      const idx = Math.floor((pct / 100) * (n - 1));
+      out.push(vals[idx]);
+    }
+    return out;
+  }
+  // Compute percentiles every 5th (5, 10, ..., 95)
+  const percentiles: Record<number, number[]> = {};
+  for (let pct = 5; pct <= 95; pct += 5) {
+    percentiles[pct] = getPercentile(sims, pct);
+  }
+  const p50 = percentiles[50];
   const benchmarkMean = Array.from({ length: Y }, (_, i) => {
     const arr = benchmarks.map(b => b[i]);
     return arr.reduce((a, b) => a + b, 0) / arr.length;
@@ -59,29 +67,40 @@ function buildChart() {
     : Array.from({ length: Y }, (_, i) => `Year ${i + 1}`);
   const datasets: any[] = [];
 
-  // Add a subset of simulation paths as very light lines behind main series
-  const sampleCount = Math.min(100, sims.length);
-  for (let i = 0; i < sampleCount; i++) {
-    datasets.push({
-      label: `Simulation ${i+1}`,
-      data: sims[i],
-      borderColor: 'rgba(107,114,128,0.15)',
-      borderWidth: 0.8,
-      pointRadius: 0,
-      fill: false,
-      tension: 0.25,
-  isSample: true,
-    });
+  // Gradients for fan chart bands
+  // Generate a gradient for each band (lighter for outer bands, darker for inner)
+  const bandGradients: Record<string, CanvasGradient | string> = {};
+  if (ctx) {
+    const chartHeight = canvasRef.value.height || 500;
+    for (let low = 5; low < 50; low += 5) {
+      const high = 100 - low;
+      const opacity = 0.04 + 0.18 * (1 - (Math.abs(50 - low) / 50)); // darker toward center
+      const grad = ctx.createLinearGradient(0, 0, 0, chartHeight);
+      grad.addColorStop(0, `rgba(14,165,233,${opacity + 0.04})`);
+      grad.addColorStop(1, `rgba(14,165,233,${opacity})`);
+      bandGradients[`${low}_${high}`] = grad;
+    }
   }
 
-  // Main summary datasets on top
+  // Fan chart: shaded bands between every 5th percentile
+  for (let low = 5; low < 50; low += 5) {
+    const high = 100 - low;
+    datasets.push(
+      { label: `${high}th percentile`, data: percentiles[high], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: '-1', tension: 0.4, order: low },
+      { label: `${low}th percentile`, data: percentiles[low], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: false, tension: 0.4, order: low }
+    );
+  }
+  // Median line
   datasets.push(
-    { label: 'Median (50th percentile)', data: median, borderColor: '#0EA5E9', backgroundColor: 'rgba(14, 165, 233, 0.1)', borderWidth: 2.5, pointRadius: 0, fill: true, tension: 0.4 },
-    { label: '75th percentile', data: p75, borderColor: '#16A34A', backgroundColor: 'rgba(22,163,74,0.05)', borderWidth: 1.5, pointRadius: 0, fill: '+-1', tension: 0.4 },
-    { label: '25th percentile', data: p25, borderColor: '#DC2626', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.4 },
-    ...(benchmarkEnabled ? [{ label: benchmarkLabel, data: benchmarkMean, borderColor: '#7C3AED', borderWidth: 2, borderDash: [5,5], pointRadius: 0, fill: false, tension: 0.4 }] : []),
-    ...(hasCorpus ? [{ label: 'Corpus (CPI Growth)', data: corpusMean, borderColor: '#F97316', borderWidth: 2, borderDash: [5,5], pointRadius: 0, fill: false, tension: 0.4 }] : [])
+    { label: 'Median (50th percentile)', data: p50, borderColor: '#0EA5E9', backgroundColor: 'rgba(14, 165, 233, 0.0)', borderWidth: 4.5, pointRadius: 0, fill: false, tension: 0.4, order: 50 }
   );
+  // Benchmarks/corpus
+  if (benchmarkEnabled) {
+    datasets.push({ label: benchmarkLabel, data: benchmarkMean, borderColor: '#7C3AED', borderWidth: 2, borderDash: [5,5], pointRadius: 0, fill: false, tension: 0.4, order: 51 });
+  }
+  if (hasCorpus) {
+    datasets.push({ label: 'Corpus (CPI Growth)', data: corpusMean, borderColor: '#F97316', borderWidth: 2, borderDash: [5,5], pointRadius: 0, fill: false, tension: 0.4, order: 52 });
+  }
 
   chart = new Chart(ctx, {
     type: 'line',
@@ -90,7 +109,26 @@ function buildChart() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-  legend: { position: 'top', labels: { filter: (item) => !String(item.text).startsWith('Simulation'), usePointStyle: true, padding: 20, color: '#6B7280', font: { weight: 600 } } },
+        // To control which datasets appear in the legend, customize the filter function below.
+        // Example: Only show median, 90%/50% bands, benchmark, and corpus in the legend.
+        legend: {
+          position: 'top',
+          labels: {
+            // --- LEGEND FILTER: customize this function to control legend items ---
+             filter: (item) => {
+              const allowed = [
+                 'Median (50th percentile)',
+                 '90% Range (5th–95th)',
+                 '50% Range (25th–75th)',
+                 benchmarkLabel,
+                 'Corpus (CPI Growth)'
+               ];
+               return allowed.includes(item.text);
+             },
+            //filter: (item) => !String(item.text).startsWith('Simulation'),
+            usePointStyle: true, padding: 20, color: '#6B7280', font: { weight: 600 }
+          }
+        },
         tooltip: {
           mode: 'index', intersect: false,
           backgroundColor: 'rgba(255,255,255,0.95)', titleColor: '#1F2937', bodyColor: '#6B7280', borderColor: '#E5E7EB', borderWidth: 1,

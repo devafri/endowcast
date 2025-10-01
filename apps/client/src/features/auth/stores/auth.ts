@@ -223,6 +223,8 @@ export const useAuthStore = defineStore('auth', () => {
   async function initializeAuth() {
     const token = localStorage.getItem('endowcast_token');
     if (token) {
+      // Ensure API service has the token
+      apiService.setToken(token);
       await verifyToken();
     }
   }

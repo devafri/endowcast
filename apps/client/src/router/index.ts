@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-
+import { useAuthStore } from '../features/auth/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -20,16 +20,76 @@ const router = createRouter({
   // Billing
   { path: '/pricing', name: 'Pricing', component: () => import('../features/billing/views/PricingView.vue') },
   
-  // Organization Management
-  { path: '/settings', name: 'Settings', component: () => import('../features/organization/views/SettingsView.vue') },
-  { path: '/organization', name: 'Organization', component: () => import('../features/organization/views/OrganizationView.vue') },
+  // Protected routes - require authentication
+  { 
+    path: '/settings', 
+    name: 'Settings', 
+    component: () => import('../features/organization/views/SettingsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  { 
+    path: '/organization', 
+    name: 'Organization', 
+    component: () => import('../features/organization/views/OrganizationView.vue'),
+    meta: { requiresAuth: true }
+  },
   
-  // Simulation Features
-  { path: '/allocation', name: 'Allocation', component: () => import('../features/simulation/views/AllocationView.vue') },
-  { path: '/results', name: 'Results', component: () => import('../features/simulation/views/ResultsView.vue') },
-  { path: '/history', name: 'History', component: () => import('../features/simulation/views/HistoryView.vue') },
-  { path: '/simulation', name: 'Simulation', component: () => import('../features/simulation/views/SimulationView.vue') },
+  // Simulation Features - require authentication
+  { 
+    path: '/allocation', 
+    name: 'Allocation', 
+    component: () => import('../features/simulation/views/AllocationView.vue'),
+    meta: { requiresAuth: true }
+  },
+  { 
+    path: '/results', 
+    name: 'Results', 
+    component: () => import('../features/simulation/views/ResultsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  { 
+    path: '/history', 
+    name: 'History', 
+    component: () => import('../features/simulation/views/HistoryView.vue'),
+    meta: { requiresAuth: true }
+  },
+  { 
+    path: '/simulation', 
+    name: 'Simulation', 
+    component: () => import('../features/simulation/views/SimulationView.vue'),
+    meta: { requiresAuth: true }
+  },
   ],
+})
+
+// Navigation guard to handle authentication
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+  
+  // Check if route requires authentication
+  if (to.meta.requiresAuth) {
+    // If user is not authenticated, try to initialize auth first
+    if (!authStore.isAuthenticated) {
+      await authStore.initializeAuth()
+    }
+    
+    // If still not authenticated after initialization, redirect to login
+    if (!authStore.isAuthenticated) {
+      next({ 
+        name: 'Login', 
+        query: { redirect: to.fullPath } // Store intended destination
+      })
+      return
+    }
+  }
+  
+  // If user is authenticated and trying to access login/signup, redirect to settings
+  if (authStore.isAuthenticated && (to.name === 'Login' || to.name === 'Signup')) {
+    next({ name: 'Settings' })
+    return
+  }
+  
+  next()
 })
 
 export default router

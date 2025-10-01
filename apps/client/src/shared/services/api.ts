@@ -9,14 +9,29 @@ class ApiError extends Error {
 
 class ApiService {
   private baseURL = API_BASE_URL;
-  private token: string | null = localStorage.getItem('endowcast_token');
+  private token: string | null = null;
+
+  constructor() {
+    // Safely initialize token from localStorage
+    try {
+      this.token = localStorage.getItem('endowcast_token');
+    } catch (error) {
+      // localStorage might not be available (SSR, etc.)
+      this.token = null;
+    }
+  }
 
   setToken(token: string | null) {
     this.token = token;
-    if (token) {
-      localStorage.setItem('endowcast_token', token);
-    } else {
-      localStorage.removeItem('endowcast_token');
+    try {
+      if (token) {
+        localStorage.setItem('endowcast_token', token);
+      } else {
+        localStorage.removeItem('endowcast_token');
+      }
+    } catch (error) {
+      // localStorage might not be available
+      console.warn('Could not access localStorage:', error);
     }
   }
 

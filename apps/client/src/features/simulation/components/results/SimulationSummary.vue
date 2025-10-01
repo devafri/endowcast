@@ -41,13 +41,15 @@ const initialSpending = props.results?.spendingPolicy?.[0]?.[0] ? median(props.r
 const finalValues = props.results?.simulations?.map((sim: number[]) => sim[sim.length - 1]) || [];
 const finalMed = median(finalValues);
 
-// Portfolio returns analysis
+// Portfolio returns analysis - use the corrected value from the store
+const medianReturn = props.results?.summary?.medianAnnualizedReturn ? props.results.summary.medianAnnualizedReturn / 100 : 0;
+
+// Calculate volatility from portfolio returns for Sharpe ratio
 const portfolioReturns = props.results?.portfolioReturns?.map((sim: number[]) => {
   const annualizedReturn = sim.reduce((a, b) => a * (1 + b), 1) ** (1 / sim.length) - 1;
   return annualizedReturn;
 }) || [];
 
-const medianReturn = median(portfolioReturns);
 const returnVolatility = standardDeviation(portfolioReturns);
 const sharpeRatio = returnVolatility > 0 ? (medianReturn - 0.02) / returnVolatility : 0; // assuming 2% risk-free rate
 
@@ -65,10 +67,19 @@ const maxDrawdowns = props.results?.simulations?.map((sim: number[]) => {
 
 // Risk metrics
 const valueAtRisk5 = percentile(finalValues, 5);
-const probSpendingBelow4Pct = finalValues.filter((val: number) => {
-  const impliedSpendingRate = (initialSpending / val) * 100;
-  return impliedSpendingRate < 4;
-}).length / finalValues.length;
+// Use user-defined spending policy rate from settings (assume constant for all years in sim)
+const spendingPolicyRate = props.results?.spendingPolicyRate ?? 0.04; // fallback to 4% if not present
+// Probability that endowment never depletes while maintaining spending policy
+const probSustainableSpending = (() => {
+  if (!props.results?.simulations?.length) return NaN;
+  let count = 0;
+  for (let i = 0; i < props.results.simulations.length; i++) {
+    const sim = props.results.simulations[i];
+    // Check if endowment is always positive after spending each year
+    if (sim.every((val: number) => val > 0)) count++;
+  }
+  return count / props.results.simulations.length;
+})();
 
 // Real value preservation (assuming 3% inflation)
 const realValueThreshold = startVal * Math.pow(1.03, years);
@@ -108,7 +119,7 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
       <div class="text-center">
         <div class="text-sm text-text-secondary mb-1 flex items-center justify-center gap-1">
           Annualized Return
-          <Tooltip text="The compound annual growth rate of the portfolio over the simulation period" position="top" />
+          <Tooltip text="The median compound annual growth rate (CAGR) across all simulation paths - industry standard for Monte Carlo simulations" position="top" />
         </div>
         <div class="text-3xl font-bold">{{ pct(medianReturn) }}</div>
         <div class="text-xs text-text-secondary mt-1">Portfolio median</div>
@@ -167,12 +178,12 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">
             Sustainable Spending Rate
-            <Tooltip text="Probability of maintaining at least 4% annual spending. >80% = High confidence, <50% = High risk of cuts." position="top" />
+            <Tooltip :text="`Probability of maintaining the user-defined spending policy rate (${(spendingPolicyRate*100).toFixed(2)}%) without depleting the endowment. >80% = High confidence, <50% = High risk of cuts.`" position="top" />
           </div>
-          <div class="text-lg font-semibold" :class="probSpendingBelow4Pct <= 0.2 ? 'text-green-600' : probSpendingBelow4Pct <= 0.4 ? 'text-yellow-600' : 'text-red-600'">
-            {{ pct(1 - probSpendingBelow4Pct) }}
+          <div class="text-lg font-semibold" :class="probSustainableSpending >= 0.8 ? 'text-green-600' : probSustainableSpending >= 0.5 ? 'text-yellow-600' : 'text-red-600'">
+            {{ pct(probSustainableSpending) }}
           </div>
-          <div class="text-xs text-text-secondary mt-1">Prob. maintaining 4%+ rate</div>
+          <div class="text-xs text-text-secondary mt-1">Prob. maintaining {{ (spendingPolicyRate*100).toFixed(2) }}%+ rate</div>
         </div>
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">

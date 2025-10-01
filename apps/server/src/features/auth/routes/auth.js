@@ -250,26 +250,48 @@ router.post('/verify-token', async (req, res) => {
         email: true,
         firstName: true,
         lastName: true,
-        planType: true,
-        planExpires: true,
-        organization: true,
+        role: true,
         jobTitle: true,
-        simulationsUsed: true,
-        simulationsReset: true,
         isActive: true,
         createdAt: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            subscription: {
+              select: {
+                planType: true,
+                status: true,
+                simulationsUsed: true,
+                simulationsReset: true,
+                currentPeriodEnd: true,
+              }
+            }
+          }
+        }
       }
     });
 
     if (!user || !user.isActive) {
       return res.status(401).json({ 
-        error: 'Invalid token' 
+        error: 'Invalid or expired token' 
       });
     }
 
     res.json({
       valid: true,
-      user
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        jobTitle: user.jobTitle,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+      },
+      organization: user.organization,
+      subscription: user.organization?.subscription
     });
   } catch (error) {
     res.status(401).json({ 

@@ -93,7 +93,7 @@ export const assetClasses = [
 ] as const;
 
 // Correlation matrix from vanilla
-const corr: number[][] = [
+export const defaultCorrelationMatrix: number[][] = [
   [1.00, 0.75, 0.20, 0.25, 0.30, 0.25, 0.05],
   [0.75, 1.00, 0.15, 0.40, 0.35, 0.20, 0.05],
   [0.20, 0.15, 1.00, 0.30, 0.10, 0.10, 0.05],
@@ -102,6 +102,9 @@ const corr: number[][] = [
   [0.25, 0.20, 0.10, 0.10, 0.20, 1.00, 0.05],
   [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 1.00],
 ];
+
+// Keep the original for internal use
+const corr: number[][] = defaultCorrelationMatrix;
 
 function cholesky(A: number[][]): number[][] {
   const n = A.length;
@@ -424,4 +427,234 @@ export function formatMoney(num: number, digits = 0): string {
   if (Math.abs(num) >= 1_000_000) return `$${(num / 1_000_000).toFixed(digits)}M`;
   if (Math.abs(num) >= 1_000) return `$${(num / 1_000).toFixed(digits)}K`;
   return `$${nf.format(num)}`;
+}
+
+// Enhanced Risk Analytics
+export interface RiskMetrics {
+  cvar95: number;          // Conditional Value at Risk (95% confidence)
+  cvar99: number;          // Conditional Value at Risk (99% confidence)
+  maxDrawdown: number;     // Maximum peak-to-trough decline
+  principalLossProb: number; // Probability of losing principal
+  sustainabilityHorizon: number; // Expected year of fund depletion
+  tailRiskMetrics: {
+    worst1Pct: number;     // Worst 1% outcome
+    worst5Pct: number;     // Worst 5% outcome
+    worst10Pct: number;    // Worst 10% outcome
+  };
+  drawdownAnalysis: {
+    avgDrawdown: number;
+    drawdownRecoveryTime: number;
+    maxDrawdownYear: number;
+  };
+}
+
+export function calculateRiskMetrics(simulations: number[][], initialValue: number): RiskMetrics {
+  const years = simulations[0]?.length ?? 10;
+  const finalValues = simulations.map(sim => sim[years - 1]);
+  
+  // Calculate CVaR (Expected Shortfall)
+  const cvar95 = calculateCVaR(finalValues, 0.05);
+  const cvar99 = calculateCVaR(finalValues, 0.01);
+  
+  // Calculate maximum drawdown across all simulations
+  const { maxDrawdown, avgDrawdown, drawdownRecoveryTime, maxDrawdownYear } = calculateDrawdownMetrics(simulations, initialValue);
+  
+  // Principal loss probability
+  const principalLossProb = finalValues.filter(v => v < initialValue).length / finalValues.length;
+  
+  // Sustainability horizon (when fund drops below 50% of initial value)
+  const sustainabilityHorizon = calculateSustainabilityHorizon(simulations, initialValue * 0.5);
+  
+  // Tail risk metrics
+  const sortedFinalValues = [...finalValues].sort((a, b) => a - b);
+  const worst1Pct = sortedFinalValues[Math.floor(sortedFinalValues.length * 0.01)] ?? 0;
+  const worst5Pct = sortedFinalValues[Math.floor(sortedFinalValues.length * 0.05)] ?? 0;
+  const worst10Pct = sortedFinalValues[Math.floor(sortedFinalValues.length * 0.10)] ?? 0;
+  
+  return {
+    cvar95,
+    cvar99,
+    maxDrawdown,
+    principalLossProb,
+    sustainabilityHorizon,
+    tailRiskMetrics: {
+      worst1Pct,
+      worst5Pct,
+      worst10Pct
+    },
+    drawdownAnalysis: {
+      avgDrawdown,
+      drawdownRecoveryTime,
+      maxDrawdownYear
+    }
+  };
+}
+
+function calculateCVaR(values: number[], alpha: number): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const cutoff = Math.floor(sorted.length * alpha);
+  const tail = sorted.slice(0, cutoff);
+  return tail.length > 0 ? tail.reduce((a, b) => a + b, 0) / tail.length : 0;
+}
+
+function calculateDrawdownMetrics(simulations: number[][], initialValue: number) {
+  let maxDrawdown = 0;
+  let totalDrawdown = 0;
+  let drawdownCount = 0;
+  let maxDrawdownYear = 0;
+  let recoveryTimes: number[] = [];
+  
+  simulations.forEach(sim => {
+    let peak = initialValue;
+    let drawdownStart = -1;
+    
+    sim.forEach((value, year) => {
+      if (value > peak) {
+        // New peak, check if we were in drawdown
+        if (drawdownStart >= 0) {
+          recoveryTimes.push(year - drawdownStart);
+          drawdownStart = -1;
+        }
+        peak = value;
+      } else if (value < peak) {
+        // In drawdown
+        if (drawdownStart < 0) drawdownStart = year;
+        const currentDrawdown = (peak - value) / peak;
+        totalDrawdown += currentDrawdown;
+        drawdownCount++;
+        
+        if (currentDrawdown > maxDrawdown) {
+          maxDrawdown = currentDrawdown;
+          maxDrawdownYear = year + 1; // Convert to 1-based year
+        }
+      }
+    });
+  });
+  
+  const avgDrawdown = drawdownCount > 0 ? totalDrawdown / drawdownCount : 0;
+  const drawdownRecoveryTime = recoveryTimes.length > 0 
+    ? recoveryTimes.reduce((a, b) => a + b, 0) / recoveryTimes.length 
+    : 0;
+  
+  return { maxDrawdown, avgDrawdown, drawdownRecoveryTime, maxDrawdownYear };
+}
+
+function calculateSustainabilityHorizon(simulations: number[][], threshold: number): number {
+  let totalDepletionYear = 0;
+  let depletionCount = 0;
+  const years = simulations[0]?.length ?? 10;
+  
+  simulations.forEach(sim => {
+    for (let year = 0; year < sim.length; year++) {
+      if (sim[year] < threshold) {
+        totalDepletionYear += year + 1; // Convert to 1-based year
+        depletionCount++;
+        break;
+      }
+    }
+  });
+  
+  return depletionCount > 0 ? totalDepletionYear / depletionCount : years + 1;
+}
+
+// Narrative Insights Generator
+export interface NarrativeInsight {
+  type: 'risk' | 'opportunity' | 'recommendation';
+  priority: 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  actionItems?: string[];
+}
+
+export function generateNarrativeInsights(
+  results: SimulationOutputs, 
+  inputs: Inputs, 
+  riskMetrics: RiskMetrics
+): NarrativeInsight[] {
+  const insights: NarrativeInsight[] = [];
+  const years = results.simulations[0]?.length ?? 10;
+  
+  // Principal Risk Insight
+  if (riskMetrics.principalLossProb > 0.3) {
+    insights.push({
+      type: 'risk',
+      priority: 'high',
+      title: `High Principal Risk: ${(riskMetrics.principalLossProb * 100).toFixed(0)}% Chance of Loss`,
+      description: `Your endowment has a ${(riskMetrics.principalLossProb * 100).toFixed(0)}% chance of losing principal over ${years} years. This is considered high risk for institutional endowments.`,
+      actionItems: [
+        'Consider reducing equity allocation to lower volatility',
+        'Evaluate reducing spending policy rate',
+        'Review portfolio diversification strategy'
+      ]
+    });
+  } else if (riskMetrics.principalLossProb > 0.1) {
+    insights.push({
+      type: 'risk',
+      priority: 'medium',
+      title: `Moderate Principal Risk: ${(riskMetrics.principalLossProb * 100).toFixed(0)}% Chance of Loss`,
+      description: `Your endowment has a ${(riskMetrics.principalLossProb * 100).toFixed(0)}% chance of losing principal over ${years} years. This is within acceptable range for most endowments.`,
+    });
+  }
+  
+  // Drawdown Risk Analysis
+  if (riskMetrics.maxDrawdown > 0.4) {
+    insights.push({
+      type: 'risk',
+      priority: 'high',
+      title: `Severe Drawdown Risk: Up to ${(riskMetrics.maxDrawdown * 100).toFixed(0)}% Decline`,
+      description: `Your portfolio could experience drawdowns of up to ${(riskMetrics.maxDrawdown * 100).toFixed(0)}% in year ${riskMetrics.drawdownAnalysis.maxDrawdownYear}. This may impact spending capacity.`,
+      actionItems: [
+        'Increase allocation to less volatile assets',
+        'Consider implementing spending smoothing rules',
+        'Build larger cash reserves for operational flexibility'
+      ]
+    });
+  }
+  
+  // Spending Policy Analysis
+  const currentSpendingRate = inputs.spendingPolicyRate;
+  if (currentSpendingRate > 5.5) {
+    insights.push({
+      type: 'risk',
+      priority: 'medium',
+      title: `Elevated Spending Rate: ${currentSpendingRate.toFixed(1)}% May Be Unsustainable`,
+      description: `Your ${currentSpendingRate.toFixed(1)}% spending rate is above the typical 4-5% range for endowments. This increases long-term sustainability risk.`,
+      actionItems: [
+        'Consider reducing spending rate to 5% or lower',
+        'Implement spending smoothing to reduce volatility',
+        'Evaluate essential vs. discretionary spending categories'
+      ]
+    });
+  }
+  
+  // Opportunity Insights
+  const finalValues = results.simulations.map(sim => sim[years - 1]);
+  const medianGrowth = (percentile(finalValues, 50) / inputs.initialEndowment - 1) * 100;
+  
+  if (medianGrowth > 25) {
+    insights.push({
+      type: 'opportunity',
+      priority: 'medium',
+      title: `Strong Growth Potential: ${medianGrowth.toFixed(0)}% Median Growth`,
+      description: `Your portfolio allocation shows strong growth potential with median ${medianGrowth.toFixed(0)}% growth over ${years} years.`,
+    });
+  }
+  
+  // CVaR Analysis
+  const cvarLoss = (inputs.initialEndowment - riskMetrics.cvar95) / inputs.initialEndowment * 100;
+  if (cvarLoss > 30) {
+    insights.push({
+      type: 'risk',
+      priority: 'high',
+      title: `Extreme Tail Risk: 5% Worst Cases Show ${cvarLoss.toFixed(0)}% Loss`,
+      description: `In the worst 5% of scenarios, your endowment could lose ${cvarLoss.toFixed(0)}% of its value (${formatMoney(riskMetrics.cvar95)} average in tail scenarios).`,
+      actionItems: [
+        'Consider tail-risk hedging strategies',
+        'Stress test spending policies under adverse scenarios',
+        'Review crisis management procedures'
+      ]
+    });
+  }
+  
+  return insights;
 }
