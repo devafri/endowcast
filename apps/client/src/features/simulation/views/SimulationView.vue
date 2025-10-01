@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive, onBeforeUnmount, onMounted, computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import TheHeader from '../../shared/components/layout/TheHeader.vue';
-import PageHeader from '../../shared/components/layout/PageHeader.vue';
+import TheHeader from '../../../shared/components/layout/TheHeader.vue';
+import PageHeader from '../../../shared/components/layout/PageHeader.vue';
 import InputCard from '../components/inputs/InputCard.vue';
 import PortfolioWeights from '../components/inputs/PortfolioWeights.vue';
 import GrantTargets from '../components/inputs/GrantTargets.vue';
