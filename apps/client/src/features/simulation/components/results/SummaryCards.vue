@@ -30,7 +30,7 @@ const years = props.results?.simulations?.[0]?.length ?? 10;
     </div>
     <div class="card p-6 text-center">
       <h3 class="text-sm font-semibold text-text-secondary">Median Annualized Return</h3>
-      <p class="text-3xl sm:text-4xl font-bold text-accent mt-2">{{ (results?.summary?.annualizedReturn ?? 0).toFixed(2) }}%</p>
+      <p class="text-3xl sm:text-4xl font-bold text-accent mt-2">{{ (results?.summary?.medianAnnualizedReturn ?? 0).toFixed(2) }}%</p>
     </div>
   </div>
 </template>

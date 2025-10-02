@@ -35,7 +35,6 @@ function standardDeviation(arr: number[]) {
 // Enhanced KPI calculations
 const years = props.results?.simulations?.[0]?.length ?? 10;
 const startVal = props.results?.simulations?.[0]?.[0] ? median(props.results.simulations.map((s: number[]) => s[0])) : NaN;
-const initialSpending = props.results?.spendingPolicy?.[0]?.[0] ? median(props.results.spendingPolicy.map((s: number[]) => s[0])) : NaN;
 
 // Final values for all simulations
 const finalValues = props.results?.simulations?.map((sim: number[]) => sim[sim.length - 1]) || [];
@@ -69,15 +68,68 @@ const maxDrawdowns = props.results?.simulations?.map((sim: number[]) => {
 const valueAtRisk5 = percentile(finalValues, 5);
 // Use user-defined spending policy rate from settings (assume constant for all years in sim)
 const spendingPolicyRate = props.results?.spendingPolicyRate ?? 0.04; // fallback to 4% if not present
-// Probability that endowment never depletes while maintaining spending policy
+// Get the user-defined spending policy rate from the simulation inputs
+const userSpendingPolicyRate = (() => {
+  // Try to extract from simulation store inputs if available
+  if (props.results?.inputs?.spendingPolicyRate) {
+    return props.results.inputs.spendingPolicyRate / 100; // Convert percentage to decimal
+  }
+  // Fallback to spendingPolicyRate calculation 
+  return spendingPolicyRate;
+})();
+
+// Calculate initial values for sustainability analysis
+// Year 0 should be the user input, not the first simulation result
+const trueInitialEndowment = props.results?.inputs?.initialEndowment || 0;
+const targetAnnualSpending = trueInitialEndowment * userSpendingPolicyRate;
+
+console.log('SIMPLE DEBUG: Component loaded, target spending =', targetAnnualSpending);
+console.log('True initial endowment (Year 0):', trueInitialEndowment);
+console.log('First simulation result (End of Year 1):', props.results?.simulations?.[0]?.[0]);
+console.log('Target spending based on true initial:', targetAnnualSpending);
+
+// Probability that endowment can maintain its exact target spending rate throughout the period
 const probSustainableSpending = (() => {
-  if (!props.results?.simulations?.length) return NaN;
+  if (!props.results?.simulations?.length || !props.results?.spendingPolicy?.length) return NaN;
   let count = 0;
+  
+  // Debug: log basic parameters
+  console.log('=== Sustainability Debug ===');
+  console.log('Target spending:', Math.round(targetAnnualSpending));
+  console.log('Total simulations:', props.results.simulations.length);
+  
   for (let i = 0; i < props.results.simulations.length; i++) {
     const sim = props.results.simulations[i];
-    // Check if endowment is always positive after spending each year
-    if (sim.every((val: number) => val > 0)) count++;
+    const spendingPath = props.results.spendingPolicy[i];
+    let canMaintainSpending = true;
+    
+    // Check each year if the target spending amount can be maintained or exceeded
+    // Note: sim[year] represents END-of-year values, spendingPath[year] is spending DURING that year
+    for (let year = 0; year < sim.length && year < spendingPath.length; year++) {
+      // For Year 1 (year=0), beginning value is the initial endowment
+      // For Year 2+ (year>=1), beginning value is the previous year's end value
+      const beginningValue = year === 0 ? trueInitialEndowment : sim[year - 1];
+      const actualSpending = spendingPath[year] || 0;
+      const threshold = targetAnnualSpending * 0.95;
+      
+      // Log first simulation details
+      if (i === 0 && year < 3) {
+        console.log(`Year ${year + 1}: beginning=${Math.round(beginningValue)}, spending=${Math.round(actualSpending)}, target=${Math.round(targetAnnualSpending)}, threshold=${Math.round(threshold)}`);
+      }
+      
+      // If beginning endowment is depleted or actual spending falls below the minimum target
+      if (beginningValue <= 0 || actualSpending < threshold) {
+        canMaintainSpending = false;
+        break;
+      }
+    }
+    
+    if (canMaintainSpending) {
+      count++;
+    }
   }
+  
+  console.log('Passed simulations:', count, 'out of', props.results.simulations.length);
   return count / props.results.simulations.length;
 })();
 
@@ -92,7 +144,6 @@ const avgAnnualSpending = props.results?.spendingPolicy?.map((sim: number[]) =>
 const yearsOfCoverage = median(finalValues.map((val: number, i: number) => val / (avgAnnualSpending[i] || 1)));
 
 // Legacy calculations for comparison
-const medEndVals = Array.from({length: years}, (_, i) => median(props.results.simulations.map((r: number[]) => r[i])));
 const medOpEx = Array.from({length: years}, (_, i) => median(props.results.operatingExpenses.map((r: number[]) => r[i])));
 const medGrants = Array.from({length: years}, (_, i) => median(props.results.grants.map((r: number[]) => r[i])));
 const medInvest = Array.from({length: years}, (_, i) => median(props.results.investmentExpenses.map((r: number[]) => r[i])));
@@ -178,12 +229,12 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">
             Sustainable Spending Rate
-            <Tooltip :text="`Probability of maintaining the user-defined spending policy rate (${(spendingPolicyRate*100).toFixed(2)}%) without depleting the endowment. >80% = High confidence, <50% = High risk of cuts.`" position="top" />
+            <Tooltip :text="`Probability that the endowment can sustain its target spending amount of $${formatMoney(targetAnnualSpending).replace('$', '')} per year (${(userSpendingPolicyRate*100).toFixed(1)}% of $${formatMoney(trueInitialEndowment).replace('$', '')}) throughout the ${years}-year period. This measures the sustainability of the spending policy.`" position="top" />
           </div>
           <div class="text-lg font-semibold" :class="probSustainableSpending >= 0.8 ? 'text-green-600' : probSustainableSpending >= 0.5 ? 'text-yellow-600' : 'text-red-600'">
             {{ pct(probSustainableSpending) }}
           </div>
-          <div class="text-xs text-text-secondary mt-1">Prob. maintaining {{ (spendingPolicyRate*100).toFixed(2) }}%+ rate</div>
+          <div class="text-xs text-text-secondary mt-1">Sustaining {{ formatMoney(targetAnnualSpending) }}/year</div>
         </div>
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">

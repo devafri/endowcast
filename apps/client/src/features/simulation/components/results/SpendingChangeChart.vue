@@ -33,6 +33,12 @@ function buildChart() {
   const spend = props.results.spendingPolicy as number[][]; // [sim][year] amounts
   const Y = years.value;
   if (Y < 1) return;
+  
+  // Debug logging
+  console.log('Spending chart debug:');
+  console.log('Y (spending years):', Y);
+  console.log('yearLabels:', props.results?.yearLabels);
+  console.log('yearLabels length:', props.results?.yearLabels?.length);
 
   // Compute per-year percentiles on absolute spending amounts
   const median = Array.from({ length: Y }, (_, i) => percentile(spend.map(s => s[i]), 50));
@@ -41,9 +47,13 @@ function buildChart() {
   const p75 = Array.from({ length: Y }, (_, i) => percentile(spend.map(s => s[i]), 75));
   const p90 = Array.from({ length: Y }, (_, i) => percentile(spend.map(s => s[i]), 90));
 
-  const labels = (props.results?.yearLabels && props.results.yearLabels.length === Y)
+  const labels = (props.results?.yearLabels && props.results.yearLabels.length > Y)
+    ? props.results.yearLabels.slice(0, Y) // Take first Y years for spending (spending happens during each year)
+    : (props.results?.yearLabels && props.results.yearLabels.length === Y)
     ? props.results.yearLabels
     : Array.from({ length: Y }, (_, i) => `Year ${i + 1}`);
+    
+  console.log('Final labels for spending chart:', labels);
 
   const datasets: any[] = [
     { label: 'Median Spending', data: median, borderColor: '#0EA5E9', backgroundColor: 'rgba(14,165,233,0.1)', borderWidth: 2.5, pointRadius: 0, fill: true, tension: 0.35 },

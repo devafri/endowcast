@@ -8,7 +8,8 @@ self.onmessage = (ev: MessageEvent<MsgIn>) => {
   const { inputs, opts } = ev.data;
   try {
     const data = runMonteCarlo(inputs, opts);
-    const msg: MsgOut = { ok: true, data };
+    // Include the original inputs in the response so they're available to components
+    const msg: MsgOut = { ok: true, data: { ...data, inputs } };
     // @ts-ignore postMessage exists on DedicatedWorkerGlobalScope
     self.postMessage(msg);
   } catch (err: any) {

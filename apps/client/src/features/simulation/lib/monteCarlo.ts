@@ -502,7 +502,7 @@ function calculateDrawdownMetrics(simulations: number[][], initialValue: number)
   let totalDrawdown = 0;
   let drawdownCount = 0;
   let maxDrawdownYear = 0;
-  let recoveryTimes: number[] = [];
+  const recoveryTimes: number[] = [];
   
   simulations.forEach(sim => {
     let peak = initialValue;

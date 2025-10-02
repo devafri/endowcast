@@ -31,14 +31,17 @@ function buildChart() {
   const benchmarkEnabled = props.results.benchmark?.enabled !== false;
   const corpusEnabled = props.results.corpus?.enabled !== false;
   const Y = years.value;
+  
+  // Get initial endowment value to prepend to all data arrays
+  const initialValue = props.results.inputs?.initialValue || props.results.inputs?.initialEndowment || 0;
 
-  // Build percentile "paths" for fan chart
+  // Build percentile "paths" for fan chart, including initial value
   function getPercentile(arrs: number[][], pct: number) {
     // arrs: [sim][year], pct: 0-100
     const n = arrs.length;
-    if (!n) return [];
+    if (!n) return [initialValue]; // Start with initial value
     const Y = arrs[0].length;
-    const out = [];
+    const out = [initialValue]; // Start with initial value
     for (let y = 0; y < Y; ++y) {
       const vals = arrs.map(a => a[y]).sort((a, b) => a - b);
       const idx = Math.floor((pct / 100) * (n - 1));
@@ -52,19 +55,19 @@ function buildChart() {
     percentiles[pct] = getPercentile(sims, pct);
   }
   const p50 = percentiles[50];
-  const benchmarkMean = Array.from({ length: Y }, (_, i) => {
+  const benchmarkMean = [initialValue, ...Array.from({ length: Y }, (_, i) => {
     const arr = benchmarks.map(b => b[i]);
     return arr.reduce((a, b) => a + b, 0) / arr.length;
-  });
+  })];
   const hasCorpus = corpusEnabled && corpus.length > 0;
-  const corpusMean = hasCorpus ? Array.from({ length: Y }, (_, i) => {
+  const corpusMean = hasCorpus ? [initialValue, ...Array.from({ length: Y }, (_, i) => {
     const arr = corpus.map(c => c[i]);
     return arr.reduce((a, b) => a + b, 0) / arr.length;
-  }) : [];
+  })] : [];
 
-  const labels = (props.results?.yearLabels && props.results.yearLabels.length === Y)
+  const labels = (props.results?.yearLabels && props.results.yearLabels.length === Y + 1)
     ? props.results.yearLabels
-    : Array.from({ length: Y }, (_, i) => `Year ${i + 1}`);
+    : [2025, ...Array.from({ length: Y }, (_, i) => 2025 + i + 1)];
   const datasets: any[] = [];
 
   // Gradients for fan chart bands

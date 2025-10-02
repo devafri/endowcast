@@ -250,7 +250,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { RiskMetrics, NarrativeInsight, SimulationOutputs, Inputs } from '../../lib/monteCarlo';
+import type { SimulationOutputs, Inputs } from '../../lib/monteCarlo';
+import type { RiskMetrics } from '../../lib/analytics';
+import type { NarrativeInsight } from '../../lib/insights';
 
 interface Props {
   riskMetrics: RiskMetrics;

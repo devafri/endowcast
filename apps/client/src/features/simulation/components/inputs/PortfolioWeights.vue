@@ -157,7 +157,7 @@ function applyPreset(name) {
     }
   }
   // Final rounding to integers while keeping total 100 by greedy adjust
-  let rounded = {};
+  const rounded = {};
   let rsum = 0;
   for (const c of props.categories) {
     const k = c.key;

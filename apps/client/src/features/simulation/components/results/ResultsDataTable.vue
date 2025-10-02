@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 const props = defineProps<{ results: any }>();
 
 function formatMoney(num: number): string {
-  if (!isFinite(num)) return '-';
+  if (typeof num !== 'number' || !isFinite(num)) return '-';
   if (Math.abs(num) >= 1_000_000) return `$${(num / 1_000_000).toFixed(1)}M`;
   if (Math.abs(num) >= 1_000) return `$${(num / 1_000).toFixed(1)}K`;
   return `$${num.toFixed(0)}`;

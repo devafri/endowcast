@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router';
 import { useSimulationStore } from '../../simulation/stores/simulation';
 import { useAuthStore } from '../../auth/stores/auth';
 import { assetClasses } from '../../simulation/lib/monteCarlo';
+import { defaultCorrelationMatrix } from '../../simulation/lib/engine';
 import type { TabConfig } from '../types/SettingsTypes';
 import { 
   useSettingsValidation,
@@ -77,18 +78,8 @@ const stressConfig = computed(() => ({
   cpiShifts: (sim.options as any).stressTest?.cpiShifts || []
 }));
 
-// Default correlation matrix from the CorrelationMatrix component
-const getDefaultCorrelationMatrix = (): number[][] => [
-  [1.00, 0.75, 0.20, 0.25, 0.30, 0.25, 0.05],
-  [0.75, 1.00, 0.15, 0.40, 0.35, 0.20, 0.05],
-  [0.20, 0.15, 1.00, 0.30, 0.10, 0.10, 0.05],
-  [0.25, 0.40, 0.30, 1.00, 0.15, 0.10, 0.05],
-  [0.30, 0.35, 0.10, 0.15, 1.00, 0.20, 0.05],
-  [0.25, 0.20, 0.10, 0.10, 0.20, 1.00, 0.05],
-  [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 1.00],
-];
-
-const correlationMatrix = ref((sim.options as any).correlationMatrix || getDefaultCorrelationMatrix());
+// Default correlation matrix from engine (single source of truth)
+const correlationMatrix = ref((sim.options as any).correlationMatrix || defaultCorrelationMatrix);
 
 const assetOverrideData = computed(() => (sim.options as any).assetOverrides || {});
 </script>

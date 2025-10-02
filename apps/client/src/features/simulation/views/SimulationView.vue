@@ -12,8 +12,9 @@ import StatisticalSummary from '../components/results/StatisticalSummary.vue';
 import SimulationChart from '../components/results/SimulationChart.vue';
 import ResultsDataTable from '../components/results/ResultsDataTable.vue';
 import EnhancedRiskAnalysis from '../components/results/EnhancedRiskAnalysis.vue';
-import { runMonteCarlo, type EngineOptions, type SimulationOutputs, calculateRiskMetrics, generateNarrativeInsights } from '../lib/monteCarlo';
-import { assetClasses } from '../lib/monteCarlo';
+import { runMonteCarlo, type EngineOptions, type SimulationOutputs, assetClasses } from '../lib/monteCarlo';
+import { calculateRiskMetrics } from '../lib/analytics';
+import { generateNarrativeInsights } from '../lib/insights';
 import { useAuthStore } from '@/features/auth/stores/auth';
 import { apiService } from '@/shared/services/api';
 
@@ -413,9 +414,9 @@ onMounted(() => { loadFromURL(); });
         <h2 class="text-lg font-semibold mb-4 section-title">Initial Operating Expense</h2>
         <div class="flex items-center">
           <span class="text-xl font-medium text-text-secondary mr-2">$</span>
-          <input type="number" v-model="inputs.initialOperatingExpense" class="input-field w-full text-xl p-3 rounded-md" />
+          <input type="number" v-model.number="inputs.initialOperatingExpense" min="0" step="50000" class="input-field w-full text-xl p-3 rounded-md" />
         </div>
-        <p class="text-xs text-text-secondary mt-2 italic">Grows annually by CPI.</p>
+        <p class="text-xs text-text-secondary mt-2 italic">Grows annually by CPI. Leave blank to auto-calculate based on spending rate.</p>
       </div>
       <div class="card p-6">
         <h2 class="text-lg font-semibold mb-4 section-title">Initial Grant Amount</h2>

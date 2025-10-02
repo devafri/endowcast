@@ -175,7 +175,12 @@ export const useSimulationStore = defineStore('simulation', () => {
 
       const yCount = (normOpts.years ?? 10);
       const baseYear = options.startYear && isFinite(options.startYear) ? Number(options.startYear) : undefined;
-      const yearLabels = Array.from({ length: yCount }, (_, i) => baseYear ? String(baseYear + i) : `Year ${i+1}`);
+      // For projection charts, we need to show starting year + ending years
+      // If 1 year projection starting 2025, show: [2025, 2026]
+      // If 5 year projection starting 2025, show: [2025, 2026, 2027, 2028, 2029, 2030]
+      const yearLabels = Array.from({ length: yCount + 1 }, (_, i) => 
+        baseYear ? String(baseYear + i) : (i === 0 ? 'Start' : `Year ${i}`)
+      );
 
       const simulationResults = {
         ...out,

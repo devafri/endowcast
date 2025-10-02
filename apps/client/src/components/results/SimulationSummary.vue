@@ -88,7 +88,6 @@ const avgAnnualSpending = props.results?.spendingPolicy?.map((sim: number[]) =>
 const yearsOfCoverage = median(finalValues.map((val: number, i: number) => val / (avgAnnualSpending[i] || 1)));
 
 // Legacy calculations for comparison
-const medEndVals = Array.from({length: years}, (_, i) => median(props.results.simulations.map((r: number[]) => r[i])));
 const medOpEx = Array.from({length: years}, (_, i) => median(props.results.operatingExpenses.map((r: number[]) => r[i])));
 const medGrants = Array.from({length: years}, (_, i) => median(props.results.grants.map((r: number[]) => r[i])));
 const medInvest = Array.from({length: years}, (_, i) => median(props.results.investmentExpenses.map((r: number[]) => r[i])));

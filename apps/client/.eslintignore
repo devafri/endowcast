@@ -1,0 +1,4 @@
+dist
+.eslintcache
+*.log
+*.d.ts
