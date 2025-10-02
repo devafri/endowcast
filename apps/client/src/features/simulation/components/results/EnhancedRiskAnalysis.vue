@@ -31,7 +31,7 @@
     <!-- Risk Metrics Tab -->
     <div v-if="activeTab === 'metrics'" class="space-y-6">
       <!-- Tail Risk Section -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-red-50 rounded-lg p-4">
           <div class="flex items-center">
             <div class="flex-shrink-0">
@@ -79,7 +79,7 @@
       </div>
 
       <!-- Detailed Risk Metrics -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Tail Risk Distribution -->
         <div class="bg-gray-50 rounded-lg p-4">
           <h4 class="text-sm font-medium text-gray-800 mb-3">Tail Risk Distribution</h4>
@@ -132,6 +132,44 @@
           <div>
             <span class="text-sm text-blue-600">CVaR (99% confidence):</span>
             <p class="text-lg font-semibold text-blue-900">{{ formatMoney(riskMetrics.cvar99) }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Ratios & Benchmarks -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-medium text-gray-800 mb-1">Sortino Ratio</h4>
+          <p class="text-lg font-semibold">{{ isFinite(riskMetrics.sortino) ? riskMetrics.sortino.toFixed(2) : '-' }}</p>
+          <p class="text-xs text-gray-600">Target 2% rf</p>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-medium text-gray-800 mb-1">Calmar Ratio</h4>
+          <p class="text-lg font-semibold">{{ isFinite(riskMetrics.calmar) ? riskMetrics.calmar.toFixed(2) : '-' }}</p>
+          <p class="text-xs text-gray-600">CAGR / Max DD</p>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-medium text-gray-800 mb-1">Beat Benchmark (Horizon)</h4>
+          <p class="text-lg font-semibold">{{ riskMetrics.probBeatBenchmark == null ? '-' : formatPercent(riskMetrics.probBeatBenchmark) }}</p>
+          <p class="text-xs text-gray-600">Probability</p>
+        </div>
+      </div>
+
+      <!-- Safe Spending 80% -->
+      <div class="bg-green-50 rounded-lg p-4">
+        <h4 class="text-sm font-medium text-green-800 mb-2">Safe Spending (80% success)</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <span class="text-sm text-green-700">Annual amount:</span>
+            <p class="text-lg font-semibold text-green-900">
+              {{ riskMetrics.safeSpending80?.amount == null ? '-' : formatMoney(riskMetrics.safeSpending80.amount) }}
+            </p>
+          </div>
+          <div>
+            <span class="text-sm text-green-700">Rate vs initial:</span>
+            <p class="text-lg font-semibold text-green-900">
+              {{ riskMetrics.safeSpending80?.ratePct == null ? '-' : `${riskMetrics.safeSpending80.ratePct.toFixed(2)}%` }}
+            </p>
           </div>
         </div>
       </div>

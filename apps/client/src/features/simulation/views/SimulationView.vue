@@ -242,7 +242,15 @@ async function runSimulation() {
     const stressSummary = stressApplied ? `Equity shocks: ${eqCount}${cpiCount ? `, CPI shifts: ${cpiCount}` : ''}` : '';
 
     // Calculate enhanced risk metrics
-    const riskMetrics = calculateRiskMetrics(out.simulations, initial);
+    const riskMetrics = calculateRiskMetrics(
+      out.simulations,
+      initial,
+      out.portfolioReturns,
+      out.benchmarks,
+      out.spendingPolicy,
+      initial,
+      0.02,
+    );
     
     // Generate narrative insights
     const narrativeInsights = generateNarrativeInsights(out, payload, riskMetrics);

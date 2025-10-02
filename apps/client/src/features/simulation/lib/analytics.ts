@@ -13,6 +13,12 @@ export interface RiskMetrics {
   maxDrawdown: number;
   principalLossProb: number;
   sustainabilityHorizon: number;
+  // New performance/risk additions
+  medianCagr: number; // median geometric mean of portfolio returns per simulation
+  sortino: number; // risk-adjusted using downside deviation
+  calmar: number; // CAGR / max drawdown
+  probBeatBenchmark?: number; // probability final value beats benchmark final
+  safeSpending80?: { amount: number; ratePct: number }; // 80% success spending amount and rate vs initial
   tailRiskMetrics: {
     worst1Pct: number;
     worst5Pct: number;
@@ -25,7 +31,25 @@ export interface RiskMetrics {
   };
 }
 
-export function calculateRiskMetrics(simulations: number[][], initialValue: number): RiskMetrics {
+/**
+ * Calculate core and extended risk metrics.
+ * @param simulations endowment paths [sim][year]
+ * @param initialValue initial endowment
+ * @param portfolioReturns optional annual portfolio returns before cash flows [sim][year]
+ * @param benchmarks optional benchmark paths [sim][year]
+ * @param spendingPolicy optional spending policy amounts [sim][year]
+ * @param initialEndowmentForRates optional initial endowment for computing safe spending rate
+ * @param targetReturn Sortino target return (e.g., risk-free). Default 2%.
+ */
+export function calculateRiskMetrics(
+  simulations: number[][],
+  initialValue: number,
+  portfolioReturns?: number[][],
+  benchmarks?: number[][],
+  spendingPolicy?: number[][],
+  initialEndowmentForRates?: number,
+  targetReturn: number = 0.02,
+): RiskMetrics {
   const years = simulations[0]?.length ?? 10;
   const finalValues = simulations.map(sim => sim[years - 1]);
 
@@ -43,12 +67,61 @@ export function calculateRiskMetrics(simulations: number[][], initialValue: numb
   const worst5Pct = sortedFinalValues[Math.floor(sortedFinalValues.length * 0.05)] ?? 0;
   const worst10Pct = sortedFinalValues[Math.floor(sortedFinalValues.length * 0.10)] ?? 0;
 
+  // Median CAGR from portfolio returns if provided
+  let medianCagr = 0;
+  if (portfolioReturns && portfolioReturns.length) {
+    const perSimCagr = portfolioReturns.map(series => annualizedReturn(series)).filter(isFinite);
+    perSimCagr.sort((a, b) => a - b);
+    medianCagr = perSimCagr[Math.floor(perSimCagr.length / 2)] ?? 0;
+  }
+
+  // Sortino ratio using annual returns if available
+  let sortino = 0;
+  if (portfolioReturns && portfolioReturns.length) {
+    const allAnnual = portfolioReturns.flat();
+    const downsideSquares: number[] = [];
+    for (const r of allAnnual) {
+      const diff = r - targetReturn;
+      if (diff < 0) downsideSquares.push(diff * diff);
+    }
+    const downsideDev = downsideSquares.length ? Math.sqrt(downsideSquares.reduce((a, b) => a + b, 0) / downsideSquares.length) : 0;
+    sortino = downsideDev > 0 ? (medianCagr - targetReturn) / downsideDev : 0;
+  }
+
+  // Calmar ratio: CAGR / Max Drawdown
+  const calmar = maxDrawdown > 0 ? (medianCagr / maxDrawdown) : 0;
+
+  // Probability of beating benchmark at horizon
+  let probBeatBenchmark: number | undefined = undefined;
+  if (benchmarks && benchmarks.length && benchmarks[0]?.length === years) {
+    const benchFinal = benchmarks.map(b => b[years - 1]);
+    let count = 0;
+    for (let i = 0; i < finalValues.length; i++) {
+      if ((finalValues[i] ?? -Infinity) > (benchFinal[i] ?? Infinity)) count++;
+    }
+    probBeatBenchmark = finalValues.length ? count / finalValues.length : 0;
+  }
+
+  // Safe spending (80% success): 20th percentile of per-simulation minimum spending amounts
+  let safeSpending80: { amount: number; ratePct: number } | undefined = undefined;
+  if (spendingPolicy && spendingPolicy.length && initialEndowmentForRates && initialEndowmentForRates > 0) {
+    const perSimMin = spendingPolicy.map(sp => Math.min(...sp));
+    const amount = percentile(perSimMin, 20);
+    const ratePct = isFinite(amount) && amount >= 0 ? (amount / initialEndowmentForRates) * 100 : 0;
+    safeSpending80 = { amount, ratePct };
+  }
+
   return {
     cvar95,
     cvar99,
     maxDrawdown,
     principalLossProb,
     sustainabilityHorizon,
+    medianCagr,
+    sortino,
+    calmar,
+    probBeatBenchmark,
+    safeSpending80,
     tailRiskMetrics: { worst1Pct, worst5Pct, worst10Pct },
     drawdownAnalysis: { avgDrawdown, drawdownRecoveryTime, maxDrawdownYear }
   };
@@ -113,4 +186,12 @@ function calculateSustainabilityHorizon(simulations: number[][], threshold: numb
     }
   });
   return depletionCount > 0 ? totalDepletionYear / depletionCount : years + 1;
+}
+
+// Helpers
+function annualizedReturn(returns: number[]): number {
+  if (!returns?.length) return NaN;
+  let prod = 1;
+  for (const r of returns) prod *= (1 + r);
+  return Math.pow(prod, 1 / returns.length) - 1;
 }
