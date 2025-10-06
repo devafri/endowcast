@@ -67,6 +67,10 @@ const router = createRouter({
     meta: { requiresAuth: true }
   },
   { 
+    path: '/simulation',
+    redirect: '/simulation/history'
+  },
+  {
     path: '/simulation/history', 
     name: 'ScenarioHistory', 
     component: () => import('../features/simulation/views/ScenarioHistory.vue'),

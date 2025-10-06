@@ -104,6 +104,21 @@ async function handleCheckoutCompleted(session) {
 
   console.log('Updating subscription for organization:', organizationId);
 
+  // Safely handle date conversion
+  const currentPeriodStart = subscription.current_period_start 
+    ? new Date(subscription.current_period_start * 1000) 
+    : new Date();
+  const currentPeriodEnd = subscription.current_period_end 
+    ? new Date(subscription.current_period_end * 1000) 
+    : null;
+
+  console.log('Date values:', { 
+    current_period_start: subscription.current_period_start,
+    current_period_end: subscription.current_period_end,
+    currentPeriodStart,
+    currentPeriodEnd 
+  });
+
   // Update or create subscription record
   const updatedSubscription = await prisma.subscription.upsert({
     where: { organizationId },
@@ -113,8 +128,8 @@ async function handleCheckoutCompleted(session) {
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscriptionId,
       stripePriceId: priceId,
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      currentPeriodStart,
+      currentPeriodEnd,
     },
     create: {
       organizationId,
@@ -123,8 +138,8 @@ async function handleCheckoutCompleted(session) {
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscriptionId,
       stripePriceId: priceId,
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      currentPeriodStart,
+      currentPeriodEnd,
       simulationsUsed: 0,
       simulationsReset: new Date(),
     }

@@ -148,7 +148,7 @@ async function handleLogout() {
               <!-- Simulation Usage -->
               <div v-if="authStore.subscription" class="text-center px-3 py-1 bg-gray-50 rounded-md">
                 <div class="text-xs font-medium text-gray-900">
-                  {{ authStore.currentPlanLimits.simulations === -1 ? 'Unlimited' : authStore.subscription.simulationsUsed + '/' + authStore.currentPlanLimits.simulations }}
+                  {{ (authStore.usageStats?.monthlySimulations || 0) }}/{{ authStore.currentPlanLimits.simulations }}
                 </div>
                 <div class="text-xs text-gray-500">simulations</div>
               </div>
