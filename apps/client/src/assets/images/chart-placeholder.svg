@@ -61,7 +61,7 @@
             <!-- Card 2: Annual Return -->
             <rect x="325" width="295" height="90" rx="8" class="bg-white" stroke="#e2e8f0" stroke-width="1"/>
             <text x="345" y="30" class="sans-serif text-gray-600" font-size="14">Annual Return</text>
-            <text x="345" y="65" class="sans-serif bold text-green-600" font-size="28">6.8%</text>
+            <text x="345" y="65" class="sans-serif bold text-green-600" font-size="28">9.8%</text>
         </g>
 
         <!-- Action Buttons -->
