@@ -77,16 +77,25 @@ export const useSimulationStore = defineStore('simulation', () => {
   async function runSimulation() {
     const authStore = useAuthStore();
     
+    console.log('runSimulation called');
+    console.log('canRunSimulation:', authStore.canRunSimulation);
+    console.log('isAuthenticated:', authStore.isAuthenticated);
+    
     // Check if user can run simulation
     if (!authStore.canRunSimulation) {
       const limit = authStore.currentPlanLimits.simulations === -1 ? 'unlimited' : authStore.currentPlanLimits.simulations;
       errorMsg.value = `You have reached your simulation limit (${limit}). Please upgrade your plan to run more simulations.`;
+      console.log('Simulation blocked by limit:', errorMsg.value);
       return;
     }
 
+    console.log('Starting simulation...');
     errorMsg.value = null;
     isLoading.value = true;
+    results.value = null; // Clear previous results
+    
     const payload = JSON.parse(JSON.stringify(inputs));
+    console.log('Simulation payload:', payload);
     if (Array.isArray(options.stress?.equityShocks)) {
       for (const sh of options.stress!.equityShocks!) {
         if (typeof sh.year === 'number') {
@@ -240,12 +249,89 @@ export const useSimulationStore = defineStore('simulation', () => {
     url.searchParams.set('s', b64);
     return url.toString();
   }
+  
   async function copyShareLink() {
     const link = encodeScenario();
     try { await navigator.clipboard.writeText(link); } catch {}
   }
 
-  return { inputs, options, allocationPolicy, results, isLoading, errorMsg, normalizeOptions, runSimulation, copyShareLink };
+  async function loadScenario(scenarioId: string) {
+    try {
+      isLoading.value = true;
+      errorMsg.value = null;
+      
+      const response = await apiService.getSimulation(scenarioId);
+      const simulation = response; // The API returns the simulation directly, not wrapped
+      
+      if (!simulation) {
+        throw new Error('Scenario not found');
+      }
+      
+      // Update inputs with scenario data
+      inputs.initialEndowment = Number(simulation.initialValue) || 50000000;
+      inputs.spendingPolicyRate = Number(simulation.spendingRate) * 100 || 5; // Convert to percentage
+      
+      // Update options
+      options.years = Number(simulation.years) || 10;
+      options.startYear = Number(simulation.startYear) || new Date().getFullYear();
+      
+      // Note: Stress testing parameters (equityShock, cpiShift) from database
+      // are stored as single values but the engine expects complex objects.
+      // For now, we'll let users configure stress testing through the UI
+      // if they want to modify these parameters.
+      
+      // Update portfolio allocation if available
+      if (simulation.portfolio) {
+        inputs.portfolioWeights = {
+          publicEquity: Number(simulation.portfolio.publicEquity) || 50,
+          privateEquity: Number(simulation.portfolio.privateEquity) || 15,
+          publicFixedIncome: Number(simulation.portfolio.publicFixedIncome) || 18,
+          privateCredit: Number(simulation.portfolio.privateCredit) || 4,
+          realAssets: Number(simulation.portfolio.realAssets) || 6,
+          diversifying: Number(simulation.portfolio.diversifying) || 7,
+          cashShortTerm: Number(simulation.portfolio.cashShortTerm) || 0,
+        };
+      }
+      
+      // Parse and load grant targets if available
+      if (simulation.grantTargets) {
+        try {
+          const grantTargets = typeof simulation.grantTargets === 'string' 
+            ? JSON.parse(simulation.grantTargets)
+            : simulation.grantTargets;
+          if (Array.isArray(grantTargets)) {
+            inputs.grantTargets = grantTargets.map((target: any) => Number(target) || 0);
+          }
+        } catch (e) {
+          console.warn('Failed to parse grant targets:', e);
+        }
+      }
+      
+      // Load existing results if available
+      if (simulation.results) {
+        try {
+          const parsedResults = typeof simulation.results === 'string' 
+            ? JSON.parse(simulation.results) 
+            : simulation.results;
+          results.value = parsedResults;
+        } catch (e) {
+          console.warn('Failed to parse simulation results:', e);
+          results.value = null; // Clear results on parse error
+        }
+      } else {
+        results.value = null; // Clear results if no existing results
+      }
+      
+    } catch (err: any) {
+      console.error('Failed to load scenario:', err);
+      errorMsg.value = err?.message || 'Failed to load scenario';
+      results.value = null; // Clear results on error
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  return { inputs, options, allocationPolicy, results, isLoading, errorMsg, normalizeOptions, runSimulation, copyShareLink, loadScenario };
 });
 
 // Resize grant targets when years changes to keep UI consistent

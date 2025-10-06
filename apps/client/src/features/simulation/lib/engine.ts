@@ -19,6 +19,8 @@ export type SimulationOutputs = {
   benchmarks: number[][]; // [sim][year]
   corpusPaths: number[][]; // [sim][year]
   portfolioReturns: number[][]; // [sim][year]
+  cpiRates?: number[][]; // [sim][year] annual CPI rates used
+  cpiIndex?: number[][]; // [sim][year] cumulative CPI index (base 1 at start of Year 0)
 };
 
 export type SpendingPolicyOptions = {
@@ -163,6 +165,8 @@ export function runMonteCarlo(inputs: Inputs, opts?: EngineOptions): SimulationO
   const bench: number[][] = Array.from({ length: simulations }, () => []);
   const corpus: number[][] = Array.from({ length: simulations }, () => []);
   const portRets: number[][] = Array.from({ length: simulations }, () => []);
+  const cpiRates: number[][] = Array.from({ length: simulations }, () => []);
+  const cpiIndex: number[][] = Array.from({ length: simulations }, () => []);
 
   const policy = opts?.spendingPolicy ?? { type: 'simple' };
   const reb = opts?.rebalancing ?? { bandPct: 0, frequency: 'annual' };
@@ -196,6 +200,7 @@ export function runMonteCarlo(inputs: Inputs, opts?: EngineOptions): SimulationO
     let benchmark = inputs.initialEndowment;
     const corpusEnabled = opts?.corpus?.enabled !== false;
     let corpusVal = opts?.corpus?.initialValue ?? 246900000;
+  let cpiIdx = 1; // base 1 at year 0
 
     for (let y = 0; y < years; y++) {
       let cpiMean = CPI_MEAN;
@@ -207,6 +212,10 @@ export function runMonteCarlo(inputs: Inputs, opts?: EngineOptions): SimulationO
         cpiMean += delta;
       }
       const cpi = Math.max(-0.02, normalRand(cpiMean, CPI_STD, rng));
+  // track CPI
+  cpiRates[s].push(cpi);
+  cpiIdx = cpiIdx * (1 + cpi);
+  cpiIndex[s].push(cpiIdx);
 
       const z = correlatedNormals(L, rng);
       const baseReturns = z.map((zi, i) => means[i] + zi * sds[i]);
@@ -362,5 +371,7 @@ export function runMonteCarlo(inputs: Inputs, opts?: EngineOptions): SimulationO
     benchmarks: bench,
     corpusPaths: corpus,
     portfolioReturns: portRets,
+  cpiRates,
+  cpiIndex,
   };
 }

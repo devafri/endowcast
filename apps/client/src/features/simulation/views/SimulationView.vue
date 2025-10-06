@@ -70,8 +70,68 @@ const options = reactive<EngineOptions>({
 
 // State for simulation results
 const results = ref<any>(null);
+const displayMode = ref<'nominal' | 'real'>('nominal');
 const isLoading = ref(false);
 const errorMsg = ref<string | null>(null);
+
+// Scenario management
+const showSaveModal = ref(false);
+const scenarioForm = reactive({
+  name: '',
+  description: '',
+  tags: '',
+  isPublic: true
+});
+
+function saveScenario() {
+  showSaveModal.value = true;
+  // Pre-fill with descriptive name
+  const spending = inputs.spendingPolicyRate;
+  const equity = inputs.portfolioWeights.publicEquity + inputs.portfolioWeights.privateEquity;
+  scenarioForm.name = `${spending}% Spending, ${equity}% Equity`;
+  scenarioForm.description = '';
+  scenarioForm.tags = '';
+  scenarioForm.isPublic = true;
+}
+
+function confirmSaveScenario() {
+  const scenario = {
+    name: scenarioForm.name,
+    description: scenarioForm.description,
+    tags: scenarioForm.tags.split(',').map(t => t.trim()).filter(Boolean),
+    isPublic: scenarioForm.isPublic,
+    inputs: { ...inputs },
+    options: { ...options },
+    results: results.value ? {
+      medianFinalValue: results.value.analytics?.medianFinalValue,
+      medianAnnualizedReturn: results.value.analytics?.medianCagr,
+      sustainabilityProb: results.value.analytics?.sustainabilityProb,
+      maxDrawdown: results.value.analytics?.maxDrawdown
+    } : null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  
+  // TODO: Save to API/localStorage
+  console.log('Saving scenario:', scenario);
+  
+  showSaveModal.value = false;
+  // Reset form
+  scenarioForm.name = '';
+  scenarioForm.description = '';
+  scenarioForm.tags = '';
+}
+
+function loadScenario(scenarioData: any) {
+  // Load inputs
+  Object.assign(inputs, scenarioData.inputs);
+  
+  // Load options
+  Object.assign(options, scenarioData.options);
+  
+  // Clear results to force re-run
+  results.value = null;
+}
 
 let worker: Worker | null = null;
 onBeforeUnmount(() => { if (worker) { worker.terminate(); worker = null; } });
@@ -264,7 +324,8 @@ async function runSimulation() {
         annualizedReturn: medianCagr * 100,
       },
       riskMetrics,
-      narrativeInsights
+      narrativeInsights,
+      display: { mode: displayMode.value },
     };
 
     results.value = simulationResults;
@@ -341,15 +402,20 @@ onMounted(() => { loadFromURL(); });
 </script>
 
 <template>
-  <TheHeader />
   <div class="bg-amber-50 border-b border-amber-200 text-amber-900 text-sm px-4 py-2 text-center">
     This consolidated page is being split. Use the top nav: Settings → Allocation → Results.
   </div>
   <main class="max-w-7xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8">
     <!-- Page Header -->
-    <div class="text-center mb-10">
-      <h1 class="text-3xl sm:text-4xl font-bold text-text-primary">Strategic Endowment Forecast</h1>
-      <p class="text-text-secondary mt-2 max-w-3xl mx-auto">Modeling a decade of growth and spending to ensure the foundation’s long‑term financial health and mission fulfillment.</p>
+    <div class="mb-10 flex items-center justify-between">
+      <div class="text-center flex-1">
+        <h1 class="text-3xl sm:text-4xl font-bold text-text-primary">Strategic Endowment Forecast</h1>
+        <p class="text-text-secondary mt-2 max-w-3xl mx-auto">Modeling a decade of growth and spending to ensure the foundation’s long‑term financial health and mission fulfillment.</p>
+      </div>
+      <div class="flex space-x-3">
+        <RouterLink to="/simulation/history" class="btn-secondary">📊 History</RouterLink>
+        <button @click="saveScenario" :disabled="!results" class="btn-primary" :class="{ 'opacity-50 cursor-not-allowed': !results }">💾 Save</button>
+      </div>
     </div>
     <div class="card p-6 mb-6">
       <h2 class="text-lg font-semibold mb-4 section-title">Model Parameters</h2>
@@ -628,6 +694,13 @@ onMounted(() => { loadFromURL(); });
 
     <!-- Results Section (conditionally rendered) -->
     <div v-if="results" class="space-y-8 pt-8 border-t border-border">
+      <div class="flex items-center justify-end">
+        <label class="text-sm mr-2">Display:</label>
+        <select v-model="results.display.mode" class="input-field py-1 px-2 text-sm">
+          <option value="nominal">Nominal</option>
+          <option value="real">Real</option>
+        </select>
+      </div>
       <SummaryCards :results="results" />
       <SimulationSummary :results="results" />
       <StatisticalSummary :results="results" />
@@ -641,8 +714,93 @@ onMounted(() => { loadFromURL(); });
         :inputs="inputs"
       />
       
-      <SimulationChart :results="results" />
+  <SimulationChart :results="results" />
       <ResultsDataTable :results="results" />
     </div>
   </main>
+
+  <!-- Save Scenario Modal -->
+  <div v-if="showSaveModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+      <h3 class="text-lg font-semibold mb-4">Save Scenario</h3>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Scenario Name *</label>
+          <input 
+            v-model="scenarioForm.name"
+            type="text" 
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g., Conservative Growth Strategy"
+          >
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea 
+            v-model="scenarioForm.description"
+            rows="2"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Brief description of this scenario..."
+          ></textarea>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+          <input 
+            v-model="scenarioForm.tags"
+            type="text" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="growth, conservative, stress-test (comma separated)"
+          >
+        </div>
+        
+        <div class="flex items-center">
+          <input 
+            v-model="scenarioForm.isPublic"
+            type="checkbox" 
+            id="is-public"
+            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          >
+          <label for="is-public" class="ml-2 block text-sm text-gray-700">
+            Share with organization members
+          </label>
+        </div>
+      </div>
+      
+      <div class="flex justify-end space-x-3 mt-6">
+        <button @click="showSaveModal = false" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50">
+          Cancel
+        </button>
+        <button @click="confirmSaveScenario" :disabled="!scenarioForm.name.trim()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          Save Scenario
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+.btn-primary {
+  background-color: rgb(37 99 235);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+}
+.btn-primary:hover {
+  background-color: rgb(29 78 216);
+}
+.btn-secondary {
+  background-color: white;
+  color: rgb(55 65 81);
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgb(209 213 219);
+  transition: background-color 0.2s;
+}
+.btn-secondary:hover {
+  background-color: rgb(249 250 251);
+}
+</style>

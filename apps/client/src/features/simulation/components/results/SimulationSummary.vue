@@ -143,11 +143,30 @@ const avgAnnualSpending = props.results?.spendingPolicy?.map((sim: number[]) =>
 ) || [];
 const yearsOfCoverage = median(finalValues.map((val: number, i: number) => val / (avgAnnualSpending[i] || 1)));
 
+// Spending volatility and worst YoY cut (median path)
+const isReal = props.results?.display?.mode === 'real';
+const cpiIndex = props.results?.cpiIndex as number[][] | undefined;
+const deflateSeries = (series: number[][]) => {
+  if (!isReal || !cpiIndex) return series;
+  return series.map((row, i) => row.map((v, y) => (cpiIndex[i]?.[y] ? v / cpiIndex[i][y] : v)));
+};
+const spendSeries = deflateSeries(props.results?.spendingPolicy || []);
+// Median per-year spending, then volatility across years of that median path
+const medSpendByYear: number[] = Array.from({length: years}, (_, i) => median(spendSeries.map((r: number[]) => r[i])));
+const spendingVolatility = standardDeviation(medSpendByYear);
+let worstCut = 0;
+for (let i = 1; i < medSpendByYear.length; i++) {
+  if (medSpendByYear[i-1] > 0) {
+    const cut = (medSpendByYear[i] - medSpendByYear[i-1]) / medSpendByYear[i-1];
+    if (cut < worstCut) worstCut = cut;
+  }
+}
+
 // Legacy calculations for comparison
-const medOpEx = Array.from({length: years}, (_, i) => median(props.results.operatingExpenses.map((r: number[]) => r[i])));
-const medGrants = Array.from({length: years}, (_, i) => median(props.results.grants.map((r: number[]) => r[i])));
-const medInvest = Array.from({length: years}, (_, i) => median(props.results.investmentExpenses.map((r: number[]) => r[i])));
-const medSpendPol = Array.from({length: years}, (_, i) => median(props.results.spendingPolicy.map((r: number[]) => r[i])));
+const medOpEx = Array.from({length: years}, (_, i) => median(deflateSeries(props.results.operatingExpenses).map((r: number[]) => r[i])));
+const medGrants = Array.from({length: years}, (_, i) => median(deflateSeries(props.results.grants).map((r: number[]) => r[i])));
+const medInvest = Array.from({length: years}, (_, i) => median(deflateSeries(props.results.investmentExpenses).map((r: number[]) => r[i])));
+const medSpendPol = Array.from({length: years}, (_, i) => median(spendSeries.map((r: number[]) => r[i])));
 
 const totalOpEx = medOpEx.reduce((a,b)=>a+(b||0),0);
 const totalGrants = medGrants.reduce((a,b)=>a+(b||0),0);
@@ -225,7 +244,7 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
     <!-- Spending Analysis -->
     <div class="mb-6">
       <h4 class="text-lg font-semibold text-gray-900 mb-4">Mission Sustainability</h4>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">
             Sustainable Spending Rate
@@ -235,6 +254,22 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
             {{ pct(probSustainableSpending) }}
           </div>
           <div class="text-xs text-text-secondary mt-1">Sustaining {{ formatMoney(targetAnnualSpending) }}/year</div>
+        </div>
+        <div class="p-4 rounded-lg border border-border bg-white/50">
+          <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">
+            Spending Volatility
+            <Tooltip text="Standard deviation of median annual spending across years (current units). Lower is smoother." position="top" />
+          </div>
+          <div class="text-lg font-semibold">{{ formatMoney(spendingVolatility) }}</div>
+          <div class="text-xs text-text-secondary mt-1">Median path</div>
+        </div>
+        <div class="p-4 rounded-lg border border-border bg-white/50">
+          <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">
+            Worst YoY Spending Cut
+            <Tooltip text="Largest one-year percentage drop in the median spending path." position="top" />
+          </div>
+          <div class="text-lg font-semibold text-red-600">{{ pct(Math.abs(worstCut)) }}</div>
+          <div class="text-xs text-text-secondary mt-1">Median path</div>
         </div>
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">

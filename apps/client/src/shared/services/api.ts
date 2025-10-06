@@ -217,10 +217,38 @@ class ApiService {
   }
 
   // Payments
-  async createCheckoutSession(planType: string) {
+  async createCheckoutSession(planType: string, paymentMethod: 'card' | 'invoice' = 'card') {
     return this.request('/payments/create-checkout-session', {
       method: 'POST',
-      body: JSON.stringify({ planType }),
+      body: JSON.stringify({ planType, paymentMethod }),
+    });
+  }
+
+  async requestInvoice(planType: string, billingCycle: string = 'MONTHLY', dueDate?: string) {
+    return this.request('/payments/request-invoice', {
+      method: 'POST',
+      body: JSON.stringify({ planType, billingCycle, dueDate }),
+    });
+  }
+
+  // Generic HTTP methods
+  async post(endpoint: string, data?: any) {
+    return this.request(endpoint, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  async put(endpoint: string, data?: any) {
+    return this.request(endpoint, {
+      method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  async delete(endpoint: string) {
+    return this.request(endpoint, {
+      method: 'DELETE',
     });
   }
 }

@@ -58,9 +58,9 @@ router.get('/profile', async (req, res) => {
     // Calculate simulation limits based on plan
     const limits = {
       FREE: 10,
-      ANALYST_PRO: 100,
-      FOUNDATION: 500,
-      FOUNDATION_PRO: -1 // Unlimited
+      ANALYST_PRO: 50,
+      FOUNDATION: 250,
+      FOUNDATION_PRO: 500
     };
 
     const simulationLimit = limits[planType];
@@ -186,9 +186,9 @@ router.get('/usage', async (req, res) => {
     // Get plan limits
     const limits = {
       FREE: 10,
-      ANALYST_PRO: 100,
-      FOUNDATION: 500,
-      FOUNDATION_PRO: -1 // Unlimited
+      ANALYST_PRO: 50,
+      FOUNDATION: 250,
+      FOUNDATION_PRO: 500
     };
 
     const simulationLimit = limits[subscription.planType];
@@ -268,9 +268,9 @@ router.post('/upgrade-plan', [
 
     // Set new plan limits
     const planLimits = {
-      ANALYST_PRO: 100,
-      FOUNDATION: 500,
-      FOUNDATION_PRO: -1 // Unlimited
+      ANALYST_PRO: 50,
+      FOUNDATION: 250,
+      FOUNDATION_PRO: 500
     };
 
     // Set plan expiration (1 year from now for paid plans)

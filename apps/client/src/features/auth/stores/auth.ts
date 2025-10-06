@@ -48,9 +48,9 @@ export const useAuthStore = defineStore('auth', () => {
   // Plan-based limits and features  
   const planLimits = {
     FREE: { simulations: 10, features: ['basic'] },
-    ANALYST_PRO: { simulations: 100, features: ['basic', 'stress', 'export', 'advanced'] },
-    FOUNDATION: { simulations: 500, features: ['basic', 'stress', 'export', 'advanced', 'priority'] },
-    FOUNDATION_PRO: { simulations: -1, features: ['basic', 'stress', 'export', 'advanced', 'priority', 'analytics'] }
+    ANALYST_PRO: { simulations: 50, features: ['basic', 'stress', 'export', 'advanced'] },
+    FOUNDATION: { simulations: 250, features: ['basic', 'stress', 'export', 'advanced', 'priority'] },
+    FOUNDATION_PRO: { simulations: 500, features: ['basic', 'stress', 'export', 'advanced', 'priority', 'analytics'] }
   };
 
   const currentPlanLimits = computed(() => {
@@ -257,6 +257,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Refresh current user data (useful after payments/upgrades)
+  async function refreshCurrentUser() {
+    try {
+      const response = await apiService.verifyToken();
+      if (response.valid && response.user) {
+        user.value = response.user;
+        organization.value = response.organization;
+        subscription.value = response.subscription;
+        await refreshUsage();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Failed to refresh user data:', err);
+      throw err;
+    }
+  }
+
   return {
     user,
     organization,
@@ -280,5 +298,6 @@ export const useAuthStore = defineStore('auth', () => {
     initializeAuth,
     getOrganization,
     updateOrganization,
+    refreshCurrentUser,
   };
 });

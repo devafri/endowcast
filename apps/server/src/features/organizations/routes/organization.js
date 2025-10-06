@@ -93,26 +93,103 @@ router.get('/users', authenticateToken, requireUserOrAdmin, async (req, res) => 
 router.post('/invite', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { email, role = 'USER' } = req.body;
-    
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
+    const organizationId = req.user.organizationId;
+    const inviterId = req.user.id;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Validate role
+    if (!['USER', 'ADMIN', 'VIEWER'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    // Check if user already exists in the organization
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email,
+        organizationId
+      }
     });
 
     if (existingUser) {
-      return res.status(409).json({ error: 'User already exists' });
+      return res.status(400).json({ error: 'User is already a member of this organization' });
     }
 
-    // For now, just return success - full invitation system would need email service
-    res.json({ 
-      message: 'Invitation would be sent',
-      email,
-      role,
-      organizationId: req.user.organizationId
+    // Check if there's already a pending invitation
+    const existingInvitation = await prisma.invitation.findFirst({
+      where: {
+        email,
+        organizationId,
+        status: 'PENDING'
+      }
     });
+
+    if (existingInvitation) {
+      return res.status(400).json({ error: 'An invitation has already been sent to this email' });
+    }
+
+    // Generate invitation token
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    // Create invitation record
+    const invitation = await prisma.invitation.create({
+      data: {
+        email,
+        organizationId,
+        inviterId,
+        role,
+        token,
+        expiresAt
+      },
+      include: {
+        organization: true,
+        inviter: true
+      }
+    });
+
+    // Send invitation email
+    const emailService = require('../../../infrastructure/email/emailService');
+    
+    try {
+      await emailService.sendInvitationEmail({
+        email,
+        inviterName: `${invitation.inviter.firstName} ${invitation.inviter.lastName}`,
+        organizationName: invitation.organization.name,
+        invitationToken: token,
+        role
+      });
+
+      res.json({
+        success: true,
+        message: 'Invitation sent successfully',
+        invitation: {
+          id: invitation.id,
+          email: invitation.email,
+          role: invitation.role,
+          status: invitation.status,
+          expiresAt: invitation.expiresAt,
+          createdAt: invitation.createdAt
+        }
+      });
+    } catch (emailError) {
+      console.error('Failed to send invitation email:', emailError);
+      
+      // Delete the invitation if email failed
+      await prisma.invitation.delete({
+        where: { id: invitation.id }
+      });
+      
+      res.status(500).json({ 
+        error: 'Failed to send invitation email. Please try again.' 
+      });
+    }
   } catch (error) {
-    console.error('Invite user error:', error);
-    res.status(500).json({ error: 'Failed to invite user' });
+    console.error('Error inviting user:', error);
+    res.status(500).json({ error: 'Failed to send invitation' });
   }
 });
 
@@ -185,9 +262,9 @@ router.get('/usage', authenticateToken, requireUserOrAdmin, async (req, res) => 
 
     const limits = {
       FREE: 10,
-      ANALYST_PRO: 100,
-      FOUNDATION: 500,
-      FOUNDATION_PRO: -1 // unlimited
+      ANALYST_PRO: 50,
+      FOUNDATION: 250,
+      FOUNDATION_PRO: 500
     };
 
     const monthlyLimit = limits[subscription?.planType] || 10;
@@ -208,6 +285,133 @@ router.get('/usage', authenticateToken, requireUserOrAdmin, async (req, res) => 
   } catch (error) {
     console.error('Get usage statistics error:', error);
     res.status(500).json({ error: 'Failed to get usage statistics' });
+  }
+});
+
+// Accept invitation
+router.post('/accept-invitation', async (req, res) => {
+  try {
+    const { token, password, firstName, lastName } = req.body;
+
+    if (!token || !password || !firstName || !lastName) {
+      return res.status(400).json({ 
+        error: 'Token, password, firstName, and lastName are required' 
+      });
+    }
+
+    // Find invitation
+    const invitation = await prisma.invitation.findFirst({
+      where: {
+        token,
+        status: 'PENDING',
+        expiresAt: {
+          gt: new Date()
+        }
+      },
+      include: {
+        organization: true
+      }
+    });
+
+    if (!invitation) {
+      return res.status(400).json({ 
+        error: 'Invalid or expired invitation token' 
+      });
+    }
+
+    // Check if user already exists globally
+    const existingUser = await prisma.user.findUnique({
+      where: { email: invitation.email }
+    });
+
+    if (existingUser) {
+      // If user exists, just add them to the organization
+      const updatedUser = await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          organizationId: invitation.organizationId,
+          role: invitation.role
+        }
+      });
+
+      // Mark invitation as accepted
+      await prisma.invitation.update({
+        where: { id: invitation.id },
+        data: {
+          status: 'ACCEPTED',
+          acceptedAt: new Date()
+        }
+      });
+
+      return res.json({
+        success: true,
+        message: 'Invitation accepted successfully',
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          role: updatedUser.role,
+          organizationId: updatedUser.organizationId
+        }
+      });
+    }
+
+    // Create new user
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const newUser = await prisma.user.create({
+      data: {
+        email: invitation.email,
+        firstName,
+        lastName,
+        password: hashedPassword,
+        organizationId: invitation.organizationId,
+        role: invitation.role,
+        emailVerified: true // Auto-verify since they came from invitation
+      }
+    });
+
+    // Mark invitation as accepted
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: {
+        status: 'ACCEPTED',
+        acceptedAt: new Date()
+      }
+    });
+
+    // Send welcome email
+    const emailService = require('../../../infrastructure/email/emailService');
+    try {
+      await emailService.sendWelcomeEmail(newUser.email, newUser.firstName);
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Don't fail the request if welcome email fails
+    }
+
+    res.json({
+      success: true,
+      message: 'Account created and invitation accepted successfully',
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        role: newUser.role,
+        organizationId: newUser.organizationId
+      }
+    });
+  } catch (error) {
+    console.error('Error accepting invitation:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to accept invitation',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 

@@ -11,6 +11,8 @@ const simulationRoutes = require('../features/simulations/routes/simulations');
 const contactRoutes = require('../features/notifications/routes/contact');
 const paymentRoutes = require('../features/billing/routes/payments');
 const webhookRoutes = require('../features/billing/routes/webhooks');
+const subscriptionRoutes = require('../features/billing/routes/subscription');
+const invoiceRoutes = require('../features/billing/routes/invoices');
 const organizationRoutes = require('../features/organizations/routes/organization');
 
 const app = express();
@@ -40,6 +42,7 @@ app.use(cors({
 // Body parsing middleware
 // For Stripe webhooks we need the raw body to verify signatures
 app.use('/api/webhooks/stripe', express.raw({ type: 'application/json' }));
+app.use('/api/billing/webhooks/stripe', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -57,9 +60,13 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/simulations', simulationRoutes);
 app.use('/api/organization', organizationRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/contact', contactRoutes);
-app.use('/api/payments', paymentRoutes);
+app.use('/api/billing', paymentRoutes); // Mount payment routes at /api/billing
+app.use('/api/payments', paymentRoutes); // Keep legacy path for compatibility
+app.use('/api/invoices', invoiceRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/billing/webhooks', webhookRoutes); // Add this for the correct path
 
 // 404 handler for any remaining routes
 app.use((req, res) => {

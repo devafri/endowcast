@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, watch, computed } from 'vue';
 import { Chart, LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, Legend } from 'chart.js';
-import { percentile } from '../../lib/monteCarlo';
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, Legend);
 
@@ -50,11 +49,11 @@ function buildChart() {
     return out;
   }
   // Compute percentiles every 5th (5, 10, ..., 95)
-  const percentiles: Record<number, number[]> = {};
-  for (let pct = 5; pct <= 95; pct += 5) {
-    percentiles[pct] = getPercentile(sims, pct);
-  }
-  const p50 = percentiles[50];
+    const percentiles: Record<number, number[]> = {};
+    for (let pct = 5; pct <= 95; pct += 5) {
+      percentiles[pct] = getPercentile(sims, pct);
+    }
+    const p50 = percentiles[50];
   const benchmarkMean = [initialValue, ...Array.from({ length: Y }, (_, i) => {
     const arr = benchmarks.map(b => b[i]);
     return arr.reduce((a, b) => a + b, 0) / arr.length;
@@ -86,13 +85,14 @@ function buildChart() {
   }
 
   // Fan chart: shaded bands between every 5th percentile
-  for (let low = 5; low < 50; low += 5) {
-    const high = 100 - low;
-    datasets.push(
-      { label: `${high}th percentile`, data: percentiles[high], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: '-1', tension: 0.4, order: low },
-      { label: `${low}th percentile`, data: percentiles[low], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: false, tension: 0.4, order: low }
-    );
-  }
+    // Fan chart: shaded bands between every 5th percentile (5–95). Outer bands lighter, inner darker.
+    for (let low = 5; low < 50; low += 5) {
+      const high = 100 - low;
+      datasets.push(
+        { label: `${high}th percentile`, data: percentiles[high], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: '-1', tension: 0.4, order: low },
+        { label: `${low}th percentile`, data: percentiles[low], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: false, tension: 0.4, order: low }
+      );
+    }
   // Median line
   datasets.push(
     { label: 'Median (50th percentile)', data: p50, borderColor: '#0EA5E9', backgroundColor: 'rgba(14, 165, 233, 0.0)', borderWidth: 4.5, pointRadius: 0, fill: false, tension: 0.4, order: 50 }
@@ -118,16 +118,14 @@ function buildChart() {
           position: 'top',
           labels: {
             // --- LEGEND FILTER: customize this function to control legend items ---
-             filter: (item) => {
-              const allowed = [
-                 'Median (50th percentile)',
-                 '90% Range (5th–95th)',
-                 '50% Range (25th–75th)',
-                 benchmarkLabel,
-                 'Corpus (CPI Growth)'
-               ];
-               return allowed.includes(item.text);
-             },
+               filter: (item) => {
+                 const allowed = [
+                   'Median (50th percentile)',
+                   benchmarkLabel,
+                   'Corpus (CPI Growth)'
+                 ];
+                 return allowed.includes(item.text);
+               },
             //filter: (item) => !String(item.text).startsWith('Simulation'),
             usePointStyle: true, padding: 20, color: '#6B7280', font: { weight: 600 }
           }

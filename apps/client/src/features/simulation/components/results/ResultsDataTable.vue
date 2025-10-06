@@ -52,24 +52,48 @@ const totalSpendSer = computed(() => percentileSeries(props.results?.totalSpendi
       <table class="min-w-full">
         <thead>
           <tr class="text-text-secondary uppercase text-sm border-b border-border">
-            <th class="py-3 px-6 text-left">Year</th>
-            <th class="py-3 px-6 text-left">Endowment Value</th>
-            <th class="py-3 px-6 text-left">Operating Expense</th>
-            <th class="py-3 px-6 text-left">Grants</th>
-            <th class="py-3 px-6 text-left subtle-highlight">Spending Policy Expense</th>
-            <th class="py-3 px-6 text-left">Investment Expense</th>
-            <th class="py-3 px-6 text-left">Total Spending</th>
+            <th class="py-3 px-4 text-left font-medium"></th>
+            <th v-for="(val, i) in simSer" :key="i" class="py-3 px-3 text-center font-medium min-w-20">
+              {{ (props.results?.yearLabels?.[i]) || (2025 + i) }}
+            </th>
           </tr>
         </thead>
-        <tbody class="text-sm font-light">
-          <tr v-for="(val, i) in simSer" :key="i" class="border-b border-border">
-            <td class="py-3 px-6">{{ (props.results?.yearLabels?.[i]) || (i + 1) }}</td>
-            <td class="py-3 px-6">{{ formatMoney(val) }}</td>
-            <td class="py-3 px-6">{{ formatMoney(opExSer[i] ?? 0) }}</td>
-            <td class="py-3 px-6">{{ formatMoney(grantsSer[i] ?? 0) }}</td>
-            <td class="py-3 px-6 subtle-highlight">{{ formatMoney(spendingSer[i] ?? 0) }}</td>
-            <td class="py-3 px-6">{{ formatMoney(invExpSer[i] ?? 0) }}</td>
-            <td class="py-3 px-6">{{ formatMoney(totalSpendSer[i] ?? 0) }}</td>
+        <tbody class="text-sm">
+          <!-- Key Metric: Endowment Value -->
+          <tr class="border-b-2 border-blue-600 bg-blue-100">
+            <td class="py-4 px-4 font-bold text-blue-900 text-base">🏛️ Endowment Value</td>
+            <td v-for="(val, i) in simSer" :key="i" class="py-4 px-3 text-center font-semibold text-blue-900 text-base">{{ formatMoney(val) }}</td>
+          </tr>
+          
+          <!-- Spacing row -->
+          <tr class="h-2"><td colspan="100%" class="border-0"></td></tr>
+          
+          <!-- Spending Policy Components -->
+          <tr class="border-b border-gray-200 bg-gray-50">
+            <td class="py-2 px-4 font-medium text-gray-700 text-xs uppercase tracking-wide">Spending Policy Components</td>
+            <td v-for="(val, i) in simSer" :key="i" class="py-2 px-3"></td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-3 px-4 pl-8 font-medium text-gray-900">• Operating Expenses</td>
+            <td v-for="(val, i) in opExSer" :key="i" class="py-3 px-3 text-center">{{ formatMoney(val) }}</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-3 px-4 pl-8 font-medium text-gray-900">• Grant Distributions</td>
+            <td v-for="(val, i) in grantsSer" :key="i" class="py-3 px-3 text-center">{{ formatMoney(val) }}</td>
+          </tr>
+          <tr class="border-b-2 border-orange-400 bg-orange-50">
+            <td class="py-3 px-4 font-semibold text-orange-900">= Spending Policy Expense</td>
+            <td v-for="(val, i) in spendingSer" :key="i" class="py-3 px-3 text-center font-semibold text-orange-800">{{ formatMoney(val) }}</td>
+          </tr>
+          
+          <!-- Total Organization Expenses -->
+          <tr class="border-b border-border bg-gray-50">
+            <td class="py-3 px-4 font-medium text-gray-900">+ Investment Expenses</td>
+            <td v-for="(val, i) in invExpSer" :key="i" class="py-3 px-3 text-center">{{ formatMoney(val) }}</td>
+          </tr>
+          <tr class="border-b-2 border-red-400 bg-red-50">
+            <td class="py-3 px-4 font-semibold text-red-900">= Total Organization Expenses</td>
+            <td v-for="(val, i) in totalSpendSer" :key="i" class="py-3 px-3 text-center font-semibold text-red-800">{{ formatMoney(val) }}</td>
           </tr>
         </tbody>
       </table>

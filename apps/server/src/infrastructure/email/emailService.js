@@ -206,6 +206,49 @@ class EmailService {
     }
   }
 
+  async sendInvitationEmail({ email, inviterName, organizationName, invitationToken, role = 'USER' }) {
+    const invitationUrl = `${process.env.FRONTEND_URL}/accept-invitation?token=${invitationToken}`;
+    
+    const htmlBody = this.getInvitationEmailTemplate({
+      inviterName, organizationName, invitationUrl, role
+    });
+    const textBody = this.getInvitationEmailText({
+      inviterName, organizationName, invitationUrl, role
+    });
+
+    const params = {
+      Source: this.fromEmail,
+      Destination: {
+        ToAddresses: [email]
+      },
+      Message: {
+        Subject: {
+          Data: `You're invited to join ${organizationName} on EndowCast`,
+          Charset: 'UTF-8'
+        },
+        Body: {
+          Html: {
+            Data: htmlBody,
+            Charset: 'UTF-8'
+          },
+          Text: {
+            Data: textBody,
+            Charset: 'UTF-8'
+          }
+        }
+      }
+    };
+
+    try {
+      const result = await ses.sendEmail(params).promise();
+      console.log('Invitation email sent:', result.MessageId);
+      return { success: true, messageId: result.MessageId };
+    } catch (error) {
+      console.error('Failed to send invitation email:', error);
+      throw new Error('Failed to send invitation email');
+    }
+  }
+
   generateVerificationToken() {
     return crypto.randomBytes(32).toString('hex');
   }
@@ -826,6 +869,233 @@ Thank you for being part of the EndowCast community. We hope to see you again so
 
 Best regards,
 The EndowCast Team`;
+  }
+
+  getInvitationEmailTemplate({ inviterName, organizationName, invitationUrl, role }) {
+    const roleDescription = role === 'ADMIN' ? 'administrator' : 'member';
+    
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitation to Join ${organizationName} - EndowCast</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            line-height: 1.6; 
+            color: #333333; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background-color: #f8fafc;
+        }
+        .container { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .invitation-icon {
+            color: #3b82f6;
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        h1 { 
+            color: #1f2937; 
+            margin: 0 0 10px 0; 
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #6b7280;
+            font-size: 16px;
+            margin: 0;
+        }
+        .invitation-details {
+            background: #eff6ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #3b82f6;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 8px 0;
+        }
+        .detail-row:not(:last-child) {
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #374151;
+        }
+        .detail-value {
+            color: #1f2937;
+        }
+        .role-badge {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .features {
+            margin: 30px 0;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            color: #374151;
+        }
+        .feature-list li:before {
+            content: "✓";
+            color: #10b981;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .cta {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .expiry-notice {
+            background: #fef3c7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #f59e0b;
+            text-align: center;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="invitation-icon">📨</div>
+            <h1>You're Invited!</h1>
+            <p class="subtitle">Join ${organizationName} on EndowCast</p>
+        </div>
+
+        <div class="content">
+            <p>Hello!</p>
+            
+            <p><strong>${inviterName}</strong> has invited you to join <strong>${organizationName}</strong> on EndowCast, the professional endowment modeling platform.</p>
+
+            <div class="invitation-details">
+                <div class="detail-row">
+                    <span class="detail-label">Organization:</span>
+                    <span class="detail-value">${organizationName}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Invited by:</span>
+                    <span class="detail-value">${inviterName}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Role:</span>
+                    <span class="detail-value">
+                        <span class="role-badge">${roleDescription.toUpperCase()}</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="features">
+                <h3>🚀 What you'll get access to:</h3>
+                <ul class="feature-list">
+                    <li>Advanced Monte Carlo endowment simulations</li>
+                    <li>Professional portfolio modeling tools</li>
+                    <li>Collaborative scenario planning</li>
+                    <li>Detailed performance analytics</li>
+                    <li>Secure data sharing with your team</li>
+                    ${role === 'ADMIN' ? '<li>Organization administration privileges</li>' : ''}
+                </ul>
+            </div>
+
+            <div class="cta">
+                <a href="${invitationUrl}" class="button">Accept Invitation</a>
+            </div>
+
+            <div class="expiry-notice">
+                <p><strong>⏰ This invitation expires in 7 days</strong></p>
+                <p>Don't wait too long to join the team!</p>
+            </div>
+
+            <p>If you're new to EndowCast, you'll be guided through creating your account as part of the acceptance process.</p>
+
+            <p>Questions about this invitation? Contact ${inviterName} or reach out to our support team.</p>
+        </div>
+
+        <div class="footer">
+            <p>You received this email because ${inviterName} invited you to join ${organizationName} on EndowCast.</p>
+            <p><strong>EndowCast - Professional Endowment Modeling</strong></p>
+        </div>
+    </div>
+</body>
+</html>`;
+  }
+
+  getInvitationEmailText({ inviterName, organizationName, invitationUrl, role }) {
+    const roleDescription = role === 'ADMIN' ? 'administrator' : 'member';
+    
+    return `You're Invited to Join ${organizationName} on EndowCast!
+
+Hello!
+
+${inviterName} has invited you to join ${organizationName} on EndowCast, the professional endowment modeling platform.
+
+INVITATION DETAILS:
+- Organization: ${organizationName}
+- Invited by: ${inviterName}
+- Role: ${roleDescription.toUpperCase()}
+
+WHAT YOU'LL GET ACCESS TO:
+✓ Advanced Monte Carlo endowment simulations
+✓ Professional portfolio modeling tools
+✓ Collaborative scenario planning
+✓ Detailed performance analytics
+✓ Secure data sharing with your team
+${role === 'ADMIN' ? '✓ Organization administration privileges' : ''}
+
+Accept your invitation: ${invitationUrl}
+
+⏰ This invitation expires in 7 days - don't wait too long to join the team!
+
+If you're new to EndowCast, you'll be guided through creating your account as part of the acceptance process.
+
+Questions about this invitation? Contact ${inviterName} or reach out to our support team.
+
+---
+You received this email because ${inviterName} invited you to join ${organizationName} on EndowCast.
+EndowCast - Professional Endowment Modeling`;
   }
 }
 

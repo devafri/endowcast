@@ -26,6 +26,9 @@ model Organization {
   users        User[]
   subscription Subscription?
   simulations  Simulation[]
+  invitations  Invitation[]
+  payments     Payment[]
+  invoices     Invoice[]
   
   @@map("organizations")
 }
@@ -34,69 +37,36 @@ model Organization {
 model Subscription {
   id             String   @id @default(cuid())
   organizationId String   @unique
-  planType       PlanType @default(FREE)
-  billingCycle   BillingCycle @default(MONTHLY)
-  status         SubscriptionStatus @default(ACTIVE)
-  
-  // Usage tracking
-  userLimit              Int      @default(1)
-  simulationsPerMonth    Int      @default(10)
-  simulationsUsed        Int      @default(0)
-  simulationsReset       DateTime @default(now())
-  
-  // Billing cycle
-  currentPeriodStart DateTime @default(now())
-  currentPeriodEnd   DateTime
-  trialEnds          DateTime?
+  planType       String   @default("FREE") // FREE, PROFESSIONAL, INSTITUTION
+  status         String   @default("active") // active, past_due, canceled, etc.
   
   // Stripe integration
   stripeCustomerId       String? @unique
   stripeSubscriptionId   String? @unique
+  stripePriceId          String?
+  
+  // Billing cycle
+  currentPeriodStart DateTime @default(now())
+  currentPeriodEnd   DateTime?
+  
+  // Usage tracking
+  simulationsUsed        Int      @default(0)
+  simulationsReset       DateTime @default(now())
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  payments     Payment[]
   
   @@map("subscriptions")
 }
 
 // Updated plan types for multi-tenant billing
-enum PlanType {
-  FREE           // 10 simulations/month
-  ANALYST_PRO    // 100 simulations/month  
-  FOUNDATION     // 500 simulations/month
-  FOUNDATION_PRO // Unlimited simulations
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  PAST_DUE
-  CANCELLED
-  TRIAL
-  SUSPENDED
-}
-
-enum BillingCycle {
-  MONTHLY
-  ANNUAL
-}
-
 enum UserRole {
   ADMIN
   USER
   VIEWER
-}
-
-enum PaymentStatus {
-  PENDING
-  PROCESSING
-  SUCCEEDED
-  FAILED
-  CANCELLED
-  REFUNDED
 }
 
 // User model - now belongs to an organization
@@ -137,6 +107,8 @@ model User {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   simulations  Simulation[]
   portfolios   Portfolio[]
+  invitationsSent Invitation[] @relation("InvitationsSent")
+  invoicesCreated Invoice[] @relation("InvoicesCreated")
   
   @@map("users")
 }
@@ -220,29 +192,20 @@ model Portfolio {
 
 // Payment model - tracks organization payments
 model Payment {
-  id                String   @id @default(cuid())
-  subscriptionId    String
-  paymentIntentId   String   @unique
-  stripeSessionId   String?
-  stripeInvoiceId   String?
-  amount            Int      // Amount in cents
-  currency          String   @default("usd")
-  status            PaymentStatus @default(PENDING)
-  planType          PlanType
-  billingCycle      BillingCycle
-  periodStart       DateTime
-  periodEnd         DateTime
-  paymentMethod     String?
-  description       String?
-  processedAt       DateTime?
-  refundedAt        DateTime?
-  refundAmount      Int?
+  id                    String        @id @default(cuid())
+  organizationId        String
+  amount                Float         // Amount in dollars
+  currency              String        @default("usd")
+  status                String        @default("pending") // succeeded, failed, pending, refunded
+  stripePaymentIntentId String?       @unique
+  stripeInvoiceId       String?       @unique
+  description           String?
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  // Relations
-  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  // Relations  
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
   @@map("payments")
 }
@@ -268,4 +231,54 @@ model ContactSubmission {
   createdAt DateTime @default(now())
 
   @@map("contact_submissions")
+}
+
+// Invoice model for Stripe invoicing
+model Invoice {
+  id              String   @id @default(cuid())
+  organizationId  String
+  stripeInvoiceId String   @unique
+  amount          Float
+  currency        String   @default("usd")
+  description     String?
+  status          String   @default("draft") // draft, open, paid, void, uncollectible
+  dueDate         DateTime?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator      User         @relation("InvoicesCreated", fields: [createdBy], references: [id])
+  
+  @@map("invoices")
+}
+
+// Invitation model for inviting users to organizations
+model Invitation {
+  id             String      @id @default(cuid())
+  email          String
+  organizationId String
+  inviterId      String
+  role           UserRole    @default(USER)
+  token          String      @unique
+  status         InvitationStatus @default(PENDING)
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter      User        @relation("InvitationsSent", fields: [inviterId], references: [id], onDelete: Cascade)
+  
+  @@unique([email, organizationId])
+  @@map("invitations")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
 }

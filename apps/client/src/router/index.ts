@@ -16,9 +16,22 @@ const router = createRouter({
   { path: '/login', name: 'Login', component: () => import('../features/auth/views/LoginView.vue') },
   { path: '/signup', name: 'Signup', component: () => import('../features/auth/views/SignupView.vue') },
   { path: '/verify-email', name: 'VerifyEmail', component: () => import('../features/auth/views/VerifyEmailView.vue') },
+  { path: '/accept-invitation', name: 'AcceptInvitation', component: () => import('../features/organization/views/AcceptInvitationView.vue') },
   
   // Billing
   { path: '/pricing', name: 'Pricing', component: () => import('../features/billing/views/PricingView.vue') },
+  { 
+    path: '/payment/success', 
+    name: 'PaymentSuccess', 
+    component: () => import('../features/billing/views/PaymentSuccess.vue'),
+    meta: { requiresAuth: true }
+  },
+  { 
+    path: '/payment/cancel', 
+    name: 'PaymentCancel', 
+    component: () => import('../features/billing/views/PaymentCancel.vue'),
+    meta: { requiresAuth: true }
+  },
   
   // Protected routes - require authentication
   { 
@@ -54,9 +67,15 @@ const router = createRouter({
     meta: { requiresAuth: true }
   },
   { 
-    path: '/simulation', 
-    name: 'Simulation', 
-    component: () => import('../features/simulation/views/SimulationView.vue'),
+    path: '/simulation/history', 
+    name: 'ScenarioHistory', 
+    component: () => import('../features/simulation/views/ScenarioHistory.vue'),
+    meta: { requiresAuth: true }
+  },
+  { 
+    path: '/simulation/compare', 
+    name: 'ScenarioComparison', 
+    component: () => import('../features/simulation/views/ScenarioComparison.vue'),
     meta: { requiresAuth: true }
   },
   ],

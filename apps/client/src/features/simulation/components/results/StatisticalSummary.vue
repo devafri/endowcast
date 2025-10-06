@@ -71,24 +71,42 @@ const lossProb = props.results?.summary?.probabilityOfLoss ?? 0;
       <table class="min-w-full">
         <thead>
           <tr class="text-text-secondary uppercase text-sm border-b border-border">
-            <th class="py-3 px-6 text-left">Percentile</th>
-            <th class="py-3 px-6 text-left">Final Value</th>
-            <th class="py-3 px-6 text-left">Annualized Return</th>
-            <th class="py-3 px-6 text-left">Annualized Volatility</th>
+            <th class="py-3 px-4 text-left font-medium"></th>
+            <th v-for="row in rows" :key="row.label" class="py-3 px-3 text-center font-medium min-w-20">
+              {{ row.label }}
+            </th>
+            <th v-if="showCorpus" class="py-3 px-3 text-center font-medium min-w-20 bg-orange-100">
+              Corpus
+            </th>
           </tr>
         </thead>
-        <tbody class="text-sm font-light">
-          <tr v-for="row in rows" :key="row.label" class="border-b border-border">
-            <td class="py-3 px-6">{{ row.label }}</td>
-            <td class="py-3 px-6">{{ formatMoney(row.finalValue) }}</td>
-            <td class="py-3 px-6">{{ formatPct(row.annReturn) }}</td>
-            <td class="py-3 px-6">{{ formatPct(row.annVol) }}</td>
+        <tbody class="text-sm">
+          <tr class="border-b border-border bg-blue-50">
+            <td class="py-3 px-4 font-semibold text-blue-900">Final Value</td>
+            <td v-for="row in rows" :key="'final-' + row.label" class="py-3 px-3 text-center font-medium">
+              {{ formatMoney(row.finalValue) }}
+            </td>
+            <td v-if="showCorpus" class="py-3 px-3 text-center font-medium bg-orange-50">
+              {{ formatMoney(corpusRow.finalValue) }}
+            </td>
           </tr>
-          <tr v-if="showCorpus" class="border-b border-border" style="background:#E8DCD6;">
-            <td class="py-3 px-6 font-medium">Corpus</td>
-            <td class="py-3 px-6">{{ formatMoney(corpusRow.finalValue) }}</td>
-            <td class="py-3 px-6">{{ formatPct(corpusRow.annReturn) }}</td>
-            <td class="py-3 px-6">{{ formatPct(corpusRow.annVol) }}</td>
+          <tr class="border-b border-border bg-gray-50">
+            <td class="py-3 px-4 font-semibold text-gray-900">Annualized Return</td>
+            <td v-for="row in rows" :key="'return-' + row.label" class="py-3 px-3 text-center">
+              {{ formatPct(row.annReturn) }}
+            </td>
+            <td v-if="showCorpus" class="py-3 px-3 text-center bg-orange-50">
+              {{ formatPct(corpusRow.annReturn) }}
+            </td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-3 px-4 font-semibold text-gray-900">Annualized Volatility</td>
+            <td v-for="row in rows" :key="'vol-' + row.label" class="py-3 px-3 text-center">
+              {{ formatPct(row.annVol) }}
+            </td>
+            <td v-if="showCorpus" class="py-3 px-3 text-center bg-orange-50">
+              {{ formatPct(corpusRow.annVol) }}
+            </td>
           </tr>
         </tbody>
       </table>

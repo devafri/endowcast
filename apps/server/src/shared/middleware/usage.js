@@ -30,7 +30,7 @@ const trackSimulationUsage = async (req, res, next) => {
       FREE: 10,
       ANALYST_PRO: 50,
       FOUNDATION: 250,
-      FOUNDATION_PRO: 500 // unlimited
+      FOUNDATION_PRO: 500 // unlimited changed to 500
     };
 
     const monthlyLimit = limits[subscription?.planType] || 10;
@@ -87,7 +87,7 @@ const getUsageStats = async (organizationId) => {
       FREE: 10,
       ANALYST_PRO: 50,
       FOUNDATION: 250,
-      FOUNDATION_PRO:500
+      FOUNDATION_PRO: 500
     };
 
     const monthlyLimit = limits[subscription?.planType] || 10;

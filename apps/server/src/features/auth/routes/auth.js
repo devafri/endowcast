@@ -242,6 +242,7 @@ router.post('/verify-token', async (req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Token verification for user:', decoded.userId);
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -254,17 +255,22 @@ router.post('/verify-token', async (req, res) => {
         jobTitle: true,
         isActive: true,
         createdAt: true,
+        organizationId: true,
         organization: {
           select: {
             id: true,
             name: true,
             subscription: {
               select: {
+                id: true,
                 planType: true,
                 status: true,
                 simulationsUsed: true,
                 simulationsReset: true,
                 currentPeriodEnd: true,
+                stripeSubscriptionId: true,
+                createdAt: true,
+                updatedAt: true,
               }
             }
           }
@@ -278,6 +284,12 @@ router.post('/verify-token', async (req, res) => {
       });
     }
 
+    console.log('User data found:', {
+      userId: user.id,
+      organizationId: user.organizationId,
+      subscription: user.organization?.subscription
+    });
+
     res.json({
       valid: true,
       user: {
@@ -286,6 +298,7 @@ router.post('/verify-token', async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        organizationId: user.organizationId,
         jobTitle: user.jobTitle,
         isActive: user.isActive,
         createdAt: user.createdAt,
@@ -294,6 +307,7 @@ router.post('/verify-token', async (req, res) => {
       subscription: user.organization?.subscription
     });
   } catch (error) {
+    console.error('Token verification error:', error);
     res.status(401).json({ 
       valid: false,
       error: 'Invalid or expired token' 
@@ -307,6 +321,103 @@ router.post('/forgot-password', async (req, res) => {
     error: 'Password reset functionality coming soon',
     message: 'Please contact support@endowcast.com for password reset assistance'
   });
+});
+
+// GET /api/auth/debug/subscription - Debug endpoint to check subscription status
+router.get('/debug/subscription', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    console.log('Debug subscription - Auth header:', authHeader ? 'Present' : 'Missing');
+    
+    if (!authHeader) {
+      return res.status(401).json({ error: 'No authorization header' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    console.log('Debug subscription - Token length:', token.length);
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Debug subscription - Decoded token:', { userId: decoded.userId, organizationId: decoded.organizationId });
+    
+    // Get user data
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, organizationId: true, email: true }
+    });
+    console.log('Debug subscription - User found:', user);
+    
+    // Get subscription data
+    const subscription = await prisma.subscription.findFirst({
+      where: { organizationId: decoded.organizationId },
+      include: {
+        organization: {
+          select: { name: true, id: true }
+        }
+      }
+    });
+    console.log('Debug subscription - Subscription found:', subscription);
+
+    // Get all subscriptions for debugging
+    const allSubscriptions = await prisma.subscription.findMany({
+      where: { organizationId: decoded.organizationId }
+    });
+    console.log('Debug subscription - All subscriptions for org:', allSubscriptions);
+
+    res.json({
+      success: true,
+      organizationId: decoded.organizationId,
+      user,
+      subscription,
+      allSubscriptions,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Debug subscription error:', error);
+    res.status(500).json({ 
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+// POST /api/auth/debug/update-subscription - Manually update subscription for testing
+router.post('/debug/update-subscription', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'No authorization header' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const { planType = 'ANALYST_PRO' } = req.body;
+
+    console.log(`Manually updating subscription for org ${decoded.organizationId} to ${planType}`);
+
+    const updatedSubscription = await prisma.subscription.update({
+      where: { organizationId: decoded.organizationId },
+      data: {
+        planType,
+        status: 'active',
+        stripeSubscriptionId: 'manual_test_sub_123',
+        stripePriceId: 'manual_test_price_123',
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        updatedAt: new Date()
+      }
+    });
+
+    console.log('Subscription updated manually:', updatedSubscription);
+
+    res.json({
+      success: true,
+      message: `Subscription updated to ${planType}`,
+      subscription: updatedSubscription
+    });
+  } catch (error) {
+    console.error('Manual subscription update error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

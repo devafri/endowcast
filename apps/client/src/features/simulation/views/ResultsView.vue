@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useSimulationStore } from '../../simulation/stores/simulation';
 import { useAuthStore } from '@/features/auth/stores/auth';
 import SummaryCards from '../components/results/SummaryCards.vue';
@@ -8,10 +10,33 @@ import SimulationChart from '../components/results/SimulationChart.vue';
 import SpendingChangeChart from '../components/results/SpendingChangeChart.vue';
 import ResultsDataTable from '../components/results/ResultsDataTable.vue';
 
+const route = useRoute();
 const sim = useSimulationStore();
 const authStore = useAuthStore();
 
-function run() { sim.runSimulation(); }
+function run() { 
+  sim.runSimulation(); 
+}
+
+// Track if component is mounted to prevent state updates after unmount
+let isMounted = false;
+
+// Check for scenarioId query parameter and load scenario on mount
+onMounted(async () => {
+  isMounted = true;
+  try {
+    const scenarioId = route.query.scenarioId as string;
+    if (scenarioId && isMounted) {
+      await sim.loadScenario(scenarioId);
+    }
+  } catch (error) {
+    console.error('Error loading scenario:', error);
+  }
+});
+
+onUnmounted(() => {
+  isMounted = false;
+});
 </script>
 
 <template>

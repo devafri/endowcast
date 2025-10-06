@@ -220,9 +220,9 @@ exports.confirmPayment = async (event, context) => {
 
     // Define user limits and simulation quotas based on plan
     const planLimits = {
-      ANALYST_PRO: { userLimit: 5, simulationsPerMonth: 100 },
-      FOUNDATION: { userLimit: 25, simulationsPerMonth: 1000 },
-      FOUNDATION_PRO: { userLimit: 125, simulationsPerMonth: -1 } // Unlimited
+      ANALYST_PRO: { userLimit: 5, simulationsPerMonth: 50 },
+      FOUNDATION: { userLimit: 25, simulationsPerMonth: 250 },
+      FOUNDATION_PRO: { userLimit: 125, simulationsPerMonth: 500 }
     };
 
     const limits = planLimits[planType] || { userLimit: 1, simulationsPerMonth: 10 };
