@@ -58,23 +58,16 @@ const router = createRouter({
     path: '/results', 
     name: 'Results', 
     component: () => import('../features/simulation/views/ResultsView.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
+    // Support legacy /simulation links that want to create a new simulation
+    alias: ['/simulation', '/simulation/results']
   },
   { 
     path: '/history', 
     name: 'History', 
     component: () => import('../features/simulation/views/HistoryView.vue'),
-    meta: { requiresAuth: true }
-  },
-  { 
-    path: '/simulation',
-    redirect: '/simulation/history'
-  },
-  {
-    path: '/simulation/history', 
-    name: 'ScenarioHistory', 
-    component: () => import('../features/simulation/views/ScenarioHistory.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
+    alias: ['/simulation/history']
   },
   { 
     path: '/simulation/compare', 
