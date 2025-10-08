@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Platform Guide • EndowCast</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+  <header class="bg-white/70 sticky top-0 z-40 backdrop-blur border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex items-center justify-between h-16">
+        <a href="index.html" class="flex items-center gap-3">
+          <div class="w-9 h-9 flex items-center justify-center rounded-md bg-slate-800 text-white font-semibold">E</div>
+          <div>
+            <div class="text-sm font-semibold">EndowCast</div>
+            <div class="text-xs text-slate-500 -mt-0.5">Endowment Analytics</div>
+          </div>
+        </a>
+        <nav class="hidden md:flex items-center gap-6">
+          <a class="text-sm text-slate-600 hover:text-slate-900" href="index.html">Home</a>
+          <a class="text-sm text-slate-600 hover:text-slate-900" href="pricing.html">Pricing</a>
+          <a class="inline-flex items-center rounded-full px-4 py-2 text-sm font-medium bg-sky-600 text-white hover:bg-sky-700" href="#">Sign Up</a>
+        </nav>
+
+        <div class="flex items-center gap-3">
+          <a class="text-sm text-slate-700 px-3 py-1.5 border rounded-md" href="#">Login</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+    <div class="text-center">
+      <h1 class="text-3xl font-extrabold">Platform Guide</h1>
+      <p class="mt-2 text-slate-500">Master the EndowCast platform with our comprehensive user guide.</p>
+    </div>
+
+    <div class="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Left navigation -->
+      <aside class="space-y-4">
+        <div class="rounded-lg bg-white p-4 border border-slate-100">
+          <nav class="space-y-2 text-sm">
+            <button data-target="getting" class="w-full text-left px-3 py-2 rounded hover:bg-slate-50 active:bg-slate-100">Getting started</button>
+            <button data-target="interpreting" class="w-full text-left px-3 py-2 rounded hover:bg-slate-50">Interpreting results</button>
+            <button data-target="advanced" class="w-full text-left px-3 py-2 rounded hover:bg-slate-50">Advanced features</button>
+          </nav>
+        </div>
+
+        <div class="rounded-lg bg-white p-4 border border-slate-100 text-sm text-slate-600">
+          <div class="font-semibold mb-2">Quick Links</div>
+          <ul class="space-y-1">
+            <li><a href="#" class="text-sky-600 hover:underline">User documentation</a></li>
+            <li><a href="#" class="hover:underline">Sample report (PDF)</a></li>
+            <li><a href="#" class="hover:underline">Contact support</a></li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Main guide content -->
+      <section class="lg:col-span-2 space-y-8">
+        <!-- Getting started -->
+        <article id="getting" class="rounded-lg bg-white p-6 border border-slate-100">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold">Getting Started</h2>
+            <a href="#" class="text-sm text-slate-500">User Documentation</a>
+          </div>
+
+          <div class="mt-4 space-y-4">
+            <div class="flex gap-4 items-start">
+              <div class="flex-shrink-0 bg-emerald-50 text-emerald-700 rounded-full w-8 h-8 flex items-center justify-center">1</div>
+              <div>
+                <h3 class="font-semibold">Configure Foundation Parameters</h3>
+                <p class="text-sm text-slate-600">Begin in Settings to establish your endowment's baseline: initial value, spending policy rate, management fees, and operating expenses.</p>
+              </div>
+            </div>
+
+            <div class="flex gap-4 items-start">
+              <div class="flex-shrink-0 bg-amber-50 text-amber-700 rounded-full w-8 h-8 flex items-center justify-center">2</div>
+              <div>
+                <h3 class="font-semibold">Design Strategic Allocation</h3>
+                <p class="text-sm text-slate-600">Navigate to Allocation to define portfolio weights across asset classes and set investment policy targets.</p>
+              </div>
+            </div>
+
+            <div class="flex gap-4 items-start">
+              <div class="flex-shrink-0 bg-sky-50 text-sky-700 rounded-full w-8 h-8 flex items-center justify-center">3</div>
+              <div>
+                <h3 class="font-semibold">Execute Monte Carlo Analysis</h3>
+                <p class="text-sm text-slate-600">Proceed to Results and launch simulations. Explore scenario filtering, stress tests, and export board-ready PDFs.</p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Interpreting results -->
+        <article id="interpreting" class="rounded-lg bg-white p-6 border border-slate-100">
+          <h2 class="text-xl font-semibold">Interpreting Your Results</h2>
+          <p class="mt-3 text-sm text-slate-600">Key outputs and how to read them.</p>
+
+          <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 rounded-lg border border-slate-100 bg-emerald-50">
+              <div class="font-semibold">Executive Summary Cards</div>
+              <p class="text-sm mt-2">Median value, probability of loss, and annualized return summaries to present to committees.</p>
+            </div>
+            <div class="p-4 rounded-lg border border-slate-100 bg-slate-50">
+              <div class="font-semibold">Projection Visualization</div>
+              <p class="text-sm mt-2">Chart-based median trajectories and confidence bands to visualize uncertainty.</p>
+            </div>
+            <div class="p-4 rounded-lg border border-slate-100 bg-rose-50">
+              <div class="font-semibold">Statistical Analysis</div>
+              <p class="text-sm mt-2">Percentile distributions, tail risk metrics, and scenario summaries.</p>
+            </div>
+            <div class="p-4 rounded-lg border border-slate-100 bg-amber-50">
+              <div class="font-semibold">Year-by-Year Data</div>
+              <p class="text-sm mt-2">Detailed annual breakdowns for reporting and governance review.</p>
+            </div>
+          </div>
+        </article>
+
+        <!-- Advanced features with accordions -->
+        <article id="advanced" class="rounded-lg bg-white p-6 border border-slate-100">
+          <h2 class="text-xl font-semibold">Advanced Features</h2>
+          <p class="mt-2 text-sm text-slate-600">Tools for power users and administrators.</p>
+
+          <div class="mt-4 space-y-3">
+            <div class="border border-slate-100 rounded-lg overflow-hidden">
+              <button class="w-full text-left px-4 py-3 flex items-center justify-between" data-accordion="a1">
+                <div>
+                  <div class="font-medium">Custom Market Assumptions</div>
+                  <div class="text-sm text-slate-500">Override default capital market expectations with your own inputs.</div>
+                </div>
+                <div class="text-slate-400">+</div>
+              </button>
+              <div class="p-4 hidden" id="a1">
+                <p class="text-sm text-slate-600">Set mean returns, volatilities, correlations, and construct custom distributions for scenario modeling.</p>
+              </div>
+            </div>
+
+            <div class="border border-slate-100 rounded-lg overflow-hidden">
+              <button class="w-full text-left px-4 py-3 flex items-center justify-between" data-accordion="a2">
+                <div>
+                  <div class="font-medium">Scenario Stress Testing</div>
+                  <div class="text-sm text-slate-500">Apply market shocks to evaluate portfolio resilience.</div>
+                </div>
+                <div class="text-slate-400">+</div>
+              </button>
+              <div class="p-4 hidden" id="a2">
+                <p class="text-sm text-slate-600">Run targeted stress tests — inflation spikes, equity drawdowns, rate shocks — and review recovery paths.</p>
+              </div>
+            </div>
+
+            <div class="border border-slate-100 rounded-lg overflow-hidden">
+              <button class="w-full text-left px-4 py-3 flex items-center justify-between" data-accordion="a3">
+                <div>
+                  <div class="font-medium">Reproducibility & Sharing</div>
+                  <div class="text-sm text-slate-500">Create shareable links and export reproducible parameter sets for governance review.</div>
+                </div>
+                <div class="text-slate-400">+</div>
+              </button>
+              <div class="p-4 hidden" id="a3">
+                <p class="text-sm text-slate-600">Share full scenario details with committee members while maintaining read-only access and audit logs.</p>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-200 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 text-sm text-slate-500 flex items-center justify-between">
+      <div>© <span id="year3"></span> EndowCast</div>
+      <div class="flex gap-4">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Simple internal nav: scroll to section
+    document.querySelectorAll('aside [data-target]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.target;
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Accordions
+    document.querySelectorAll('[data-accordion]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-accordion');
+        const content = document.getElementById(target);
+        if (!content) return;
+        const isHidden = content.classList.contains('hidden');
+        // close others (optional)
+        document.querySelectorAll('article [id^="a"]').forEach(c => c.classList.add('hidden'));
+        if (isHidden) content.classList.remove('hidden'); else content.classList.add('hidden');
+      });
+    });
+
+    document.getElementById('year3').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

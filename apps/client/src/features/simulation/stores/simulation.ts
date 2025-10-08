@@ -3,6 +3,8 @@ import { reactive, ref, watch } from 'vue';
 import type { EngineOptions, SimulationOutputs } from '../lib/monteCarlo';
 import { useAuthStore } from '../../auth/stores/auth';
 import { apiService } from '@/shared/services/api';
+import { perSimulationWorstCuts, summarizeWorstCuts } from '../utils/spendingCuts';
+import { medoidByFinalValue, nearestToPointwiseMedian, pointwiseMedian } from '../utils/representativePath';
 
 export const useSimulationStore = defineStore('simulation', () => {
   const inputs = reactive({
@@ -208,11 +210,28 @@ export const useSimulationStore = defineStore('simulation', () => {
       // Save the simulation results to the database
       if (authStore.isAuthenticated && simulationId) {
         console.log('Saving simulation results to database...');
+        const worstCuts = perSimulationWorstCuts(out.simulations || [], out.spendingPolicy || []);
+        const worstSummary = summarizeWorstCuts(worstCuts);
+        const medoid = medoidByFinalValue(out.simulations || []);
+        const nearMedian = nearestToPointwiseMedian(out.simulations || []);
+        const pwMedian = pointwiseMedian(out.simulations || []);
+
         const resultsData = {
           simulations: out.simulations,
           portfolioReturns: out.portfolioReturns,
           spendingPolicy: out.spendingPolicy,
-          summary: simulationResults.summary,
+          summary: {
+            ...simulationResults.summary,
+            worstCuts: worstCuts,
+            worstCutsSummary: worstSummary,
+            representative: {
+              medoidIndex: medoid.index,
+              medoidPath: medoid.path,
+              nearestToMedianIndex: nearMedian.index,
+              nearestToMedianPath: nearMedian.path,
+              pointwiseMedian: pwMedian,
+            }
+          },
           stress: simulationResults.stress,
           yearLabels: simulationResults.yearLabels
         };

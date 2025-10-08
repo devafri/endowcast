@@ -97,6 +97,23 @@ function buildChart() {
   datasets.push(
     { label: 'Median (50th percentile)', data: p50, borderColor: '#0EA5E9', backgroundColor: 'rgba(14, 165, 233, 0.0)', borderWidth: 4.5, pointRadius: 0, fill: false, tension: 0.4, order: 50 }
   );
+  // Representative overlays if available in results.summary
+  try {
+    const rep = props.results?.summary?.representative;
+    if (rep) {
+      if (Array.isArray(rep.medoidPath) && rep.medoidPath.length) {
+        datasets.push({ label: 'Representative (Medoid)', data: [initialValue, ...rep.medoidPath], borderColor: '#EF4444', borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.3, order: 100 });
+      }
+      if (Array.isArray(rep.nearestToMedianPath) && rep.nearestToMedianPath.length) {
+        datasets.push({ label: 'Nearest to Median (actual path)', data: [initialValue, ...rep.nearestToMedianPath], borderColor: '#D946EF', borderWidth: 2, borderDash: [6,4], pointRadius: 0, fill: false, tension: 0.3, order: 101 });
+      }
+      if (Array.isArray(rep.pointwiseMedian) && rep.pointwiseMedian.length) {
+        datasets.push({ label: 'Pointwise Median (abstract)', data: [initialValue, ...rep.pointwiseMedian], borderColor: '#0EA5E9', borderWidth: 2, borderDash: [2,4], pointRadius: 0, fill: false, tension: 0.3, order: 99, borderOpacity: 0.7 });
+      }
+    }
+  } catch (e) {
+    // ignore if summary not present
+  }
   // Benchmarks/corpus
   if (benchmarkEnabled) {
     datasets.push({ label: benchmarkLabel, data: benchmarkMean, borderColor: '#7C3AED', borderWidth: 2, borderDash: [5,5], pointRadius: 0, fill: false, tension: 0.4, order: 51 });

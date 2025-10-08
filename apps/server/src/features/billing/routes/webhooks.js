@@ -3,16 +3,6 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Simple test endpoint to verify webhook is accessible
-router.get('/stripe-test', (req, res) => {
-  console.log('✅ Webhook test endpoint hit');
-  res.json({ 
-    success: true, 
-    message: 'Webhook endpoint is accessible',
-    timestamp: new Date().toISOString()
-  });
-});
-
 // Stripe webhook handler - requires raw body for signature verification
 router.post('/stripe', async (req, res) => {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
@@ -70,13 +60,10 @@ router.post('/stripe', async (req, res) => {
 
 async function handleCheckoutCompleted(session) {
   console.log('Processing checkout completion:', session.id);
-  console.log('Session data:', JSON.stringify(session, null, 2));
   
   const organizationId = session.client_reference_id;
   const customerId = session.customer;
   const subscriptionId = session.subscription;
-  
-  console.log('Extracted IDs:', { organizationId, customerId, subscriptionId });
   
   if (!organizationId) {
     console.error('No organization ID in checkout session');
@@ -87,40 +74,17 @@ async function handleCheckoutCompleted(session) {
   const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   
-  console.log('Stripe subscription data:', JSON.stringify(subscription, null, 2));
-  
   // Map Stripe price ID to our plan type
   const priceId = subscription.items.data[0].price.id;
-  console.log('Price ID from subscription:', priceId);
-  
   const planType = await getPlanTypeFromPriceId(priceId);
-  console.log('Mapped plan type:', planType);
   
   if (!planType) {
     console.error('Unknown price ID:', priceId);
-    console.error('Available price mappings:', process.env.STRIPE_PRICE_IDS);
     return;
   }
 
-  console.log('Updating subscription for organization:', organizationId);
-
-  // Safely handle date conversion
-  const currentPeriodStart = subscription.current_period_start 
-    ? new Date(subscription.current_period_start * 1000) 
-    : new Date();
-  const currentPeriodEnd = subscription.current_period_end 
-    ? new Date(subscription.current_period_end * 1000) 
-    : null;
-
-  console.log('Date values:', { 
-    current_period_start: subscription.current_period_start,
-    current_period_end: subscription.current_period_end,
-    currentPeriodStart,
-    currentPeriodEnd 
-  });
-
   // Update or create subscription record
-  const updatedSubscription = await prisma.subscription.upsert({
+  await prisma.subscription.upsert({
     where: { organizationId },
     update: {
       planType,
@@ -128,8 +92,8 @@ async function handleCheckoutCompleted(session) {
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscriptionId,
       stripePriceId: priceId,
-      currentPeriodStart,
-      currentPeriodEnd,
+      currentPeriodStart: new Date(subscription.current_period_start * 1000),
+      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
     },
     create: {
       organizationId,
@@ -138,17 +102,15 @@ async function handleCheckoutCompleted(session) {
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscriptionId,
       stripePriceId: priceId,
-      currentPeriodStart,
-      currentPeriodEnd,
+      currentPeriodStart: new Date(subscription.current_period_start * 1000),
+      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
       simulationsUsed: 0,
       simulationsReset: new Date(),
     }
   });
 
-  console.log('Subscription upserted:', JSON.stringify(updatedSubscription, null, 2));
-
   // Create payment record
-  const paymentRecord = await prisma.payment.create({
+  await prisma.payment.create({
     data: {
       organizationId,
       amount: session.amount_total / 100, // Convert from cents
@@ -159,8 +121,7 @@ async function handleCheckoutCompleted(session) {
     }
   });
 
-  console.log('Payment record created:', JSON.stringify(paymentRecord, null, 2));
-  console.log(`✅ Subscription successfully updated for org ${organizationId}: ${planType}`);
+  console.log(`Subscription created/updated for org ${organizationId}: ${planType}`);
 }
 
 async function handleInvoicePaymentSucceeded(invoice) {
@@ -283,25 +244,15 @@ async function handleSubscriptionDeleted(subscription) {
 
 async function getPlanTypeFromPriceId(priceId) {
   try {
-    const priceMapString = process.env.STRIPE_PRICE_IDS || '{}';
-    console.log('STRIPE_PRICE_IDS env var:', priceMapString);
-    
-    const priceMap = JSON.parse(priceMapString);
-    console.log('Parsed price map:', priceMap);
+    const priceMap = JSON.parse(process.env.STRIPE_PRICE_IDS || '{}');
     
     // Reverse lookup: find plan type by price ID
-    for (const [planKey, id] of Object.entries(priceMap)) {
-      console.log(`Checking ${planKey}: ${id} === ${priceId}?`);
+    for (const [planType, id] of Object.entries(priceMap)) {
       if (id === priceId) {
-        // Extract just the plan type part (remove billing cycle suffix)
-        const planType = planKey.replace(/_MONTHLY$|_ANNUAL$/, '');
-        console.log(`Found match! Plan key: ${planKey}, Plan type: ${planType}`);
         return planType;
       }
     }
     
-    console.error('No plan type found for price ID:', priceId);
-    console.error('Available price IDs:', Object.values(priceMap));
     return null;
   } catch (e) {
     console.error('Error parsing STRIPE_PRICE_IDS:', e);

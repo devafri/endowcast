@@ -145,6 +145,8 @@ model Simulation {
   
   // Results data (stored as JSON for flexibility)
   results Json?
+  // Computed summary (stored separately for quick access)
+  summary Json?
   
   // Metadata
   isCompleted Boolean @default(false)

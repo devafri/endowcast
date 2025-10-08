@@ -38,6 +38,7 @@
     "eslint-plugin-vue": "~10.3.0",
     "jiti": "^2.4.2",
     "npm-run-all2": "^8.0.4",
+    "playwright": "^1.40.0",
     "postcss": "^8.5.6",
     "prettier": "3.6.2",
     "tailwindcss": "^4.1.13",

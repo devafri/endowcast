@@ -136,12 +136,11 @@ router.post('/create-checkout-session', authenticateForPayments, async (req, res
       payment_method_types: ['card'],
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/cancel`,
+      success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/settings?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/pricing`,
       client_reference_id: req.user.organizationId,
       metadata: { 
         userId: req.user.id,
-        organizationId: req.user.organizationId,
         planType: planType,
         billingCycle: billingCycle
       }

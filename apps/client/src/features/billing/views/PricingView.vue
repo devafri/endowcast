@@ -43,7 +43,7 @@ const plans = [
     period: 'month',
     description: 'For small teams and advisors',
     features: [
-      '50 simulations per month',
+      '25 simulations per month',
       'Stress testing & scenario comparison',
       'All asset class assumptions',
       'CSV export & scenario sharing',
@@ -63,7 +63,7 @@ const plans = [
     period: 'month',
     description: 'For larger teams with frequent analysis',
     features: [
-      '250 simulations per month',
+      '100 simulations per month',
       'Everything in Analyst Pro',
       'Priority email support (24hr response)',
       'Advanced analytics dashboard',
@@ -82,7 +82,7 @@ const plans = [
     period: 'month',
     description: 'For organizations needing high throughput',
     features: [
-      '500 simulations per month',
+      '250 simulations per month',
       'Everything in Foundation',
       'Priority support (12hr response)',
       'API access & integrations (coming soon)',
@@ -187,14 +187,14 @@ async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUND
 </script>
 
 <template>
-  <main class="bg-primary-bg">
+  <main class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
     <!-- Hero Section -->
     <section class="py-20">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h1 class="text-5xl font-bold text-primary mb-6">
+        <h1 class="text-5xl font-bold text-gray-900 mb-6">
           Choose Your Plan
         </h1>
-        <p class="text-xl text-secondary max-w-3xl mx-auto mb-8">
+        <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
           Start with a free trial, then upgrade to unlock advanced features for comprehensive endowment analysis.
         </p>
         <div class="flex items-center justify-center gap-4 mb-12">
@@ -204,13 +204,13 @@ async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUND
             </svg>
             <span>No setup fees</span>
           </div>
-          <div class="flex items-center gap-2 text-sm text-accent">
+          <div class="flex items-center gap-2 text-sm text-blue-600">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
             </svg>
             <span>No long-term commitment</span>
           </div>
-          <div class="flex items-center gap-2 text-sm text-secondary">
+          <div class="flex items-center gap-2 text-sm text-gray-600">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
             </svg>
@@ -223,42 +223,42 @@ async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUND
     <!-- Pricing Cards -->
     <section class="pb-20">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div v-for="(plan, index) in plans" :key="index" class="relative">
             <!-- Popular badge -->
             <div v-if="plan.popular" class="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-              <div class="popular-pill">
+              <div class="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
                 Most Popular
               </div>
             </div>
 
             <!-- Card -->
-            <div class="card p-8 h-full flex flex-col" :class="plan.popular ? 'ring-2 ring-accent-gold shadow-xl transform scale-105' : ''">
+            <div class="card p-8 h-full flex flex-col" :class="plan.popular ? 'ring-2 ring-blue-500 shadow-xl transform scale-105' : ''">
               <!-- Header -->
               <div class="text-center mb-8">
-                <h3 class="text-2xl font-bold text-primary mb-2">{{ plan.name }}</h3>
-                <p class="text-secondary mb-4">{{ plan.description }}</p>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">{{ plan.name }}</h3>
+                <p class="text-gray-600 mb-4">{{ plan.description }}</p>
                 <div class="flex items-baseline justify-center">
-                  <span class="text-5xl font-bold text-primary">${{ plan.price }}</span>
-                  <span class="text-secondary ml-2">{{ plan.price > 0 ? `/${plan.period}` : plan.period }}</span>
+                  <span class="text-5xl font-bold text-gray-900">${{ plan.price }}</span>
+                  <span class="text-gray-500 ml-2">{{ plan.price > 0 ? `/${plan.period}` : plan.period }}</span>
                 </div>
               </div>
 
               <!-- Features -->
               <div class="flex-1 mb-8">
-                <h4 class="font-semibold text-primary mb-4">What's included:</h4>
+                <h4 class="font-semibold text-gray-900 mb-4">What's included:</h4>
                 <ul class="space-y-3">
                   <li v-for="feature in plan.features" :key="feature" class="flex items-start">
                     <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                     </svg>
-                    <span class="text-secondary">{{ feature }}</span>
+                    <span class="text-gray-700">{{ feature }}</span>
                   </li>
                 </ul>
 
                 <!-- Limitations for free trial -->
                 <div v-if="plan.limitations.length > 0" class="mt-6">
-                  <h4 class="font-semibold text-primary mb-3">Limitations:</h4>
+                  <h4 class="font-semibold text-gray-900 mb-3">Limitations:</h4>
                   <ul class="space-y-2">
                     <li v-for="limitation in plan.limitations" :key="limitation" class="flex items-start">
                       <svg class="w-5 h-5 text-gray-400 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -294,7 +294,7 @@ async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUND
               </button>
 
               <!-- Cancellation / commitment note -->
-              <p v-if="plan.price > 0" class="text-center text-xs text-secondary mt-3">
+              <p v-if="plan.price > 0" class="text-center text-xs text-gray-500 mt-3">
                 No long-term commitment — cancel anytime.
               </p>
             </div>
@@ -304,40 +304,40 @@ async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUND
     </section>
 
     <!-- FAQ Section -->
-    <section class="py-16 bg-secondary">
+    <section class="py-16 bg-white">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-center text-primary mb-12">Frequently Asked Questions</h2>
+        <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Frequently Asked Questions</h2>
         <div class="space-y-8">
           <div class="border-b border-gray-200 pb-6">
-            <h3 class="text-lg font-semibold text-primary mb-2">What happens when I reach my simulation limit?</h3>
-            <p class="text-secondary">Your account won't be blocked, but you'll need to wait until next month for the limit to reset, or upgrade to a higher plan for more simulations.</p>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">What happens when I reach my simulation limit?</h3>
+            <p class="text-gray-600">Your account won't be blocked, but you'll need to wait until next month for the limit to reset, or upgrade to a higher plan for more simulations.</p>
           </div>
           <div class="border-b border-gray-200 pb-6">
-            <h3 class="text-lg font-semibold text-primary mb-2">Can I cancel my subscription anytime?</h3>
-            <p class="text-secondary">Yes! You can cancel anytime. You'll keep access to all features until the end of your current billing period, then revert to view-only access for your historical simulations.</p>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Can I cancel my subscription anytime?</h3>
+            <p class="text-gray-600">Yes! You can cancel anytime. You'll keep access to all features until the end of your current billing period, then revert to view-only access for your historical simulations.</p>
           </div>
           <div class="border-b border-gray-200 pb-6">
-            <h3 class="text-lg font-semibold text-primary mb-2">Do you offer discounts for nonprofits or students?</h3>
-            <p class="text-secondary">Yes! Academic institutions and qualified nonprofits receive a 30% discount. Contact us with proof of eligibility.</p>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Do you offer discounts for nonprofits or students?</h3>
+            <p class="text-gray-600">Yes! Academic institutions and qualified nonprofits receive a 30% discount. Contact us with proof of eligibility.</p>
           </div>
           <div class="border-b border-gray-200 pb-6">
-            <h3 class="text-lg font-semibold text-primary mb-2">How fast is your support response time?</h3>
-            <p class="text-secondary">Analyst Pro users receive email support within 48 hours. Foundation and Foundation Pro users get priority support within 24 hours. All support is provided via email.</p>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">How fast is your support response time?</h3>
+            <p class="text-gray-600">Analyst Pro users receive email support within 48 hours. Foundation and Foundation Pro users get priority support within 24 hours. All support is provided via email.</p>
           </div>
           <div class="border-b border-gray-200 pb-6">
-            <h3 class="text-lg font-semibold text-primary mb-2">Is my endowment data secure and private?</h3>
-            <p class="text-secondary">Absolutely. All data is encrypted in transit and at rest using industry-standard practices. We never share or access your endowment data, and you can delete your account and all data anytime.</p>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Is my endowment data secure and private?</h3>
+            <p class="text-gray-600">Absolutely. All data is encrypted in transit and at rest using industry-standard practices. We never share or access your endowment data, and you can delete your account and all data anytime.</p>
           </div>
           <div class="border-b border-gray-200 pb-6">
-            <h3 class="text-lg font-semibold text-primary mb-2">What counts as a "simulation"?</h3>
-            <p class="text-secondary">A simulation run is recorded each time a user clicks "Run monte carlo analysis" on the Results page. Usage is counted per organization across users.</p>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">What counts as a "simulation"?</h3>
+            <p class="text-gray-600">A simulation run is recorded each time a user clicks "Run monte carlo analysis" on the Results page. Usage is counted per organization across users.</p>
           </div>
         </div>
       </div>
     </section>
 
     <!-- CTA Section -->
-    <section class="py-16 cta-banner">
+    <section class="py-16 bg-gradient-to-r from-blue-600 to-blue-700">
       <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
         <h2 class="text-3xl font-bold text-white mb-6">
           <span v-if="authStore.isAuthenticated">Upgrade your plan for more simulations</span>
@@ -349,20 +349,20 @@ async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUND
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
           <template v-if="authStore.isAuthenticated">
-            <button @click="selectPlan(plans[1])" class="btn-cta-secondary">
+            <button @click="selectPlan(plans[1])" class="bg-white text-blue-600 hover:bg-gray-50 py-4 px-8 rounded-lg font-semibold transition-colors">
               <span v-if="authStore.subscription?.planType === 'ANALYST_PRO'">✓ Current Plan</span>
               <span v-else>Upgrade to Analyst Pro</span>
             </button>
-            <button @click="selectPlan(plans[2])" class="btn-cta-tertiary">
+            <button @click="selectPlan(plans[2])" class="border-2 border-white text-white hover:bg-white hover:text-blue-600 py-4 px-8 rounded-lg font-semibold transition-colors">
               <span v-if="authStore.subscription?.planType === 'FOUNDATION'">✓ Current Plan</span>
               <span v-else>Upgrade to Foundation</span>
             </button>
           </template>
           <template v-else>
-            <RouterLink to="/signup" class="btn-cta-secondary">
+            <RouterLink to="/signup" class="bg-white text-blue-600 hover:bg-gray-50 py-4 px-8 rounded-lg font-semibold transition-colors">
               Start Free
             </RouterLink>
-            <RouterLink to="/signup?plan=ANALYST_PRO" class="btn-cta-tertiary">
+            <RouterLink to="/signup?plan=ANALYST_PRO" class="border-2 border-white text-white hover:bg-white hover:text-blue-600 py-4 px-8 rounded-lg font-semibold transition-colors">
               Try Analyst Pro
             </RouterLink>
           </template>
@@ -375,7 +375,7 @@ async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUND
   <div v-if="showPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg max-w-md w-full mx-4 p-6">
       <div class="flex justify-between items-center mb-6">
-        <h3 class="text-xl font-semibold text-primary">Choose Payment Method</h3>
+        <h3 class="text-xl font-semibold text-gray-900">Choose Payment Method</h3>
         <button @click="closePaymentModal" class="text-gray-400 hover:text-gray-600">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -385,8 +385,8 @@ async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUND
 
       <div v-if="selectedPlan" class="mb-6">
         <div class="bg-gray-50 rounded-lg p-4">
-          <h4 class="font-semibold text-primary">{{ selectedPlan.name }}</h4>
-          <p class="text-secondary">${{ selectedPlan.price }}/{{ selectedPlan.period }}</p>
+          <h4 class="font-semibold text-gray-900">{{ selectedPlan.name }}</h4>
+          <p class="text-gray-600">${{ selectedPlan.price }}/{{ selectedPlan.period }}</p>
           <p class="text-sm text-gray-500 mt-1">{{ selectedPlan.description }}</p>
         </div>
       </div>
@@ -397,17 +397,17 @@ async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUND
             type="radio" 
             v-model="paymentMethod" 
             value="card" 
-            class="mt-1 text-accent focus:ring-accent"
+            class="mt-1 text-blue-600 focus:ring-blue-500"
           />
           <div class="flex-1">
             <div class="flex items-center space-x-2">
-              <span class="font-medium text-primary">Pay with Card</span>
-              <svg class="w-5 h-5 text-accent" fill="currentColor" viewBox="0 0 24 24">
+              <span class="font-medium text-gray-900">Pay with Card</span>
+              <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zM4 6h16v2H4V6zm0 4h16v8H4v-8z"/>
                 <path d="M6 14h2v2H6v-2zm4 0h6v2h-6v-2z"/>
               </svg>
             </div>
-            <p class="text-sm text-secondary">Secure checkout with Stripe • Instant activation</p>
+            <p class="text-sm text-gray-600">Secure checkout with Stripe • Instant activation</p>
           </div>
         </label>
 
@@ -416,17 +416,17 @@ async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUND
             type="radio" 
             v-model="paymentMethod" 
             value="invoice" 
-            class="mt-1 text-accent focus:ring-accent"
+            class="mt-1 text-blue-600 focus:ring-blue-500"
           />
           <div class="flex-1">
             <div class="flex items-center space-x-2">
-              <span class="font-medium text-primary">Pay by Invoice</span>
+              <span class="font-medium text-gray-900">Pay by Invoice</span>
               <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
                 <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
               </svg>
             </div>
-            <p class="text-sm text-secondary">Professional invoice with 30-day payment terms</p>
+            <p class="text-sm text-gray-600">Professional invoice with 30-day payment terms</p>
             <p class="text-xs text-amber-600 mt-1">
               • Perfect for organizations requiring purchase orders
               • Account activation after payment receipt
@@ -438,14 +438,14 @@ async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUND
       <div class="flex space-x-3">
         <button 
           @click="closePaymentModal" 
-          class="flex-1 bg-gray-100 text-secondary py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+          class="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
           :disabled="isProcessing"
         >
           Cancel
         </button>
         <button 
           @click="proceedWithPayment" 
-          class="flex-1 bg-accent text-white py-3 px-4 rounded-lg font-medium hover:bg-accent-dark transition-colors disabled:opacity-50"
+          class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
           :disabled="isProcessing"
         >
           <span v-if="isProcessing">Processing...</span>
@@ -456,53 +456,3 @@ async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUND
     </div>
   </div>
 </template>
-<style scoped>
-.bg-primary-bg { background-color: var(--primary-bg); }
-.bg-secondary { background-color: var(--secondary-bg); }
-.text-primary { color: var(--text-primary); }
-.text-secondary { color: var(--text-secondary); }
-.text-accent { color: var(--accent); }
-.ring-accent-gold { --tw-ring-color: var(--accent-gold); }
-
-.popular-pill {
-  background-color: var(--accent-gold);
-  color: var(--text-primary);
-  padding: 0.25rem 1rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.cta-banner {
-  background: linear-gradient(to right, var(--accent-dark), #1A2B42); /* Dark Blue to Navy */
-}
-
-.btn-cta-secondary {
-  background-color: var(--secondary-bg);
-  color: var(--accent);
-  padding: 1rem 2rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  text-decoration: none;
-}
-.btn-cta-secondary:hover {
-  background-color: #f0f0f0;
-  transform: translateY(-2px);
-}
-
-.btn-cta-tertiary {
-  border: 2px solid var(--secondary-bg);
-  color: var(--secondary-bg);
-  padding: 1rem 2rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  text-decoration: none;
-}
-.btn-cta-tertiary:hover {
-  background-color: var(--secondary-bg);
-  color: var(--accent);
-  transform: translateY(-2px);
-}
-</style>

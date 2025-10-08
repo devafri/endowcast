@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Tooltip from '@/shared/components/ui/Tooltip.vue';
+import WorstCutHistogram from '../ui/WorstCutHistogram.vue';
 
 const props = defineProps<{ results: any }>();
 
@@ -12,10 +13,25 @@ function formatMoney(num: number): string {
 
 function pct(n: number) { return isFinite(n) ? `${(n * 100).toFixed(2)}%` : '-'; }
 
+function fmtPercentValue(v: number | null | undefined) {
+  if (v === null || v === undefined || !isFinite(Number(v))) return '-';
+  const n = Number(v);
+  // If value is in 0..1 treat as decimal; otherwise assume it's already a percent value (e.g. -12.34)
+  if (Math.abs(n) <= 1) return `${(n * 100).toFixed(2)}%`;
+  return `${Math.abs(n).toFixed(2)}%`;
+}
+
 function median(arr: number[]) {
   if (!arr.length) return NaN;
   const s = [...arr].sort((a,b)=>a-b);
   return s[Math.floor(s.length/2)];
+}
+
+function safeMedian(arr: any[]) {
+  const nums = (arr || []).filter((v: any) => Number.isFinite(v)).map((v: any) => Number(v));
+  if (!nums.length) return NaN;
+  nums.sort((a,b) => a-b);
+  return nums[Math.floor(nums.length/2)];
 }
 
 function percentile(arr: number[], p: number) {
@@ -34,7 +50,7 @@ function standardDeviation(arr: number[]) {
 
 // Enhanced KPI calculations
 const years = props.results?.simulations?.[0]?.length ?? 10;
-const startVal = props.results?.simulations?.[0]?.[0] ? median(props.results.simulations.map((s: number[]) => s[0])) : NaN;
+const startVal = props.results?.simulations?.[0]?.[0] ? safeMedian(props.results.simulations.map((s: number[]) => s[0])) : NaN;
 
 // Final values for all simulations
 const finalValues = props.results?.simulations?.map((sim: number[]) => sim[sim.length - 1]) || [];
@@ -152,21 +168,31 @@ const deflateSeries = (series: number[][]) => {
 };
 const spendSeries = deflateSeries(props.results?.spendingPolicy || []);
 // Median per-year spending, then volatility across years of that median path
-const medSpendByYear: number[] = Array.from({length: years}, (_, i) => median(spendSeries.map((r: number[]) => r[i])));
-const spendingVolatility = standardDeviation(medSpendByYear);
+// Compute median spending per year safely (filter out missing values)
+const medSpendByYear: number[] = Array.from({ length: years }, (_, i) => {
+  const vals = (spendSeries || []).map((r: number[]) => r?.[i]).filter((v: any) => Number.isFinite(v));
+  return vals.length ? safeMedian(vals) : NaN;
+});
+
+// Spending volatility: standard deviation of the median per-year spending, ignoring NaNs
+const finiteMedSpend = medSpendByYear.filter((v) => Number.isFinite(v));
+const spendingVolatility = finiteMedSpend.length ? standardDeviation(finiteMedSpend) : NaN;
+
+// Worst YoY spending cut (largest negative YoY percent change in the median spending path)
 let worstCut = 0;
 for (let i = 1; i < medSpendByYear.length; i++) {
-  if (medSpendByYear[i-1] > 0) {
-    const cut = (medSpendByYear[i] - medSpendByYear[i-1]) / medSpendByYear[i-1];
-    if (cut < worstCut) worstCut = cut;
-  }
+  const prev = medSpendByYear[i - 1];
+  const curr = medSpendByYear[i];
+  if (!Number.isFinite(prev) || !Number.isFinite(curr) || prev <= 0) continue;
+  const cut = (curr - prev) / prev; // negative if drop
+  if (cut < worstCut) worstCut = cut;
 }
 
 // Legacy calculations for comparison
-const medOpEx = Array.from({length: years}, (_, i) => median(deflateSeries(props.results.operatingExpenses).map((r: number[]) => r[i])));
-const medGrants = Array.from({length: years}, (_, i) => median(deflateSeries(props.results.grants).map((r: number[]) => r[i])));
-const medInvest = Array.from({length: years}, (_, i) => median(deflateSeries(props.results.investmentExpenses).map((r: number[]) => r[i])));
-const medSpendPol = Array.from({length: years}, (_, i) => median(spendSeries.map((r: number[]) => r[i])));
+const medOpEx = Array.from({ length: years }, (_, i) => safeMedian(deflateSeries(props.results.operatingExpenses || []).map((r: number[] | undefined) => r?.[i])));
+const medGrants = Array.from({ length: years }, (_, i) => safeMedian(deflateSeries(props.results.grants || []).map((r: number[] | undefined) => r?.[i])));
+const medInvest = Array.from({ length: years }, (_, i) => safeMedian(deflateSeries(props.results.investmentExpenses || []).map((r: number[] | undefined) => r?.[i])));
+const medSpendPol = Array.from({ length: years }, (_, i) => safeMedian((spendSeries || []).map((r: number[] | undefined) => r?.[i])));
 
 const totalOpEx = medOpEx.reduce((a,b)=>a+(b||0),0);
 const totalGrants = medGrants.reduce((a,b)=>a+(b||0),0);
@@ -179,28 +205,27 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
   <div class="card p-4 sm:p-6">
     <h3 class="section-title mb-6">Endowment Performance Analysis</h3>
     
-    <!-- Primary KPIs -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <div class="text-center">
-        <div class="text-sm text-text-secondary mb-1">Median Final Value</div>
-        <div class="text-3xl font-bold text-accent">{{ formatMoney(finalMed) }}</div>
-        <div class="text-xs text-text-secondary mt-1">After {{ years }} years</div>
+    <!-- Compact KPI Banner (4 cards) -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div class="p-4 rounded-lg border border-border bg-white/60">
+        <div class="text-xs text-text-secondary">Median Final Value</div>
+        <div class="text-2xl font-bold text-accent">{{ formatMoney(finalMed) }}</div>
+        <div class="text-xs text-text-secondary">After {{ years }} years</div>
       </div>
-      <div class="text-center">
-        <div class="text-sm text-text-secondary mb-1 flex items-center justify-center gap-1">
-          Annualized Return
-          <Tooltip text="The median compound annual growth rate (CAGR) across all simulation paths - industry standard for Monte Carlo simulations" position="top" />
-        </div>
-        <div class="text-3xl font-bold">{{ pct(medianReturn) }}</div>
-        <div class="text-xs text-text-secondary mt-1">Portfolio median</div>
+      <div class="p-4 rounded-lg border border-border bg-white/60">
+        <div class="text-xs text-text-secondary">Annualized Return</div>
+        <div class="text-2xl font-bold">{{ pct(medianReturn) }}</div>
+        <div class="text-xs text-text-secondary">Portfolio median</div>
       </div>
-      <div class="text-center">
-        <div class="text-sm text-text-secondary mb-1 flex items-center justify-center gap-1">
-          Sharpe Ratio
-          <Tooltip text="Risk-adjusted performance measure. >1.0 = Excellent, 0.5-1.0 = Good, <0.5 = Poor" position="top" />
-        </div>
-        <div class="text-3xl font-bold">{{ isFinite(sharpeRatio) ? sharpeRatio.toFixed(2) : '-' }}</div>
-        <div class="text-xs text-text-secondary mt-1">Risk-adjusted performance</div>
+      <div class="p-4 rounded-lg border border-border bg-white/60">
+        <div class="text-xs text-text-secondary">Prob. of Maintaining Target Spending</div>
+        <div class="text-2xl font-bold" :class="probSustainableSpending >= 0.8 ? 'text-green-600' : probSustainableSpending >= 0.5 ? 'text-yellow-600' : 'text-red-600'">{{ pct(probSustainableSpending) }}</div>
+        <div class="text-xs text-text-secondary">Sustaining {{ formatMoney(targetAnnualSpending) }}/year</div>
+      </div>
+      <div class="p-4 rounded-lg border border-border bg-white/60">
+        <div class="text-xs text-text-secondary">10th %-ile Worst YoY Cut</div>
+        <div class="text-2xl font-bold text-red-600">{{ fmtPercentValue(props.results?.summary?.worstCutsSummary?.p10 ?? (worstCut * 100)) }}</div>
+        <div class="text-xs text-text-secondary">Representative downside (10th pct)</div>
       </div>
     </div>
 
@@ -268,8 +293,21 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
             Worst YoY Spending Cut
             <Tooltip text="Largest one-year percentage drop in the median spending path." position="top" />
           </div>
-          <div class="text-lg font-semibold text-red-600">{{ pct(Math.abs(worstCut)) }}</div>
+          <div class="text-lg font-semibold text-red-600">{{ pct(Math.abs(props.results?.summary?.worstCutsSummary?.p10 ?? worstCut)) }}</div>
           <div class="text-xs text-text-secondary mt-1">Median path</div>
+        </div>
+        <!-- Histogram widget - small component -->
+        <div class="md:col-span-2 p-4 rounded-lg border border-border bg-white/50">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-xs text-text-secondary">Worst Cut Distribution</div>
+            <div class="text-xs text-text-secondary">P(cut &gt; 20%): <strong>{{ (() => {
+              const cuts = props.results?.summary?.worstCuts || [];
+              if (!cuts?.length) return '-';
+              const count = cuts.filter((c:number) => Math.abs(c) >= 20).length;
+              return ((count / cuts.length) * 100).toFixed(1) + '%';
+            })() }}</strong></div>
+          </div>
+          <WorstCutHistogram :cuts="props.results?.summary?.worstCuts || []" />
         </div>
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">

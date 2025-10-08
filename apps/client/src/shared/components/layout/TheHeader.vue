@@ -53,64 +53,64 @@ async function handleLogout() {
         </RouterLink>
 
         <nav class="hidden lg:flex items-center gap-2 text-sm">
-          <!-- Basic Navigation -->
-          <RouterLink to="/" class="nav-link" :class="route.path==='/' ? 'nav-link-active' : 'nav-link-default'">Home</RouterLink>
-          <RouterLink to="/pricing" class="nav-link" :class="route.path==='/pricing' ? 'nav-link-active' : 'nav-link-default'">Pricing</RouterLink>
-          <RouterLink to="/instructions" class="nav-link" :class="route.path==='/instructions' ? 'nav-link-active' : 'nav-link-default'">Guide</RouterLink>
-          
-          <!-- Analysis Dropdown -->
-          <div class="relative" @mouseenter="analysisDropdown = true" @mouseleave="analysisDropdown = false">
-            <button class="nav-link flex items-center gap-1" :class="isAnalysisActive() ? 'nav-link-active' : 'nav-link-default'">
-              Analysis
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </button>
-            <div v-if="analysisDropdown" class="dropdown-menu">
-              <RouterLink to="/settings" class="dropdown-item" @click="closeAllDropdowns">
-                <div class="dropdown-item-content">
-                  <span class="font-medium">Settings</span>
-                  <span class="text-xs text-gray-500">Analysis parameters & preferences</span>
-                </div>
-              </RouterLink>
-              <RouterLink to="/allocation" class="dropdown-item" @click="closeAllDropdowns">
-                <div class="dropdown-item-content">
-                  <span class="font-medium">Portfolio Allocation</span>
-                  <span class="text-xs text-gray-500">Set asset weights and constraints</span>
-                </div>
-              </RouterLink>
-              <RouterLink to="/results" class="dropdown-item dropdown-item-primary" @click="closeAllDropdowns">
-                <div class="dropdown-item-content">
-                  <span class="font-semibold">🚀 Run Monte Carlo Analysis</span>
-                  <span class="text-xs text-blue-600">Execute simulation & view results</span>
-                </div>
-              </RouterLink>
+          <template v-if="authStore.isAuthenticated">
+            <!-- Basic Navigation -->
+            <RouterLink to="/" class="nav-link" :class="route.path==='/' ? 'nav-link-active' : 'nav-link-default'">Home</RouterLink>
+            <RouterLink to="/pricing" class="nav-link" :class="route.path==='/pricing' ? 'nav-link-active' : 'nav-link-default'">Pricing</RouterLink>
+            <RouterLink to="/instructions" class="nav-link" :class="route.path==='/instructions' ? 'nav-link-active' : 'nav-link-default'">Guide</RouterLink>
+            <!-- Analysis Dropdown -->
+            <div class="relative" @mouseenter="analysisDropdown = true" @mouseleave="analysisDropdown = false">
+              <button class="nav-link flex items-center gap-1" :class="isAnalysisActive() ? 'nav-link-active' : 'nav-link-default'">
+                Analysis
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <div v-if="analysisDropdown" class="dropdown-menu">
+                <RouterLink to="/settings" class="dropdown-item" @click="closeAllDropdowns">
+                  <div class="dropdown-item-content">
+                    <span class="font-medium">Settings</span>
+                    <span class="text-xs text-gray-500">Analysis parameters & preferences</span>
+                  </div>
+                </RouterLink>
+                <RouterLink to="/allocation" class="dropdown-item" @click="closeAllDropdowns">
+                  <div class="dropdown-item-content">
+                    <span class="font-medium">Portfolio Allocation</span>
+                    <span class="text-xs text-gray-500">Set asset weights and constraints</span>
+                  </div>
+                </RouterLink>
+                <RouterLink to="/results" class="dropdown-item dropdown-item-primary" @click="closeAllDropdowns">
+                  <div class="dropdown-item-content">
+                    <span class="font-semibold">🚀 Run Monte Carlo Analysis</span>
+                    <span class="text-xs text-blue-600">Execute simulation & view results</span>
+                  </div>
+                </RouterLink>
+              </div>
             </div>
-          </div>
-
-          <!-- Scenarios Dropdown -->
-          <div class="relative" @mouseenter="scenariosDropdown = true" @mouseleave="scenariosDropdown = false">
-            <button class="nav-link flex items-center gap-1" :class="isScenariosActive() ? 'nav-link-active' : 'nav-link-default'">
-              Scenarios
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </button>
-            <div v-if="scenariosDropdown" class="dropdown-menu">
-              <RouterLink to="/simulation/history" class="dropdown-item" @click="closeAllDropdowns">
-                <div class="dropdown-item-content">
-                  <span class="font-medium">Scenario History</span>
-                  <span class="text-xs text-gray-500">Browse saved scenarios</span>
-                </div>
-              </RouterLink>
-              <RouterLink to="/simulation/compare" class="dropdown-item" @click="closeAllDropdowns">
-                <div class="dropdown-item-content">
-                  <span class="font-medium">Compare Scenarios</span>
-                  <span class="text-xs text-gray-500">Side-by-side analysis</span>
-                </div>
-              </RouterLink>
+            <!-- Scenarios Dropdown -->
+            <div class="relative" @mouseenter="scenariosDropdown = true" @mouseleave="scenariosDropdown = false">
+              <button class="nav-link flex items-center gap-1" :class="isScenariosActive() ? 'nav-link-active' : 'nav-link-default'">
+                Scenarios
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <div v-if="scenariosDropdown" class="dropdown-menu">
+                <RouterLink to="/simulation/history" class="dropdown-item" @click="closeAllDropdowns">
+                  <div class="dropdown-item-content">
+                    <span class="font-medium">Scenario History</span>
+                    <span class="text-xs text-gray-500">Browse saved scenarios</span>
+                  </div>
+                </RouterLink>
+                <RouterLink to="/simulation/compare" class="dropdown-item" @click="closeAllDropdowns">
+                  <div class="dropdown-item-content">
+                    <span class="font-medium">Compare Scenarios</span>
+                    <span class="text-xs text-gray-500">Side-by-side analysis</span>
+                  </div>
+                </RouterLink>
+              </div>
             </div>
-          </div>
+          </template>
         </nav>
 
         <div class="flex items-center gap-4">

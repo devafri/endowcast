@@ -313,10 +313,71 @@ router.post('/:id/run', trackSimulationUsage, async (req, res) => {
     const { results } = req.body;
 
     // Update simulation with results
+    // Helper: compute per-simulation worst year-over-year spending cuts
+    function computePerSimWorstCuts(simulations = [], spendingPolicy = []) {
+      // simulations: array of arrays; spendingPolicy: array of arrays matching sims length
+      const cuts = [];
+      for (let i = 0; i < simulations.length; i++) {
+        const sim = simulations[i] || [];
+        const spend = (spendingPolicy && spendingPolicy[i]) ? spendingPolicy[i] : null;
+        let worst = null;
+        // If spending path exists, compute YoY on spending; otherwise compute YoY on sim values
+        const series = spend && spend.length === sim.length ? spend : sim;
+        for (let t = 0; t < series.length - 1; t++) {
+          const a = series[t];
+          const b = series[t+1];
+          if (!isFinite(a) || !isFinite(b) || a === 0) continue;
+          const pct = (b - a) / Math.abs(a); // relative change
+          if (worst === null || pct < worst) worst = pct;
+        }
+        cuts.push(worst === null ? null : Math.round(worst * 10000) / 100); // percent with 2 decimals
+      }
+      return cuts.filter((c) => c !== null);
+    }
+
+    // Helper: compute medoid index (closest to all others under euclidean on final values)
+    function computeMedoidIndex(simulations = []) {
+      if (!simulations || simulations.length === 0) return null;
+      const n = simulations.length;
+      // Reduce each sim to its final value to keep this cheap; could use full path distance later
+      const finals = simulations.map(s => (s && s.length ? s[s.length - 1] : 0));
+      let bestIdx = 0; let bestSum = Infinity;
+      for (let i = 0; i < n; i++) {
+        let sum = 0;
+        for (let j = 0; j < n; j++) {
+          const d = finals[i] - finals[j]; sum += d * d;
+        }
+        if (sum < bestSum) { bestSum = sum; bestIdx = i; }
+      }
+      return bestIdx;
+    }
+
+    const simulationsArr = Array.isArray(results?.simulations) ? results.simulations : [];
+    const spendingArr = Array.isArray(results?.spendingPolicy) ? results.spendingPolicy : [];
+    const worstCuts = computePerSimWorstCuts(simulationsArr, spendingArr);
+    const medoidIdx = computeMedoidIndex(simulationsArr);
+    const representativePath = (medoidIdx !== null && simulationsArr[medoidIdx]) ? simulationsArr[medoidIdx] : null;
+
+    const summary = {
+      worstCutDistribution: worstCuts,
+      worstCutPercentiles: {
+        p10: worstCuts.length ? worstCuts[Math.floor(worstCuts.length * 0.1)] : null,
+        p25: worstCuts.length ? worstCuts[Math.floor(worstCuts.length * 0.25)] : null,
+        p50: worstCuts.length ? worstCuts[Math.floor(worstCuts.length * 0.5)] : null,
+        p75: worstCuts.length ? worstCuts[Math.floor(worstCuts.length * 0.75)] : null,
+        p90: worstCuts.length ? worstCuts[Math.floor(worstCuts.length * 0.9)] : null,
+      },
+      representative: {
+        medoidIndex: medoidIdx,
+        path: representativePath,
+      }
+    };
+
     const updatedSimulation = await prisma.simulation.update({
       where: { id: req.params.id },
       data: {
         results,
+        summary,
         isCompleted: true,
         runCount: {
           increment: 1

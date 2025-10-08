@@ -1,4 +1,46 @@
-<template>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EndowCast • Institutional-Grade Endowment Analytics</title>
+  <meta name="description" content="EndowCast — Monte Carlo based endowment analytics for foundations and institutions." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* small helpers for demo */
+    .glass { background: rgba(255,255,255,0.7); backdrop-filter: blur(6px); }
+  </style>
+</head>
+<body class="antialiased text-gray-800 bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen">
+
+  <!-- NAV -->
+  <header class="bg-white/70 sticky top-0 z-40 backdrop-blur border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex items-center justify-between h-16">
+        <a href="index.html" class="flex items-center gap-3">
+          <div class="w-9 h-9 flex items-center justify-center rounded-md bg-slate-800 text-white font-semibold">E</div>
+          <div>
+            <div class="text-sm font-semibold">EndowCast</div>
+            <div class="text-xs text-slate-500 -mt-0.5">Endowment Analytics</div>
+          </div>
+        </a>
+        <nav class="hidden md:flex items-center gap-6">
+          <a class="text-sm text-slate-600 hover:text-slate-900" href="pricing.html">Pricing</a>
+          <a class="text-sm text-slate-600 hover:text-slate-900" href="guide.html">Guide</a>
+          <a class="text-sm text-slate-600 hover:text-slate-900" href="#">Resources</a>
+          <a class="inline-flex items-center rounded-full px-4 py-2 text-sm font-medium bg-sky-600 text-white hover:bg-sky-700" href="pricing.html">Choose a plan</a>
+        </nav>
+
+        <div class="flex items-center gap-3">
+          <a class="text-sm text-slate-600 hover:text-slate-900 md:hidden" href="#" aria-label="open menu">☰</a>
+          <a class="text-sm text-slate-700 px-3 py-1.5 border rounded-md" href="#">Login</a>
+          <a class="text-sm text-white bg-sky-600 hover:bg-sky-700 px-4 py-1.5 rounded-md" href="pricing.html">Sign Up</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
   <main class="mt-10">
     <section class="max-w-7xl mx-auto px-4 sm:px-6">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
@@ -7,10 +49,11 @@
           <p class="text-lg text-slate-600 max-w-2xl">Leverage sophisticated Monte Carlo simulations to fortify your endowment strategy and navigate market uncertainty with confidence.</p>
 
           <div class="flex flex-col sm:flex-row gap-3">
-            <RouterLink to="/pricing" class="inline-flex items-center justify-center rounded-md px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-700 text-white font-semibold shadow">Choose a plan</RouterLink>
-            <RouterLink to="/instructions" class="inline-flex items-center justify-center rounded-md px-6 py-3 border border-slate-200 text-slate-800">Explore Platform</RouterLink>
+            <a href="pricing.html" class="inline-flex items-center justify-center rounded-md px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-700 text-white font-semibold shadow">Choose a plan</a>
+            <a href="guide.html" class="inline-flex items-center justify-center rounded-md px-6 py-3 border border-slate-200 text-slate-800">Explore Platform</a>
           </div>
 
+          <!-- Trust / social proof -->
           <div class="flex items-center gap-4 text-sm text-slate-500 mt-4">
             <span>Trusted by</span>
             <div class="flex gap-3 items-center">
@@ -21,6 +64,7 @@
           </div>
         </div>
 
+        <!-- Right: feature card + sample chart -->
         <div>
           <div class="rounded-2xl p-6 glass border border-slate-200 shadow">
             <div class="flex items-start justify-between gap-4">
@@ -31,8 +75,9 @@
               <div class="text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-700">Simulation</div>
             </div>
 
+            <!-- Placeholder chart -->
             <div class="mt-6 h-44 rounded-md bg-white flex items-center justify-center border border-slate-100">
-              <!-- Placeholder chart -->
+              <!-- Replace with a chart component (Chart.js/plotly) -->
               <svg class="w-full h-full" viewBox="0 0 600 200" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
@@ -57,6 +102,7 @@
             </div>
           </div>
 
+          <!-- Cards features row -->
           <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="p-4 rounded-lg bg-white border border-slate-100 shadow-sm">
               <div class="font-semibold text-sm">Stochastic Modeling Engine</div>
@@ -84,22 +130,28 @@
             <p class="text-sm text-sky-100 mt-2">Start building your projection model — free trial available.</p>
           </div>
           <div class="flex gap-3">
-            <RouterLink to="/pricing" class="px-5 py-3 rounded-md bg-white text-slate-800 font-semibold">Start Free</RouterLink>
-            <RouterLink to="/instructions" class="px-5 py-3 rounded-md border border-white/30">Try Analyst Pro</RouterLink>
+            <a href="pricing.html" class="px-5 py-3 rounded-md bg-white text-slate-800 font-semibold">Start Free</a>
+            <a href="guide.html" class="px-5 py-3 rounded-md border border-white/30">Try Analyst Pro</a>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- Footer -->
+    <footer class="mt-16 border-t border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="text-sm text-slate-500">© <span id="year"></span> EndowCast — Professional endowment analysis platform</div>
+        <div class="flex items-center gap-4">
+          <a class="text-sm text-slate-600" href="#">Terms</a>
+          <a class="text-sm text-slate-600" href="#">Privacy</a>
+          <a class="text-sm text-slate-600" href="#">Contact</a>
+        </div>
+      </div>
+    </footer>
   </main>
-</template>
 
-<script setup lang="ts">
-import { RouterLink } from 'vue-router';
-</script>
-
-<style scoped>
-.glass {
-  background: rgba(255,255,255,0.7);
-  backdrop-filter: blur(6px);
-}
-</style>
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

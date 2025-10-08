@@ -2,6 +2,7 @@
 import { RouterLink, RouterView, useRoute } from 'vue-router';
 import { onMounted } from 'vue';
 import TheHeader from './shared/components/layout/TheHeader.vue';
+import SideNav from './shared/components/layout/SideNav.vue';
 import { useAuthStore } from '@/features/auth/stores/auth';
 
 const route = useRoute();
@@ -22,29 +23,27 @@ async function handleLogout() {
 </script>
 
 <template>
-  <div id="app">
-    <TheHeader />
-  <!-- Primary navigation moved into TheHeader to avoid double nav bars -->
-    <main class="min-h-[60vh]">
-      <RouterView />
-    </main>
+  <div id="app" class="min-h-screen">
+    <!-- Show SideNav on all routes except landing page -->
+    <SideNav v-if="route.path !== '/'" />
+    <div :class="route.path !== '/' ? 'lg:pl-64' : ''">
+      <!-- Show TheHeader only on landing page -->
+      <TheHeader v-if="route.path === '/'" />
+      <main class="min-h-[60vh]">
+        <RouterView />
+      </main>
+    </div>
   </div>
-  <footer class="bg-gray-50 border-t border-gray-200 mt-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="flex flex-col md:flex-row justify-between items-center">
-        <div class="text-gray-600 text-sm">
-          © {{ new Date().getFullYear() }} EndowCast — Professional endowment analysis platform
-        </div>
-        <div class="flex items-center space-x-4 mt-2 md:mt-0">
-          <span class="text-xs text-gray-500">Built for institutional investors</span>
-          <div class="flex items-center space-x-2">
-            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span class="text-xs text-gray-500">Live System</span>
-          </div>
+      <footer class="mt-16 border-t border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="text-sm text-slate-500">© {{ new Date().getFullYear() }}  EndowCast — Professional endowment analysis platform</div>
+        <div class="flex items-center gap-4">
+          <router-link class="text-sm text-slate-600" to="/terms">Terms</router-link>
+          <router-link to="/privacy" class="text-sm text-slate-600 hover:text-blue-600">Privacy Policy</router-link>
+          <router-link class="text-sm text-slate-600" to="/contact">Contact</router-link>
         </div>
       </div>
-    </div>
-  </footer>
+    </footer>
 </template>
 
 <style>
