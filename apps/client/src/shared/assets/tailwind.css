@@ -1,1 +1,15 @@
+/* Import Tailwind utilities first */
 @import "tailwindcss";
+
+/* Load Inter from Google Fonts (variable font for best rendering) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@8..14,100..900&display=swap');
+
+/* Ensure base elements use the Tailwind `font-sans` (which includes Inter in tailwind.config.js) */
+@layer base {
+	html, body {
+		/* Explicit font-family to satisfy linters that don't understand @apply */
+		font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+}

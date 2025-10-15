@@ -20,7 +20,7 @@
         </div>
       </div>
       <div class="opacity-30 pointer-events-none">
-        <div class="card p-6">
+        <div class="bg-white border border-slate-100 rounded-lg p-6">
           <div class="flex items-center mb-6">
             <div class="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center mr-3">
               <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -30,14 +30,14 @@
             </div>
             <div>
               <h3 class="text-lg font-semibold text-gray-900">Advanced Settings</h3>
-              <p class="text-sm text-gray-600">Fine-tune spending policies and portfolio management</p>
+              <p class="text-sm text-slate-700">Fine-tune spending policies and portfolio management</p>
             </div>
           </div>
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="space-y-4">
-              <div class="bg-blue-50 rounded-lg p-4">
-                <h4 class="text-sm font-semibold text-gray-900 mb-3">Advanced Spending Rules</h4>
-                <div class="space-y-2 text-xs text-gray-600">
+        <div class="bg-blue-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3">Advanced Spending Rules</h4>
+          <div class="space-y-2 text-xs text-slate-600">
                   <div>• Multi-year averaging</div>
                   <div>• Annual change limits</div>
                   <div>• Inflation adjustments</div>
@@ -48,7 +48,7 @@
             <div class="space-y-4">
               <div class="bg-green-50 rounded-lg p-4">
                 <h4 class="text-sm font-semibold text-gray-900 mb-3">Rebalancing Settings</h4>
-                <div class="space-y-2 text-xs text-gray-600">
+                <div class="space-y-2 text-xs text-slate-600">
                   <div>• Tolerance bands</div>
                   <div>• Rebalancing frequency</div>
                   <div>• Transaction costs</div>
@@ -59,7 +59,7 @@
             <div class="space-y-4">
               <div class="bg-orange-50 rounded-lg p-4">
                 <h4 class="text-sm font-semibold text-gray-900 mb-3">Correlation Matrix</h4>
-                <div class="space-y-2 text-xs text-gray-600">
+                <div class="space-y-2 text-xs text-slate-600">
                   <div>• Asset correlations</div>
                   <div>• Risk modeling</div>
                   <div>• Diversification analysis</div>

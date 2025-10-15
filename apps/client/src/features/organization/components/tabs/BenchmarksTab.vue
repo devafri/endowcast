@@ -19,7 +19,7 @@
         </div>
       </div>
       <div class="opacity-30 pointer-events-none">
-        <div class="card p-6">
+        <div class="bg-white border border-slate-100 rounded-lg p-6">
           <div class="flex items-center mb-6">
             <div class="w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center mr-3">
               <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,16 +28,16 @@
             </div>
             <div>
               <h3 class="text-lg font-semibold text-gray-900">Benchmark Settings</h3>
-              <p class="text-sm text-gray-600">Configure performance benchmarks</p>
+              <p class="text-sm text-slate-700">Configure performance benchmarks</p>
             </div>
           </div>
           
-          <div class="bg-purple-50 rounded-lg p-4 space-y-4">
+            <div class="bg-purple-50 rounded-lg p-4 space-y-4">
             <div class="flex items-center">
               <input type="checkbox" disabled class="mr-3 text-purple-600" />
               <div>
                 <label class="text-sm font-medium text-gray-900">Enable Benchmark Comparison</label>
-                <p class="text-xs text-gray-600">Show benchmark in simulation charts</p>
+                <p class="text-xs text-slate-700">Show benchmark in simulation charts</p>
               </div>
             </div>
             

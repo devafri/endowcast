@@ -1,5 +1,26 @@
 <template>
   <div class="space-y-6">
+    <!-- Global portfolio-level risk-free control placed at top of Asset Class settings -->
+    <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 shadow-sm ring-1 ring-indigo-50">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm font-medium text-gray-900">Risk-free rate</div>
+          <div class="text-xs text-gray-500">Portfolio-level risk-free rate used in Sharpe/Sortino calculations</div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            v-model.number="sim.inputs.riskFreeRate"
+            aria-label="Risk-free rate percent"
+            class="w-28 px-2 py-1 rounded text-sm bg-white border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          />
+          <div class="text-xs">%</div>
+        </div>
+      </div>
+    </div>
+
     <div v-if="!canAccessTab" class="relative">
       <div class="absolute inset-0 bg-white bg-opacity-75 backdrop-blur-sm z-10 rounded-lg flex items-center justify-center">
         <div class="text-center p-8">
@@ -19,7 +40,7 @@
         </div>
       </div>
       <div class="opacity-30 pointer-events-none">
-        <div class="card p-6">
+          <div class="bg-white border border-slate-100 rounded-lg p-6">
           <div class="flex items-center mb-6">
             <div class="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center mr-3">
               <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,7 +49,7 @@
             </div>
             <div>
               <h3 class="text-lg font-semibold text-gray-900">Asset Class Assumptions</h3>
-              <p class="text-sm text-gray-600">Customize expected returns and volatility</p>
+                <p class="text-sm text-slate-700">Customize expected returns and volatility</p>
             </div>
           </div>
           <div class="space-y-4">
@@ -65,12 +86,12 @@
       </div>
       
       <div class="space-y-4">
-        <div v-for="a in assetClasses" :key="a.key" class="bg-gray-50 rounded-lg p-4 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+          <div v-for="a in assetClasses" :key="a.key" class="bg-gray-50 rounded-lg p-4 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
           <div>
             <div class="font-medium text-gray-900">{{ a.label }}</div>
             <div class="text-xs text-gray-500 mt-1">Default μ {{ (a.mean*100).toFixed(1) }}% / σ {{ (a.sd*100).toFixed(1) }}%</div>
           </div>
-          <div>
+            <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">Expected Return (%)</label>
             <input 
               type="number" 
@@ -78,7 +99,7 @@
               :placeholder="(a.mean*100).toFixed(1)" 
               :value="getOverrideMeanPct(a.key, a.mean)" 
               @input="$emit('set-override-mean-pct', a.key, $event)" 
-              class="input-field w-full p-2 rounded-md" 
+              class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
             />
           </div>
           <div>
@@ -89,7 +110,7 @@
               :placeholder="(a.sd*100).toFixed(1)" 
               :value="getOverrideSdPct(a.key, a.sd)" 
               @input="$emit('set-override-sd-pct', a.key, $event)" 
-              class="input-field w-full p-2 rounded-md" 
+              class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
             />
           </div>
           <div class="flex justify-end md:justify-start">
@@ -99,7 +120,7 @@
       </div>
       
       <div class="mt-4 flex justify-between items-center pt-4 border-t border-gray-200">
-        <p class="text-xs text-gray-500">Leave blank to use default institutional assumptions</p>
+          <p class="text-xs text-slate-600">Leave blank to use default institutional assumptions</p>
         <button 
           type="button" 
           class="btn-secondary py-2 px-3 text-sm hover:bg-gray-100 transition-colors" 
@@ -148,4 +169,11 @@ function getOverrideSdPct(assetKey: string, defaultSd: number): string {
   const override = props.assetOverrides[assetKey]?.sd;
   return override !== undefined ? (override * 100).toFixed(1) : '';
 }
+</script>
+
+<script lang="ts">
+// Provide the simulation store for binding the risk-free rate when this component
+// is used within the Settings/Organization flow.
+import { useSimulationStore } from '@/features/simulation/stores/simulation';
+const sim = useSimulationStore();
 </script>

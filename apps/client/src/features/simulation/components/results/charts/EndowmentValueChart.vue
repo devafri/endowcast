@@ -31,16 +31,13 @@ function buildChart() {
   const corpusEnabled = props.results.corpus?.enabled !== false;
   const Y = years.value;
   
-  // Get initial endowment value to prepend to all data arrays
   const initialValue = props.results.inputs?.initialValue || props.results.inputs?.initialEndowment || 0;
 
-  // Build percentile "paths" for fan chart, including initial value
   function getPercentile(arrs: number[][], pct: number) {
-    // arrs: [sim][year], pct: 0-100
     const n = arrs.length;
-    if (!n) return [initialValue]; // Start with initial value
+    if (!n) return [initialValue];
     const Y = arrs[0].length;
-    const out = [initialValue]; // Start with initial value
+    const out = [initialValue];
     for (let y = 0; y < Y; ++y) {
       const vals = arrs.map(a => a[y]).sort((a, b) => a - b);
       const idx = Math.floor((pct / 100) * (n - 1));
@@ -48,12 +45,12 @@ function buildChart() {
     }
     return out;
   }
-  // Compute percentiles every 5th (5, 10, ..., 95)
-    const percentiles: Record<number, number[]> = {};
-    for (let pct = 5; pct <= 95; pct += 5) {
-      percentiles[pct] = getPercentile(sims, pct);
-    }
-    const p50 = percentiles[50];
+
+  const percentiles: Record<number, number[]> = {};
+  for (let pct = 5; pct <= 95; pct += 5) {
+    percentiles[pct] = getPercentile(sims, pct);
+  }
+  const p50 = percentiles[50];
   const benchmarkMean = [initialValue, ...Array.from({ length: Y }, (_, i) => {
     const arr = benchmarks.map(b => b[i]);
     return arr.reduce((a, b) => a + b, 0) / arr.length;
@@ -69,14 +66,13 @@ function buildChart() {
     : [2025, ...Array.from({ length: Y }, (_, i) => 2025 + i + 1)];
   const datasets: any[] = [];
 
-  // Gradients for fan chart bands
-  // Generate a gradient for each band (lighter for outer bands, darker for inner)
+// Gradients for fan chart bands
   const bandGradients: Record<string, CanvasGradient | string> = {};
   if (ctx) {
     const chartHeight = canvasRef.value.height || 500;
     for (let low = 5; low < 50; low += 5) {
       const high = 100 - low;
-      const opacity = 0.04 + 0.18 * (1 - (Math.abs(50 - low) / 50)); // darker toward center
+      const opacity = 0.04 + 0.18 * (1 - (Math.abs(50 - low) / 50));
       const grad = ctx.createLinearGradient(0, 0, 0, chartHeight);
       grad.addColorStop(0, `rgba(14,165,233,${opacity + 0.04})`);
       grad.addColorStop(1, `rgba(14,165,233,${opacity})`);
@@ -84,20 +80,31 @@ function buildChart() {
     }
   }
 
-  // Fan chart: shaded bands between every 5th percentile
-    // Fan chart: shaded bands between every 5th percentile (5–95). Outer bands lighter, inner darker.
-    for (let low = 5; low < 50; low += 5) {
-      const high = 100 - low;
-      datasets.push(
-        { label: `${high}th percentile`, data: percentiles[high], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: '-1', tension: 0.4, order: low },
-        { label: `${low}th percentile`, data: percentiles[low], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: false, tension: 0.4, order: low }
-      );
-    }
-  // Median line
+  for (let low = 5; low < 50; low += 5) {
+    const high = 100 - low;
+    datasets.push(
+      { label: `${high}th percentile`, data: percentiles[high], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: '-1', tension: 0.4, order: low, isSample: true },
+      { label: `${low}th percentile`, data: percentiles[low], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: false, tension: 0.4, order: low, isSample: true }
+    );
+  }
   datasets.push(
     { label: 'Median (50th percentile)', data: p50, borderColor: '#0EA5E9', backgroundColor: 'rgba(14, 165, 233, 0.0)', borderWidth: 4.5, pointRadius: 0, fill: false, tension: 0.4, order: 50 }
   );
-  // Representative overlays if available in results.summary
+
+    // Visible percentile lines (overlay on top of bands) - keep styling subtle but readable
+    const percentileLineStyles: Record<number, any> = {
+      90: { borderColor: '#0B814A', borderWidth: 1.8, borderDash: [6,4] },
+      75: { borderColor: '#16A34A', borderWidth: 1.6, borderDash: [] },
+      25: { borderColor: '#DC2626', borderWidth: 1.6, borderDash: [] },
+      10: { borderColor: '#991B1B', borderWidth: 1.8, borderDash: [6,4] }
+    };
+    const overlayPercentiles = [90, 75, 25, 10];
+    for (const pct of overlayPercentiles) {
+      const style = percentileLineStyles[pct] || { borderColor: '#0EA5E9', borderWidth: 1.2 };
+      // add a visible line for this percentile
+      datasets.push({ label: `${pct}th percentile`, data: percentiles[pct], borderColor: style.borderColor, borderWidth: style.borderWidth, borderDash: style.borderDash || [], pointRadius: 0, fill: false, tension: 0.35, order: 60 + pct });
+    }
+
   try {
     const rep = props.results?.summary?.representative;
     if (rep) {
@@ -111,10 +118,8 @@ function buildChart() {
         datasets.push({ label: 'Pointwise Median (abstract)', data: [initialValue, ...rep.pointwiseMedian], borderColor: '#0EA5E9', borderWidth: 2, borderDash: [2,4], pointRadius: 0, fill: false, tension: 0.3, order: 99, borderOpacity: 0.7 });
       }
     }
-  } catch (e) {
-    // ignore if summary not present
-  }
-  // Benchmarks/corpus
+  } catch (e) {}
+
   if (benchmarkEnabled) {
     datasets.push({ label: benchmarkLabel, data: benchmarkMean, borderColor: '#7C3AED', borderWidth: 2, borderDash: [5,5], pointRadius: 0, fill: false, tension: 0.4, order: 51 });
   }
@@ -129,44 +134,59 @@ function buildChart() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        // To control which datasets appear in the legend, customize the filter function below.
-        // Example: Only show median, 90%/50% bands, benchmark, and corpus in the legend.
-        legend: {
-          position: 'top',
-          labels: {
-            // --- LEGEND FILTER: customize this function to control legend items ---
-               filter: (item) => {
-                 const allowed = [
-                   'Median (50th percentile)',
-                   benchmarkLabel,
-                   'Corpus (CPI Growth)'
-                 ];
-                 return allowed.includes(item.text);
-               },
-            //filter: (item) => !String(item.text).startsWith('Simulation'),
-            usePointStyle: true, padding: 20, color: '#6B7280', font: { weight: 600 }
-          }
-        },
+        legend: { position: 'top', labels: { filter: (item) => {
+            const allowed = [ 'Median (50th percentile)', benchmarkLabel, 'Corpus (CPI Growth)' ];
+            return allowed.includes(item.text);
+          }, usePointStyle: true, padding: 20, color: '#6B7280', font: { weight: 600 } } },
         tooltip: {
           mode: 'index', intersect: false,
           backgroundColor: 'rgba(255,255,255,0.95)', titleColor: '#1F2937', bodyColor: '#6B7280', borderColor: '#E5E7EB', borderWidth: 1,
           filter: (ctx) => {
             const ds: any = ctx.dataset || {};
             const lbl = String(ds.label || '');
-            return !lbl.startsWith('Simulation') && !ds.isSample;
+            if (lbl.startsWith('Simulation') || ds.isSample) return false;
+            if (lbl === benchmarkLabel) return true;
+            if (lbl === 'Corpus (CPI Growth)') return true;
+            if (/median/i.test(lbl)) return true;
+            const m = lbl.match(/(\d+)th?\s+percentile/i);
+            if (m) {
+              const n = Number(m[1]);
+              return [10,25,50,75,90].includes(n);
+            }
+            return false;
           },
-          callbacks: { 
-            label: (ctx) => {
-              const value = ctx.parsed.y;
-              return `${ctx.dataset.label}: ${formatMoney(value)}`;
+          itemSort: (a: any, b: any) => {
+            const labelA = String(a.dataset?.label || '');
+            const labelB = String(b.dataset?.label || '');
+            function rankLabel(lbl: string) {
+              if (lbl === benchmarkLabel) return 100;
+              if (lbl === 'Corpus (CPI Growth)') return 101;
+              if (/median/i.test(lbl)) return 2;
+              const m = lbl.match(/(\d+)th?\s+percentile/i);
+              if (m) {
+                const n = Number(m[1]);
+                if (n === 90) return 0;
+                if (n === 75) return 1;
+                if (n === 50) return 2;
+                if (n === 25) return 3;
+                if (n === 10) return 4;
+              }
+              return 999;
+            }
+            return rankLabel(labelA) - rankLabel(labelB);
+          },
+          callbacks: {
+            label: (ctx) => { const value = ctx.parsed.y; return `${ctx.dataset.label}: ${formatMoney(value)}`; },
+            labelColor: (ctx) => {
+              const ds: any = ctx.dataset || {};
+              // prefer borderColor, fall back to backgroundColor, otherwise default
+              const c = ds.borderColor || ds.backgroundColor || '#0EA5E9';
+              return { borderColor: c, backgroundColor: c };
             }
           }
         }
       },
-      scales: {
-        y: { title: { display: true, text: 'Endowment Value (USD)', color: '#6B7280' }, ticks: { color: '#6B7280', callback: (v) => formatMoney(Number(v)) }, grid: { color: '#E5E7EB' } },
-        x: { title: { display: true, text: (props.results?.yearLabels?.[0] && !props.results.yearLabels[0].startsWith('Year')) ? 'Calendar Year' : 'Year', color: '#6B7280' }, ticks: { color: '#6B7280' }, grid: { display: false } },
-      },
+      scales: { y: { title: { display: true, text: 'Endowment Value (USD)', color: '#6B7280' }, ticks: { color: '#6B7280', callback: (v) => formatMoney(Number(v)) }, grid: { color: '#E5E7EB' } }, x: { title: { display: true, text: (props.results?.yearLabels?.[0] && !props.results.yearLabels[0].startsWith('Year')) ? 'Calendar Year' : 'Year', color: '#6B7280' }, ticks: { color: '#6B7280' }, grid: { display: false } } },
       interaction: { mode: 'index', intersect: false },
     }
   });
@@ -178,18 +198,20 @@ watch(() => props.results, buildChart, { deep: true });
 </script>
 
 <template>
-  <div class="card p-6 mb-8" style="height: 500px;">
+  <div class="p-6 bg-white border border-gray-200 rounded-xl shadow-lg h-128 mb-8">
     <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold">Endowment Value Projection</h3>
+      <h3 class="text-xl font-bold text-gray-800">Endowment Value Projection</h3>
       <div class="flex space-x-2 items-center">
-        <span v-if="props.results?.stress?.applied" class="text-xs px-2 py-1 bg-amber-500 bg-opacity-20 text-amber-600 rounded-full">Stress applied: {{ props.results?.stress?.summary }}</span>
-        <span class="text-xs px-2 py-1 bg-blue-500 bg-opacity-20 text-blue-300 rounded-full">Median</span>
-        <span class="text-xs px-2 py-1 bg-green-500 bg-opacity-20 text-green-300 rounded-full">75th %</span>
-        <span class="text-xs px-2 py-1 bg-red-500 bg-opacity-20 text-red-300 rounded-full">25th %</span>
-        <span class="text-xs px-2 py-1 bg-purple-500 bg-opacity-20 text-purple-300 rounded-full">Benchmark</span>
+        <span 
+          v-if="props.results?.stress?.applied" 
+          class="text-xs px-3 py-1 bg-amber-100 text-amber-700 font-medium rounded-full border border-amber-200"
+        >
+          Stress applied: {{ props.results?.stress?.summary }}
+        </span>
       </div>
     </div>
-    <canvas ref="canvasRef"></canvas>
+    <div class="relative h-full">
+      <canvas ref="canvasRef" class="w-full h-full"></canvas>
+    </div>
   </div>
 </template>
-

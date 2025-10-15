@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, nextTick } from 'vue';
 import { useSimulationStore } from '../../simulation/stores/simulation';
 import PortfolioWeights from '../components/inputs/PortfolioWeights.vue';
+import PageHero from '@/shared/components/ui/PageHero.vue';
+import FeatureCard from '@/shared/components/ui/FeatureCard.vue';
+import CTABand from '@/shared/components/ui/CTABand.vue';
 
 const sim = useSimulationStore();
 
@@ -14,17 +17,55 @@ const allocationCategories = computed(() => {
     default: sim.allocationPolicy[k].default,
   }));
 });
+
+// Inline validation for policy limits. For each category we ensure:
+// - min <= max
+// - default is between min and max
+const validation = computed(() => {
+  const map: Record<string, string[]> = {};
+  Object.keys(sim.allocationPolicy).forEach(k => {
+    const policy = sim.allocationPolicy[k];
+    const msgs: string[] = [];
+    const min = Number(policy.min ?? 0);
+    const max = Number(policy.max ?? 0);
+    const def = Number(policy.default ?? 0);
+    if (min > max) msgs.push('Minimum must be less than or equal to Maximum.');
+    if (def < min || def > max) msgs.push('Default must be between Minimum and Maximum.');
+    if (msgs.length) map[k] = msgs;
+  });
+  return map;
+});
+
+// Paint the filled portion of range inputs inside the allocation-weights wrapper.
+function updateRangeFill(el: HTMLInputElement) {
+  const val = Number(el.value || 0);
+  const min = Number(el.min || 0);
+  const max = Number(el.max || 100);
+  const pct = max > min ? ((val - min) * 100) / (max - min) : 0;
+  el.style.background = `linear-gradient(90deg, #0ea5e9 ${pct}%, #e6eef9 ${pct}%)`;
+}
+
+onMounted(() => {
+  nextTick(() => {
+    const root = document.querySelector('.allocation-weights');
+    if (!root) return;
+    const ranges = Array.from(root.querySelectorAll('input[type="range"]')) as HTMLInputElement[];
+    ranges.forEach(r => {
+      updateRangeFill(r);
+      r.addEventListener('input', () => updateRangeFill(r));
+      r.addEventListener('change', () => updateRangeFill(r));
+    });
+  });
+});
 </script>
 
 <template>
-  <main class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
-    <div class="max-w-4xl xl:max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">Portfolio Allocation</h1>
-        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-          Define your strategic asset allocation and policy constraints
-        </p>
-        <div class="mt-6 flex items-center justify-center">
+  <main class="min-h-screen bg-slate-50 text-slate-800">
+    <PageHero>
+      <template #title>Portfolio Allocation</template>
+      <template #subtitle>Define your strategic asset allocation and policy constraints</template>
+      <template #controls>
+        <div class="mt-2 flex items-center">
           <div class="flex items-center bg-white rounded-full px-4 py-2 shadow-md">
             <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center mr-3">
               <span class="text-blue-800 font-semibold text-sm">3</span>
@@ -32,10 +73,12 @@ const allocationCategories = computed(() => {
             <span class="text-gray-700 font-medium">Asset Allocation Strategy</span>
           </div>
         </div>
-      </div>
+      </template>
+    </PageHero>
 
-      <!-- Portfolio Allocation -->
-      <div class="card p-6 mb-6 hover:shadow-md transition-shadow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
+  <!-- Portfolio Allocation -->
+  <div class="bg-white border border-slate-100 rounded-lg p-6 mb-6 hover:shadow-md hover:-translate-y-0.5 transition-transform transition-shadow">
         <div class="flex items-center mb-6">
           <div class="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center mr-3">
             <svg class="w-4 h-4 text-blue-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,13 +89,14 @@ const allocationCategories = computed(() => {
           <div>
             <h2 class="text-lg font-semibold text-gray-900">Target Asset Allocation</h2>
             <p class="text-sm text-gray-600">Set your strategic portfolio weights across asset classes</p>
+            <!-- Risk-free rate moved to Asset Class Assumptions tab in Settings -->
           </div>
         </div>
-        <PortfolioWeights v-model="sim.inputs.portfolioWeights" :categories="allocationCategories" />
+        <PortfolioWeights class="allocation-weights" v-model="sim.inputs.portfolioWeights" :categories="allocationCategories" />
       </div>
 
-      <!-- Allocation Policy Limits -->
-      <div class="card p-6 mb-6 hover:shadow-md transition-shadow">
+  <!-- Allocation Policy Limits -->
+  <div class="bg-white border border-slate-100 rounded-lg p-6 mb-6 hover:shadow-md hover:-translate-y-0.5 transition-transform transition-shadow">
         <div class="flex items-center mb-6">
           <div class="w-6 h-6 rounded-md bg-yellow-100 flex items-center justify-center mr-3">
             <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,17 +113,22 @@ const allocationCategories = computed(() => {
             <div class="text-base font-semibold text-gray-900 mb-3">{{ sim.allocationPolicy[k].label }}</div>
             <div class="grid grid-cols-3 gap-3">
               <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Minimum (%)</label>
-                <input type="number" step="1" min="0" max="100" v-model.number="sim.allocationPolicy[k].min" class="input-field w-full p-2 rounded-md text-center" />
+                <label class="block text-xs font-medium text-slate-800 mb-1">Minimum (%)</label>
+                <input type="number" step="1" min="0" max="100" v-model.number="sim.allocationPolicy[k].min" class="input-field w-full px-3 py-2 rounded-md text-center bg-white border border-slate-200 text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-300" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Maximum (%)</label>
-                <input type="number" step="1" min="0" max="100" v-model.number="sim.allocationPolicy[k].max" class="input-field w-full p-2 rounded-md text-center" />
+                <label class="block text-xs font-medium text-slate-800 mb-1">Maximum (%)</label>
+                <input type="number" step="1" min="0" max="100" v-model.number="sim.allocationPolicy[k].max" class="input-field w-full px-3 py-2 rounded-md text-center bg-white border border-slate-200 text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-300" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Default (%)</label>
-                <input type="number" step="1" min="0" max="100" v-model.number="sim.allocationPolicy[k].default" class="input-field w-full p-2 rounded-md text-center" />
+                <label class="block text-xs font-medium text-slate-800 mb-1">Default (%)</label>
+                <input type="number" step="1" min="0" max="100" v-model.number="sim.allocationPolicy[k].default" class="input-field w-full px-3 py-2 rounded-md text-center bg-white border border-slate-200 text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-300" />
               </div>
+            </div>
+            <div v-if="validation[k] && validation[k].length" class="mt-3 text-sm text-red-600">
+              <ul>
+                <li v-for="(m, i) in validation[k]" :key="i">{{ m }}</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -90,12 +139,11 @@ const allocationCategories = computed(() => {
             </svg>
             <div>
               <p class="text-sm font-medium text-blue-900">Policy Guidelines</p>
-              <p class="text-xs text-blue-800 mt-1">Target allocations will be automatically constrained within these policy limits. Default values are used for preset allocation strategies and rebalancing targets.</p>
+              <p class="text-xs text-blue-900 mt-1">Target allocations will be automatically constrained within these policy limits. Default values are used for preset allocation strategies and rebalancing targets.</p>
             </div>
           </div>
         </div>
       </div>
-
       <!-- Navigation -->
       <div class="flex justify-between items-center">
         <RouterLink to="/settings" class="btn-secondary py-3 px-6 text-lg font-medium hover:shadow-md transition-all">
@@ -112,5 +160,59 @@ const allocationCategories = computed(() => {
         </RouterLink>
       </div>
     </div>
+
+    <CTABand>
+      <template #title>Run a simulation for this allocation</template>
+      <template #subtitle>Preview results across thousands of scenarios.</template>
+      <template #actions>
+        <RouterLink to="/results" class="px-5 py-3 rounded-md bg-white text-slate-800 font-semibold">Run Simulation</RouterLink>
+      </template>
+    </CTABand>
   </main>
 </template>
+
+<style scoped>
+/* Scoped slider styles for AllocationView only. Targets range inputs inside the
+   PortfolioWeights component using a local wrapper class and deep selector. */
+.allocation-weights :deep(input[type="range"]) {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: #e6eef9; /* light track */
+  border-radius: 9999px;
+  outline: none;
+}
+.allocation-weights :deep(input[type="range"]::-webkit-slider-runnable-track) {
+  height: 8px;
+  background: #e6eef9;
+  border-radius: 9999px;
+}
+.allocation-weights :deep(input[type="range"]::-webkit-slider-thumb) {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #0ea5e9; /* sky-500 */
+  box-shadow: 0 4px 8px rgba(14,165,233,0.18);
+  border: 2px solid #ffffff;
+  margin-top: -4px; /* vertically center the thumb on the track */
+}
+.allocation-weights :deep(input[type="range"]::-moz-range-track) {
+  height: 8px;
+  background: #e6eef9;
+  border-radius: 9999px;
+}
+.allocation-weights :deep(input[type="range"]::-moz-range-thumb) {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #0ea5e9;
+  box-shadow: 0 4px 8px rgba(14,165,233,0.18);
+  border: 2px solid #ffffff;
+}
+.allocation-weights :deep(input[type="range"]:focus) {
+  box-shadow: 0 0 0 6px rgba(14,165,233,0.12);
+}
+</style>

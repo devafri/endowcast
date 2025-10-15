@@ -255,11 +255,36 @@ function rebalanceTo100() {
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
       <div class="flex flex-wrap items-center gap-2">
         <div class="hidden sm:flex items-center space-x-2">
-          <button type="button" class="btn-secondary py-2 px-4 text-sm font-medium" @click="applyPreset('Conservative')">Conservative</button>
-          <button type="button" class="btn-secondary py-2 px-4 text-sm font-medium" @click="applyPreset('Balanced')">Balanced</button>
-          <button type="button" class="btn-secondary py-2 px-4 text-sm font-medium" @click="applyPreset('Growth')">Growth</button>
+          <button
+            type="button"
+            class="preset-btn inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-300 transition"
+            @click="applyPreset('Conservative')"
+            aria-pressed="false"
+          >
+            Conservative
+          </button>
+          <button
+            type="button"
+            class="preset-btn inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-300 transition"
+            @click="applyPreset('Balanced')"
+          >
+            Balanced
+          </button>
+          <button
+            type="button"
+            class="preset-btn inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-300 transition"
+            @click="applyPreset('Growth')"
+          >
+            Growth
+          </button>
         </div>
-        <button type="button" class="btn-secondary py-2 px-4 text-sm font-medium" @click="resetToDefaults">Reset</button>
+        <button
+          type="button"
+          class="reset-btn inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-transparent bg-amber-50 text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-200 transition"
+          @click="resetToDefaults"
+        >
+          Reset
+        </button>
       </div>
       
       <div class="text-right bg-white rounded-lg px-3 py-2 border-2 border-gray-200 min-w-0 shrink-0">
@@ -275,12 +300,12 @@ function rebalanceTo100() {
     </div>
 
     <!-- Mobile preset buttons with better spacing -->
-    <div class="sm:hidden mb-6">
+      <div class="sm:hidden mb-6">
       <p class="text-sm font-medium text-gray-600 mb-3">Quick Presets:</p>
       <div class="grid grid-cols-3 gap-2">
-        <button type="button" class="btn-secondary py-2 px-3 text-sm" @click="applyPreset('Conservative')">Conservative</button>
-        <button type="button" class="btn-secondary py-2 px-3 text-sm" @click="applyPreset('Balanced')">Balanced</button>
-        <button type="button" class="btn-secondary py-2 px-3 text-sm" @click="applyPreset('Growth')">Growth</button>
+        <button type="button" class="preset-btn w-full text-center px-3 py-2 text-sm font-medium rounded-full border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-300 transition" @click="applyPreset('Conservative')">Conservative</button>
+        <button type="button" class="preset-btn w-full text-center px-3 py-2 text-sm font-medium rounded-full border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-300 transition" @click="applyPreset('Balanced')">Balanced</button>
+        <button type="button" class="preset-btn w-full text-center px-3 py-2 text-sm font-medium rounded-full border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-300 transition" @click="applyPreset('Growth')">Growth</button>
       </div>
     </div>
 
@@ -318,3 +343,18 @@ function rebalanceTo100() {
   </div>
   
 </template>
+
+<style scoped>
+.preset-btn[aria-pressed="true"], .preset-btn.active {
+  background-color: #e6f6ff; /* very light sky */
+  border-color: #7dd3fc; /* sky-300 */
+  color: #0369a1; /* sky-700 */
+}
+
+
+/* Small helper for focus-visible only (improves keyboard UX) */
+.preset-btn:focus-visible, .reset-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(14,165,233,0.12);
+}
+</style>

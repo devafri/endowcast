@@ -19,7 +19,7 @@
         </div>
       </div>
       <div class="opacity-30 pointer-events-none">
-        <div class="card p-6">
+        <div class="bg-white border border-slate-100 rounded-lg p-6">
           <div class="flex items-center mb-6">
             <div class="w-6 h-6 rounded-md bg-red-100 flex items-center justify-center mr-3">
               <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,7 +28,7 @@
             </div>
             <div>
               <h3 class="text-lg font-semibold text-gray-900">Stress Testing</h3>
-              <p class="text-sm text-gray-600">Model adverse scenarios and market shocks</p>
+              <p class="text-sm text-slate-700">Model adverse scenarios and market shocks</p>
             </div>
           </div>
           
@@ -37,7 +37,7 @@
               <div class="flex items-center justify-between mb-4">
                 <h4 class="text-sm font-semibold text-gray-900">Asset Class Shocks</h4>
               </div>
-              <div class="text-sm text-gray-600 italic">
+              <div class="text-sm text-slate-600 italic">
                 Configure market stress scenarios...
               </div>
             </div>
@@ -45,7 +45,7 @@
               <div class="flex items-center justify-between mb-4">
                 <h4 class="text-sm font-semibold text-gray-900">CPI Inflation Shifts</h4>
               </div>
-              <div class="text-sm text-gray-600 italic">
+              <div class="text-sm text-slate-600 italic">
                 Model inflation scenarios...
               </div>
             </div>
@@ -72,7 +72,12 @@
         <div class="bg-red-50 rounded-lg p-4">
           <div class="flex items-center justify-between mb-4">
             <h4 class="text-sm font-semibold text-gray-900">Asset Class Shocks</h4>
-            <button type="button" @click="$emit('add-equity-shock')" class="btn-secondary py-1 px-3 text-sm hover:bg-gray-100 transition-colors">
+            <button
+              type="button"
+              @click="$emit('add-equity-shock')"
+              class="py-1 px-3 text-sm inline-flex items-center rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-300 cursor-pointer bg-white text-red-700 border border-red-200 hover:bg-red-50 transition-colors"
+              aria-label="Add asset class shock"
+            >
               <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
               </svg>
@@ -130,7 +135,12 @@
         <div class="bg-amber-50 rounded-lg p-4">
           <div class="flex items-center justify-between mb-4">
             <h4 class="text-sm font-semibold text-gray-900">CPI Inflation Shifts</h4>
-            <button type="button" @click="$emit('add-cpi-shock')" class="btn-secondary py-1 px-3 text-sm hover:bg-gray-100 transition-colors">
+            <button
+              type="button"
+              @click="$emit('add-cpi-shock')"
+              class="py-1 px-3 text-sm inline-flex items-center rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-amber-200 cursor-pointer bg-white text-amber-700 border border-amber-200 hover:bg-amber-50 transition-colors"
+              aria-label="Add CPI inflation shift"
+            >
               <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
               </svg>

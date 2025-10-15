@@ -312,6 +312,29 @@ router.post('/:id/run', trackSimulationUsage, async (req, res) => {
 
     const { results } = req.body;
 
+    // Diagnostic logging: record metadata about incoming results so we can
+    // quickly identify payload size / shape issues that cause 500s.
+    try {
+      console.log(`Save run requested: simulationId=${req.params.id} user=${req.user?.id || 'unknown'} time=${new Date().toISOString()}`);
+      if (!results) {
+        console.warn('No results payload present in request body');
+      } else {
+        try {
+          const raw = JSON.stringify(results);
+          const sizeBytes = Buffer.byteLength(raw, 'utf8');
+          const simsCount = Array.isArray(results.simulations) ? results.simulations.length : 0;
+          const yearsPerSim = simsCount && Array.isArray(results.simulations[0]) ? results.simulations[0].length : 0;
+          console.log(`Results payload size: ${sizeBytes} bytes; simulations: ${simsCount}; yearsPerSim: ${yearsPerSim}`);
+          // Log top-level keys to see what is being sent
+          console.log('Results top-level keys:', Object.keys(results));
+        } catch (sizeErr) {
+          console.warn('Could not compute results payload size or inspect contents', sizeErr);
+        }
+      }
+    } catch (diagErr) {
+      console.warn('Unexpected error while logging request diagnostics', diagErr);
+    }
+
     // Update simulation with results
     // Helper: compute per-simulation worst year-over-year spending cuts
     function computePerSimWorstCuts(simulations = [], spendingPolicy = []) {
@@ -373,22 +396,36 @@ router.post('/:id/run', trackSimulationUsage, async (req, res) => {
       }
     };
 
-    const updatedSimulation = await prisma.simulation.update({
-      where: { id: req.params.id },
-      data: {
-        results,
-        summary,
-        isCompleted: true,
-        runCount: {
-          increment: 1
+    try {
+      const updatedSimulation = await prisma.simulation.update({
+        where: { id: req.params.id },
+        data: {
+          results,
+          summary,
+          isCompleted: true,
+          runCount: {
+            increment: 1
+          }
         }
-      }
-    });
+      });
 
-    res.json({
-      message: 'Simulation results saved successfully',
-      simulation: updatedSimulation
-    });
+      res.json({
+        message: 'Simulation results saved successfully',
+        simulation: updatedSimulation
+      });
+    } catch (dbErr) {
+      // Log DB error and include as much context as possible without leaking sensitive data
+      console.error('Prisma update error saving simulation results:', dbErr);
+      console.error('Simulation id:', req.params.id, 'Organization:', req.user?.organizationId, 'User:', req.user?.id);
+      // If possible, log the size/shape again for correlation with the error
+      try {
+        console.error('Results keys at error time:', Object.keys(results || {}));
+      } catch (kErr) {}
+      return res.status(500).json({
+        error: 'Failed to save simulation results',
+        details: dbErr?.message || String(dbErr)
+      });
+    }
   } catch (error) {
     console.error('Save simulation results error:', error);
     res.status(500).json({ 

@@ -73,9 +73,11 @@ const {
 } = access;
 
 // Create proper data structures for components
+// NOTE: use `sim.options.stress` (engine + simulation code expects `stress`) —
+// earlier code used `stressTest` which caused the UI to mutate a different key.
 const stressConfig = computed(() => ({
-  equityShocks: (sim.options as any).stressTest?.equityShocks || [],
-  cpiShifts: (sim.options as any).stressTest?.cpiShifts || []
+  equityShocks: (sim.options as any).stress?.equityShocks || [],
+  cpiShifts: (sim.options as any).stress?.cpiShifts || []
 }));
 
 // Default correlation matrix from engine (single source of truth)
@@ -85,8 +87,8 @@ const assetOverrideData = computed(() => (sim.options as any).assetOverrides || 
 </script>
 
 <template>
-  <main class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+  <main class="min-h-screen bg-slate-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <PageHeader 
         title="Configuration Settings"
@@ -96,29 +98,32 @@ const assetOverrideData = computed(() => (sim.options as any).assetOverrides || 
         step-label="Settings & Assumptions"
       />
 
-      <!-- Tab Navigation with Upgrade Banner -->
-      <TabNavigation 
-        :tabs="tabs"
-        :active-tab="activeTab"
-        :can-access-tab="canAccessTab"
-        @tab-change="switchToTab"
-      >
-        <template #after-navigation>
-          <UpgradeBanner 
-            :show="isTrialUser && restrictedTabs.length > 0"
+      <!-- Tabs container (white card) -->
+      <div class="mt-6 bg-white border border-slate-100 rounded-lg shadow-sm">
+        <div class="px-6 py-6">
+          <!-- Tab Navigation with Upgrade Banner -->
+          <TabNavigation 
+            :tabs="tabs"
+            :active-tab="activeTab"
+            :can-access-tab="canAccessTab"
+            @tab-change="switchToTab"
+          >
+            <template #after-navigation>
+              <UpgradeBanner 
+                :show="isTrialUser && restrictedTabs.length > 0"
+              />
+            </template>
+          </TabNavigation>
+
+          <!-- Onboarding Helper -->
+          <SettingsOnboardingHelper 
+            v-if="showOnboardingTip"
+            show-dismiss
+            @dismiss="showOnboardingTip = false"
           />
-        </template>
-      </TabNavigation>
 
-      <!-- Onboarding Helper -->
-      <SettingsOnboardingHelper 
-        v-if="showOnboardingTip"
-        show-dismiss
-        @dismiss="showOnboardingTip = false"
-      />
-
-      <!-- Tab Content -->
-      <div class="space-y-6">
+          <!-- Tab Content -->
+          <div class="space-y-6 mt-4">
         <!-- Basic Parameters Tab -->
         <BasicParametersTab
           v-show="activeTab === 'basic'"
@@ -143,10 +148,10 @@ const assetOverrideData = computed(() => (sim.options as any).assetOverrides || 
           :asset-classes="assetClasses as any"
           :max-years="sim.options.years || 10"
           @update:stress-config="(config: any) => {
-            if (!(sim.options as any).stressTest) {
-              (sim.options as any).stressTest = {};
+            if (!(sim.options as any).stress) {
+              (sim.options as any).stress = { equityShocks: [], cpiShifts: [] };
             }
-            Object.assign((sim.options as any).stressTest, config);
+            Object.assign((sim.options as any).stress, config);
           }"
           @add-equity-shock="stressTesting.addEquityShockHandler"
           @remove-equity-shock="stressTesting.removeEquityShockHandler"
@@ -193,6 +198,8 @@ const assetOverrideData = computed(() => (sim.options as any).assetOverrides || 
           }"
           @normalize-benchmark-weights="benchmarkConfig.normalizeBenchmarkWeightsHandler"
         />
+          </div>
+        </div>
       </div>
 
       <!-- Navigation -->

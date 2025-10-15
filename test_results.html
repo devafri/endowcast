@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EndowCast Results</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+
+  <div class="max-w-7xl mx-auto px-6 py-10 space-y-12">
+    
+    <!-- Header -->
+    <section class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 shadow-sm flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Monte Carlo Analysis</h1>
+        <p class="text-gray-600 mt-1">Evaluate long-term sustainability, risk, and policy alignment</p>
+      </div>
+      <div class="flex gap-3">
+        <button class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 text-gray-700">Re-run Simulation</button>
+        <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Export PDF</button>
+        <button class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">Share Report</button>
+      </div>
+    </section>
+
+    <!-- Simulation Status -->
+    <div class="text-sm text-gray-500">
+      ✅ Simulation completed on October 12, 2025 – 3,000 runs
+    </div>
+
+    <!-- Executive Summary -->
+    <section>
+      <h2 class="text-xl font-semibold mb-4 text-gray-800">Executive Summary</h2>
+      <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-6">
+        <div class="bg-white rounded-xl shadow p-5 text-center">
+          <h3 class="text-sm text-gray-500">50th percentile projected corpus</h3>
+          <p class="text-2xl font-bold mt-1">$53.4M</p>
+          <p class="text-sm text-gray-700 mt-1">Median Ending Value</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-5 text-center">
+          <h3 class="text-sm text-gray-500">Median expected portfolio return</h3>
+          <p class="text-2xl font-bold mt-1">6.68%</p>
+          <p class="text-sm text-gray-700 mt-1">Annualized Return</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-5 text-center">
+          <h3 class="text-sm text-gray-500">Corpus below initial value</h3>
+          <p class="text-2xl font-bold mt-1">42.7%</p>
+          <p class="text-sm text-gray-700 mt-1">Probability of Loss</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-5 text-center">
+          <h3 class="text-sm text-gray-500">Inflation-adjusted principal retained</h3>
+          <p class="text-2xl font-bold mt-1">72.4%</p>
+          <p class="text-sm text-gray-700 mt-1">Corpus Preservation</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-5 text-center">
+          <h3 class="text-sm text-gray-500">Long-term sustainable rate</h3>
+          <p class="text-2xl font-bold mt-1">4.3%</p>
+          <p class="text-sm text-gray-700 mt-1">Sustainable Spending</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Risk & Policy Compliance -->
+    <section>
+      <h2 class="text-xl font-semibold mb-4 text-gray-800">Risk & Policy Compliance</h2>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div class="bg-white shadow-md rounded-xl p-6">
+          <h3 class="font-medium text-gray-800 mb-3">Investment Risk</h3>
+          <ul class="space-y-2 text-sm text-gray-600">
+            <li>• Value at Risk (95%): <span class="font-semibold text-gray-900">$4.2M</span></li>
+            <li>• Downside Deviation: <span class="font-semibold text-gray-900">8.4%</span></li>
+            <li>• Sharpe Ratio: <span class="font-semibold text-gray-900">0.74</span></li>
+            <li>• Stress Test (2008 Scenario): <span class="font-semibold text-gray-900">-28%</span></li>
+          </ul>
+        </div>
+        <div class="bg-white shadow-md rounded-xl p-6">
+          <h3 class="font-medium text-gray-800 mb-3">Spending Policy Compliance</h3>
+          <ul class="space-y-2 text-sm text-gray-600">
+            <li>• Policy Target: <span class="font-semibold text-gray-900">5.0%</span></li>
+            <li>• Actual Average: <span class="font-semibold text-gray-900">5.2%</span></li>
+            <li>• Volatility: <span class="font-semibold text-gray-900">0.6%</span></li>
+            <li>• Probability of Violation: <span class="font-semibold text-gray-900">21%</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mission Sustainability -->
+    <section>
+      <h2 class="text-xl font-semibold mb-4 text-gray-800">Mission Sustainability</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow p-5 text-center">
+          <h3 class="text-sm text-gray-500">After inflation</h3>
+          <p class="text-2xl font-bold mt-1">2.3%</p>
+          <p class="text-sm text-gray-700 mt-1">Median Real Corpus Growth</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-5 text-center">
+          <h3 class="text-sm text-gray-500">Projected over 20 years</h3>
+          <p class="text-2xl font-bold mt-1">4.1%</p>
+          <p class="text-sm text-gray-700 mt-1">Sustainable Mission Spending</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-5 text-center">
+          <h3 class="text-sm text-gray-500">Corpus vs inflation</h3>
+          <p class="text-2xl font-bold mt-1">88%</p>
+          <p class="text-sm text-gray-700 mt-1">Purchasing Power Retention</p>
+        </div>
+      </div>
+    <!-- Chart 1 -->
+    <section class="bg-white p-6 rounded-xl shadow-md">
+      <h2 class="text-xl font-semibold mb-4 text-gray-800">Endowment Value Projection (Fan Chart)</h2>
+      <canvas id="endowmentChart" height="120"></canvas>
+      <p class="text-sm text-gray-500 mt-3">
+        Shows potential endowment growth paths with benchmark and corpus value overlay.
+      </p>
+    </section>
+
+    <!-- Chart 2 -->
+    <section class="bg-white p-6 rounded-xl shadow-md">
+      <h2 class="text-xl font-semibold mb-4 text-gray-800">Available Dollars (Based on Spending Policy)</h2>
+      <canvas id="spendingChart" height="120"></canvas>
+      <p class="text-sm text-gray-500 mt-3">
+        Estimated spending availability assuming a 5% policy distribution.
+      </p>
+    </section>
+
+    <!-- Statistical Summary -->
+    <section>
+      <h2 class="text-xl font-semibold mb-4 text-gray-800">Statistical Summary</h2>
+      <div class="overflow-x-auto bg-white rounded-xl shadow-md">
+        <table class="min-w-full border-collapse text-sm text-gray-700">
+          <thead class="bg-gray-100 text-gray-600">
+            <tr>
+              <th class="text-left px-4 py-2 border-b">Metric</th>
+              <th class="text-left px-4 py-2 border-b">10th</th>
+              <th class="text-left px-4 py-2 border-b">25th</th>
+              <th class="text-left px-4 py-2 border-b">Median</th>
+              <th class="text-left px-4 py-2 border-b">75th</th>
+              <th class="text-left px-4 py-2 border-b">90th</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="odd:bg-white even:bg-gray-50">
+              <td class="px-4 py-2 border-b">Final Value ($M)</td>
+              <td class="px-4 py-2 border-b">32</td>
+              <td class="px-4 py-2 border-b">41</td>
+              <td class="px-4 py-2 border-b">53</td>
+              <td class="px-4 py-2 border-b">68</td>
+              <td class="px-4 py-2 border-b">82</td>
+            </tr>
+            <tr class="odd:bg-white even:bg-gray-50">
+              <td class="px-4 py-2 border-b">Annualized Return</td>
+              <td class="px-4 py-2 border-b">3.8%</td>
+              <td class="px-4 py-2 border-b">5.2%</td>
+              <td class="px-4 py-2 border-b">6.7%</td>
+              <td class="px-4 py-2 border-b">7.8%</td>
+              <td class="px-4 py-2 border-b">8.9%</td>
+            </tr>
+            <tr class="odd:bg-white even:bg-gray-50">
+              <td class="px-4 py-2 border-b">Corpus Retention</td>
+              <td class="px-4 py-2 border-b">62%</td>
+              <td class="px-4 py-2 border-b">70%</td>
+              <td class="px-4 py-2 border-b">78%</td>
+              <td class="px-4 py-2 border-b">85%</td>
+              <td class="px-4 py-2 border-b">91%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Insights -->
+    <section class="bg-gray-50 p-6 rounded-xl border border-gray-100">
+      <h2 class="text-lg font-semibold mb-3 text-gray-800">Insights & Recommendations</h2>
+      <ul class="text-gray-700 space-y-2 text-sm">
+        <li>💡 Reducing spending by <strong>0.5%</strong> raises long-term corpus preservation by <strong>12%</strong>.</li>
+        <li>💡 Your current policy exceeds sustainable levels in <strong>32%</strong> of simulations.</li>
+        <li>💡 Diversifying fixed income increases Sharpe ratio by <strong>0.08</strong>.</li>
+      </ul>
+    </section>
+
+    <!-- Footer -->
+    <footer class="flex justify-between items-center py-6 mt-12 border-t">
+      <button class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 text-gray-700">
+        ← Back to Allocation
+      </button>
+      <div class="flex gap-3">
+        <button class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">Export Report</button>
+        <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Share with Committee</button>
+      </div>
+    </footer>
+  </div>
+<script>
+    // --- Chart 1: Endowment Value Projection ---
+    const ctx1 = document.getElementById('endowmentChart').getContext('2d');
+
+    new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels: ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034'],
+        datasets: [
+          {
+            label: '10th Percentile',
+            data: [80, 82, 85, 87, 89, 90, 91, 93, 94, 95],
+            fill: '+1',
+            borderWidth: 0,
+            backgroundColor: 'rgba(79, 70, 229, 0.05)',
+          },
+          {
+            label: '90th Percentile',
+            data: [80, 88, 94, 101, 108, 115, 121, 128, 136, 145],
+            fill: '-1',
+            borderWidth: 0,
+            backgroundColor: 'rgba(79, 70, 229, 0.05)',
+          },
+          {
+            label: 'Median Projection',
+            data: [80, 85, 90, 96, 102, 108, 113, 119, 125, 130],
+            borderColor: 'rgba(79, 70, 229, 1)',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.3,
+          },
+          {
+            label: 'Benchmark Growth (Policy Target)',
+            data: [80, 84, 88, 92, 96, 101, 106, 111, 116, 122],
+            borderColor: 'rgba(34, 197, 94, 1)',
+            borderDash: [5, 5],
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.3,
+          },
+          {
+            label: 'Current Corpus Value',
+            data: [80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
+            borderColor: 'rgba(239, 68, 68, 1)',
+            borderWidth: 1.5,
+            borderDash: [2, 3],
+            pointRadius: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        stacked: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { enabled: true },
+        },
+        scales: {
+          y: {
+            title: { display: true, text: 'Endowment Value ($M)' },
+            grid: { color: '#f1f5f9' },
+          },
+          x: { grid: { display: false } },
+        },
+      },
+    });
+
+    // --- Chart 2: Spending Policy Projection ---
+    const ctx2 = document.getElementById('spendingChart').getContext('2d');
+
+    new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034'],
+        datasets: [
+          {
+            label: 'Projected Spending (5% Policy)',
+            data: [4, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8],
+            backgroundColor: 'rgba(79, 70, 229, 0.6)',
+            borderRadius: 6,
+          },
+          {
+            label: 'Benchmark Target ($)',
+            data: [4, 4.1, 4.3, 4.4, 4.6, 4.7, 4.8, 5.0, 5.1, 5.2],
+            type: 'line',
+            borderColor: 'rgba(34, 197, 94, 1)',
+            borderWidth: 2,
+            pointRadius: 3,
+            tension: 0.3,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { mode: 'index', intersect: false },
+        },
+        scales: {
+          y: {
+            title: { display: true, text: 'Available Dollars ($M)' },
+            grid: { color: '#f1f5f9' },
+          },
+          x: { grid: { display: false } },
+        },
+      },
+    });
+  </script>
+</body>
+</html>

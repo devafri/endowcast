@@ -43,8 +43,10 @@ app.use(cors({
 // For Stripe webhooks we need the raw body to verify signatures
 app.use('/api/webhooks/stripe', express.raw({ type: 'application/json' }));
 app.use('/api/billing/webhooks/stripe', express.raw({ type: 'application/json' }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Increase JSON and URL-encoded body size limits to support large simulation
+// result payloads (many scenarios). Default was 10mb which can be too small.
+app.use(express.json({ limit: process.env.EXPRESS_JSON_LIMIT || '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: process.env.EXPRESS_JSON_LIMIT || '50mb' }));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

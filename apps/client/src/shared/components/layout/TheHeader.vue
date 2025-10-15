@@ -79,7 +79,7 @@ async function handleLogout() {
                     <span class="text-xs text-gray-500">Set asset weights and constraints</span>
                   </div>
                 </RouterLink>
-                <RouterLink to="/results" class="dropdown-item dropdown-item-primary" @click="closeAllDropdowns">
+                <RouterLink :to="{ path: '/results', query: { run: '1' } }" class="dropdown-item dropdown-item-primary" @click="closeAllDropdowns">
                   <div class="dropdown-item-content">
                     <span class="font-semibold">🚀 Run Monte Carlo Analysis</span>
                     <span class="text-xs text-blue-600">Execute simulation & view results</span>

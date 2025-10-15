@@ -1,458 +1,162 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/features/auth/stores/auth';
 import { apiService } from '@/shared/services/api';
+import PageHero from '@/shared/components/ui/PageHero.vue';
+import CTABand from '@/shared/components/ui/CTABand.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-// Payment method selection state
-const showPaymentModal = ref(false);
-const selectedPlan = ref<typeof plans[0] | null>(null);
-const paymentMethod = ref<'card' | 'invoice'>('card');
-const isProcessing = ref(false);
+const billingCycle = ref<'monthly' | 'annual'>('monthly');
 
 const plans = [
-  {
-    name: 'Free',
-    planType: 'FREE',
-    price: 0,
-    period: 'forever',
-    description: 'Try EndowCast and evaluate basic features',
-    features: [
-      '5 simulations per month',
-      'Basic portfolio allocation',
-      'Standard reporting (in-app)',
-      'Community support',
-      'Multi-user organizations (limited)'
-    ],
-    limitations: [
-      'No stress testing',
-      'No exports (CSV available on paid plans)',
-      'Limited analytics features'
-    ],
-    buttonText: 'Start Free',
-    buttonClass: 'btn-secondary',
-    popular: false
-  },
-  {
-    name: 'Analyst Pro',
-    planType: 'ANALYST_PRO',
-    price: 49,
-    period: 'month',
-    description: 'For small teams and advisors',
-    features: [
-      '25 simulations per month',
-      'Stress testing & scenario comparison',
-      'All asset class assumptions',
-      'CSV export & scenario sharing',
-      'Multi-user collaboration',
-      'Email support (48hr response)',
-      'Access to knowledge base'
-    ],
-    limitations: [],
-    buttonText: 'Start Analyst Pro',
-    buttonClass: 'btn-primary',
-    popular: false
-  },
-  {
-    name: 'Foundation',
-    planType: 'FOUNDATION',
-    price: 249,
-    period: 'month',
-    description: 'For larger teams with frequent analysis',
-    features: [
-      '100 simulations per month',
-      'Everything in Analyst Pro',
-      'Priority email support (24hr response)',
-      'Advanced analytics dashboard',
-      'User management & roles',
-      'Usage reporting & monthly exports'
-    ],
-    limitations: [],
-    buttonText: 'Start Foundation',
-    buttonClass: 'btn-primary',
-    popular: true
-  },
-  {
-    name: 'Foundation Pro',
-    planType: 'FOUNDATION_PRO',
-    price: 449,
-    period: 'month',
-    description: 'For organizations needing high throughput',
-    features: [
-      '250 simulations per month',
-      'Everything in Foundation',
-      'Priority support (12hr response)',
-      'API access & integrations (coming soon)',
-      'Advanced export options (CSV, bulk)',
-      'Dedicated customer success & onboarding'
-    ],
-    limitations: [],
-    buttonText: 'Contact Sales',
-    buttonClass: 'btn-primary',
-    popular: false
-  }
+  { name: 'Free', planType: 'FREE', price: 0, description: 'Try EndowCast with limited features.', features: ['5 simulations per month'], buttonText: 'Start Free', popular: false },
+  { name: 'Analyst Pro', planType: 'ANALYST_PRO', price: 49, description: 'For individual analysts', features: ['50 simulations / month'], buttonText: 'Start Analyst Pro', popular: false },
+  { name: 'Foundation', planType: 'FOUNDATION', price: 249, description: 'For mid-size endowments', features: ['500 simulations / month'], buttonText: 'Start Foundation', popular: true },
+  { name: 'Foundation Pro', planType: 'FOUNDATION_PRO', price: 449, description: 'Enterprise features', features: ['Unlimited simulations'], buttonText: 'Contact Sales', popular: false },
 ];
 
-async function selectPlan(plan: typeof plans[0]) {
+function annualPrice(monthly: number) {
+  return Math.round(monthly * 12 * 0.85);
+}
+
+const displayedPlans = computed(() =>
+  plans.map(p => billingCycle.value === 'annual' ? { ...p, displayPrice: annualPrice(p.price), period: 'yr' } : { ...p, displayPrice: p.price, period: 'mo' })
+);
+
+function setBillingCycle(v: 'monthly' | 'annual') { billingCycle.value = v; }
+
+async function selectPlan(plan: any) {
   if (authStore.isAuthenticated) {
-    // User is logged in, handle plan upgrade
-    if (plan.planType === 'FREE') {
-      // Already on free plan - redirect to organization settings
-      router.push('/organization');
-    } else if (plan.planType === 'FOUNDATION_PRO') {
-      // Contact sales for enterprise plan - route to contact page with subject
-      router.push({ path: '/contact', query: { subject: 'Foundation Pro Plan Inquiry' } });
-    } else {
-      // For paid plans, show payment method selection
-      if (!authStore.isAdmin) {
-        alert('Only organization administrators can upgrade plans. Please contact your admin.');
-        router.push('/organization');
-        return;
-      }
-
-      selectedPlan.value = plan;
-      showPaymentModal.value = true;
-    }
+    if (plan.planType === 'FREE') return router.push('/organization');
+    if (!authStore.isAdmin) { alert('Only organization admins can upgrade.'); return router.push('/organization'); }
+    try { const resp = await apiService.createCheckoutSession(plan.planType, 'card'); if (resp?.url) window.location.href = resp.url; } catch (e) { console.error(e); alert('Unable to start checkout.'); }
   } else {
-    // User not logged in, redirect to signup with plan
-    if (plan.planType === 'FREE') {
-      router.push('/signup');
-    } else if (plan.planType === 'FOUNDATION_PRO') {
-      // Contact sales for enterprise - route to contact page with subject
-      router.push({ path: '/contact', query: { subject: 'Foundation Pro Plan Inquiry' } });
-    } else {
-      router.push(`/signup?plan=${plan.planType}`);
-    }
+    router.push(`/signup?plan=${plan.planType}`);
   }
-}
-
-async function proceedWithPayment() {
-  if (!selectedPlan.value) return;
-
-  isProcessing.value = true;
-
-  try {
-    if (paymentMethod.value === 'card') {
-      // Traditional card checkout
-      const resp = await apiService.createCheckoutSession(selectedPlan.value.planType, 'card');
-      if (resp && resp.url) {
-        window.location.href = resp.url;
-        return;
-      }
-    } else {
-      // Invoice request
-      const resp = await apiService.requestInvoice(selectedPlan.value.planType);
-      if (resp && resp.success) {
-        alert(`Invoice request submitted successfully! ${resp.message}`);
-        showPaymentModal.value = false;
-        router.push('/organization');
-        return;
-      }
-    }
-  } catch (err) {
-    console.error('Payment processing failed:', err);
-    alert('Unable to process payment request. Please contact support.');
-  } finally {
-    isProcessing.value = false;
-  }
-}
-
-function closePaymentModal() {
-  showPaymentModal.value = false;
-  selectedPlan.value = null;
-  paymentMethod.value = 'card';
-}
-
-async function handlePlanUpgrade(planType: 'ANALYST_PRO' | 'FOUNDATION' | 'FOUNDATION_PRO') {
-  if (!authStore.isAuthenticated) {
-    // Not logged in - redirect to signup with plan
-    router.push(`/signup?plan=${planType}`);
-    return;
-  }
-
-  if (!authStore.isAdmin) {
-    // Not an admin - show message and redirect to organization page
-    alert('Only organization administrators can upgrade plans. Please contact your admin.');
-    router.push('/organization');
-    return;
-  }
-
-  // Admin user - redirect to organization management for plan upgrade
-  alert(`Plan upgrade to ${planType} would be handled through organization management. This would integrate with payment processing.`);
-  router.push('/organization');
 }
 </script>
 
 <template>
-  <main class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-    <!-- Hero Section -->
-    <section class="py-20">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h1 class="text-5xl font-bold text-gray-900 mb-6">
-          Choose Your Plan
-        </h1>
-        <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-          Start with a free trial, then upgrade to unlock advanced features for comprehensive endowment analysis.
-        </p>
-        <div class="flex items-center justify-center gap-4 mb-12">
-          <div class="flex items-center gap-2 text-sm text-green-600">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-            </svg>
-            <span>No setup fees</span>
-          </div>
-          <div class="flex items-center gap-2 text-sm text-blue-600">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-            </svg>
-            <span>No long-term commitment</span>
-          </div>
-          <div class="flex items-center gap-2 text-sm text-gray-600">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-            </svg>
-            <span>Hassle-free cancellation</span>
-          </div>
+  <main class="min-h-screen bg-slate-50 text-slate-800">
+    <PageHero>
+      <template #title>Choose Your Plan</template>
+      <template #subtitle>Start with a free trial — then upgrade to unlock advanced features.</template>
+      <template #controls>
+        <div class="inline-flex items-center bg-white rounded-full p-1 shadow-sm border border-slate-100">
+          <button @click.prevent="setBillingCycle('monthly')" :class="billingCycle === 'monthly' ? 'px-4 py-2 rounded-full bg-slate-800 text-white text-sm' : 'px-4 py-2 rounded-full text-sm text-slate-600'" class="transition-colors duration-150 hover:bg-slate-100">Monthly</button>
+          <button @click.prevent="setBillingCycle('annual')" :class="billingCycle === 'annual' ? 'px-4 py-2 rounded-full bg-slate-800 text-white text-sm' : 'px-4 py-2 rounded-full text-sm text-slate-600'" class="ml-1 transition-colors duration-150 hover:bg-slate-100">Annual (save 15%)</button>
         </div>
-      </div>
-    </section>
+      </template>
+    </PageHero>
 
-    <!-- Pricing Cards -->
-    <section class="pb-20">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div v-for="(plan, index) in plans" :key="index" class="relative">
-            <!-- Popular badge -->
-            <div v-if="plan.popular" class="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-              <div class="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                Most Popular
-              </div>
+    <div class="max-w-7xl mx-auto px-4 pb-12">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div v-for="(plan, idx) in displayedPlans" :key="idx" class="rounded-xl border border-slate-100 bg-white p-6 text-center">
+            <div class="text-sm font-semibold text-slate-600">{{ plan.name }}</div>
+            <div class="mt-4 flex items-baseline justify-center gap-2">
+              <div class="text-3xl font-extrabold">${{ plan.displayPrice }}</div>
+              <div class="text-sm text-slate-500">/{{ plan.period }}</div>
             </div>
+            <p class="text-sm text-slate-500 mt-3">{{ plan.description }}</p>
 
-            <!-- Card -->
-            <div class="card p-8 h-full flex flex-col" :class="plan.popular ? 'ring-2 ring-blue-500 shadow-xl transform scale-105' : ''">
-              <!-- Header -->
-              <div class="text-center mb-8">
-                <h3 class="text-2xl font-bold text-gray-900 mb-2">{{ plan.name }}</h3>
-                <p class="text-gray-600 mb-4">{{ plan.description }}</p>
-                <div class="flex items-baseline justify-center">
-                  <span class="text-5xl font-bold text-gray-900">${{ plan.price }}</span>
-                  <span class="text-gray-500 ml-2">{{ plan.price > 0 ? `/${plan.period}` : plan.period }}</span>
-                </div>
-              </div>
+            <!-- Feature list (keep small) -->
+            <ul class="mt-4 text-sm text-slate-600 space-y-2 text-left">
+              <li v-for="(f, i) in plan.features" :key="i">{{ f }}</li>
+              <!-- Add some common filler items if plan.features is minimal -->
+              <li v-if="plan.planType === 'FREE'">Standard assumption sets</li>
+              <li v-if="plan.planType === 'FREE'">Community support</li>
+              <li v-if="plan.planType === 'ANALYST_PRO'">Custom assumption sets</li>
+              <li v-if="plan.planType === 'ANALYST_PRO'">Exportable reports</li>
+              <li v-if="plan.planType === 'FOUNDATION'">Team access & permissions</li>
+              <li v-if="plan.planType === 'FOUNDATION'">Priority email support</li>
+              <li v-if="plan.planType === 'FOUNDATION_PRO'">Dedicated CSM</li>
+              <li v-if="plan.planType === 'FOUNDATION_PRO'">Onboarding assistance</li>
+            </ul>
 
-              <!-- Features -->
-              <div class="flex-1 mb-8">
-                <h4 class="font-semibold text-gray-900 mb-4">What's included:</h4>
-                <ul class="space-y-3">
-                  <li v-for="feature in plan.features" :key="feature" class="flex items-start">
-                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span class="text-gray-700">{{ feature }}</span>
-                  </li>
-                </ul>
-
-                <!-- Limitations for free trial -->
-                <div v-if="plan.limitations.length > 0" class="mt-6">
-                  <h4 class="font-semibold text-gray-900 mb-3">Limitations:</h4>
-                  <ul class="space-y-2">
-                    <li v-for="limitation in plan.limitations" :key="limitation" class="flex items-start">
-                      <svg class="w-5 h-5 text-gray-400 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                      </svg>
-                      <span class="text-gray-500 text-sm">{{ limitation }}</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <!-- CTA Button -->
-              <button 
-                @click="selectPlan(plan)" 
-                :disabled="false"
-                :class="[
-                  plan.buttonClass, 
-                  'w-full py-4 px-6 text-lg font-semibold transition-all hover:shadow-lg',
-                  'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none'
-                ]"
-              >
-                <span v-if="authStore.isAuthenticated">
-                  <span v-if="authStore.subscription && authStore.subscription.planType === plan.planType">
-                    ✓ Current Plan
-                  </span>
-                  <span v-else>
-                    {{ plan.buttonText }}
-                  </span>
-                </span>
-                <span v-else>
-                  {{ plan.buttonText }}
-                </span>
-              </button>
-
-              <!-- Cancellation / commitment note -->
-              <p v-if="plan.price > 0" class="text-center text-xs text-gray-500 mt-3">
-                No long-term commitment — cancel anytime.
-              </p>
+            <div class="mt-6">
+              <button @click="selectPlan(plan)" class="mt-2 inline-block w-full px-4 py-2 rounded-md font-semibold text-sm" :class="plan.popular ? 'bg-slate-800 text-white' : 'border border-slate-200 bg-white text-slate-800'">{{ plan.buttonText }}</button>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- FAQ Section -->
-    <section class="py-16 bg-white">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Frequently Asked Questions</h2>
-        <div class="space-y-8">
-          <div class="border-b border-gray-200 pb-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">What happens when I reach my simulation limit?</h3>
-            <p class="text-gray-600">Your account won't be blocked, but you'll need to wait until next month for the limit to reset, or upgrade to a higher plan for more simulations.</p>
-          </div>
-          <div class="border-b border-gray-200 pb-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">Can I cancel my subscription anytime?</h3>
-            <p class="text-gray-600">Yes! You can cancel anytime. You'll keep access to all features until the end of your current billing period, then revert to view-only access for your historical simulations.</p>
-          </div>
-          <div class="border-b border-gray-200 pb-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">Do you offer discounts for nonprofits or students?</h3>
-            <p class="text-gray-600">Yes! Academic institutions and qualified nonprofits receive a 30% discount. Contact us with proof of eligibility.</p>
-          </div>
-          <div class="border-b border-gray-200 pb-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">How fast is your support response time?</h3>
-            <p class="text-gray-600">Analyst Pro users receive email support within 48 hours. Foundation and Foundation Pro users get priority support within 24 hours. All support is provided via email.</p>
-          </div>
-          <div class="border-b border-gray-200 pb-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">Is my endowment data secure and private?</h3>
-            <p class="text-gray-600">Absolutely. All data is encrypted in transit and at rest using industry-standard practices. We never share or access your endowment data, and you can delete your account and all data anytime.</p>
-          </div>
-          <div class="border-b border-gray-200 pb-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">What counts as a "simulation"?</h3>
-            <p class="text-gray-600">A simulation run is recorded each time a user clicks "Run monte carlo analysis" on the Results page. Usage is counted per organization across users.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="py-16 bg-gradient-to-r from-blue-600 to-blue-700">
-      <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-white mb-6">
-          <span v-if="authStore.isAuthenticated">Upgrade your plan for more simulations</span>
-          <span v-else>Ready to optimize your endowment strategy?</span>
-        </h2>
-        <p class="text-xl text-blue-100 mb-8">
-          <span v-if="authStore.isAuthenticated">Get more simulations and advanced features with a paid plan.</span>
-          <span v-else>Join hundreds of investment professionals who trust EndowCast for their forecasting needs.</span>
-        </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <template v-if="authStore.isAuthenticated">
-            <button @click="selectPlan(plans[1])" class="bg-white text-blue-600 hover:bg-gray-50 py-4 px-8 rounded-lg font-semibold transition-colors">
-              <span v-if="authStore.subscription?.planType === 'ANALYST_PRO'">✓ Current Plan</span>
-              <span v-else>Upgrade to Analyst Pro</span>
-            </button>
-            <button @click="selectPlan(plans[2])" class="border-2 border-white text-white hover:bg-white hover:text-blue-600 py-4 px-8 rounded-lg font-semibold transition-colors">
-              <span v-if="authStore.subscription?.planType === 'FOUNDATION'">✓ Current Plan</span>
-              <span v-else>Upgrade to Foundation</span>
-            </button>
-          </template>
-          <template v-else>
-            <RouterLink to="/signup" class="bg-white text-blue-600 hover:bg-gray-50 py-4 px-8 rounded-lg font-semibold transition-colors">
-              Start Free
-            </RouterLink>
-            <RouterLink to="/signup?plan=ANALYST_PRO" class="border-2 border-white text-white hover:bg-white hover:text-blue-600 py-4 px-8 rounded-lg font-semibold transition-colors">
-              Try Analyst Pro
-            </RouterLink>
-          </template>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- Payment Method Modal -->
-  <div v-if="showPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg max-w-md w-full mx-4 p-6">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-xl font-semibold text-gray-900">Choose Payment Method</h3>
-        <button @click="closePaymentModal" class="text-gray-400 hover:text-gray-600">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-
-      <div v-if="selectedPlan" class="mb-6">
-        <div class="bg-gray-50 rounded-lg p-4">
-          <h4 class="font-semibold text-gray-900">{{ selectedPlan.name }}</h4>
-          <p class="text-gray-600">${{ selectedPlan.price }}/{{ selectedPlan.period }}</p>
-          <p class="text-sm text-gray-500 mt-1">{{ selectedPlan.description }}</p>
-        </div>
-      </div>
-
-      <div class="space-y-4 mb-6">
-        <label class="flex items-start space-x-3 cursor-pointer">
-          <input 
-            type="radio" 
-            v-model="paymentMethod" 
-            value="card" 
-            class="mt-1 text-blue-600 focus:ring-blue-500"
-          />
-          <div class="flex-1">
-            <div class="flex items-center space-x-2">
-              <span class="font-medium text-gray-900">Pay with Card</span>
-              <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zM4 6h16v2H4V6zm0 4h16v8H4v-8z"/>
-                <path d="M6 14h2v2H6v-2zm4 0h6v2h-6v-2z"/>
-              </svg>
-            </div>
-            <p class="text-sm text-gray-600">Secure checkout with Stripe • Instant activation</p>
-          </div>
-        </label>
-
-        <label class="flex items-start space-x-3 cursor-pointer">
-          <input 
-            type="radio" 
-            v-model="paymentMethod" 
-            value="invoice" 
-            class="mt-1 text-blue-600 focus:ring-blue-500"
-          />
-          <div class="flex-1">
-            <div class="flex items-center space-x-2">
-              <span class="font-medium text-gray-900">Pay by Invoice</span>
-              <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
-                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-              </svg>
-            </div>
-            <p class="text-sm text-gray-600">Professional invoice with 30-day payment terms</p>
-            <p class="text-xs text-amber-600 mt-1">
-              • Perfect for organizations requiring purchase orders
-              • Account activation after payment receipt
-            </p>
-          </div>
-        </label>
-      </div>
-
-      <div class="flex space-x-3">
-        <button 
-          @click="closePaymentModal" 
-          class="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-          :disabled="isProcessing"
-        >
-          Cancel
-        </button>
-        <button 
-          @click="proceedWithPayment" 
-          class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-          :disabled="isProcessing"
-        >
-          <span v-if="isProcessing">Processing...</span>
-          <span v-else-if="paymentMethod === 'card'">Pay with Card</span>
-          <span v-else>Request Invoice</span>
-        </button>
       </div>
     </div>
-  </div>
+
+      <!-- Feature comparison table (contained) -->
+      <div class="max-w-7xl mx-auto px-4">
+        <section class="mt-12 bg-white rounded-xl border border-slate-100 p-6">
+          <h3 class="text-lg font-semibold">Feature comparison</h3>
+          <div class="mt-4 overflow-x-auto">
+              <table class="w-full text-sm max-w-full">
+                <thead class="text-slate-600">
+                  <tr>
+                    <th class="py-3 text-left">Feature</th>
+                    <th class="py-3 text-center">Free</th>
+                    <th class="py-3 text-center">Analyst Pro</th>
+                    <th class="py-3 text-center">Foundation</th>
+                    <th class="py-3 text-center">Foundation Pro</th>
+                  </tr>
+                </thead>
+                <tbody class="text-slate-600 divide-y">
+                  <tr>
+                    <td class="py-3">Simulations / month</td>
+                    <td class="py-3 text-center">5</td>
+                    <td class="py-3 text-center">50</td>
+                    <td class="py-3 text-center">500</td>
+                    <td class="py-3 text-center">Unlimited</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3">Custom assumptions</td>
+                    <td class="py-3 text-center">—</td>
+                    <td class="py-3 text-center">✓</td>
+                    <td class="py-3 text-center">✓</td>
+                    <td class="py-3 text-center">✓</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3">Team seats</td>
+                    <td class="py-3 text-center">—</td>
+                    <td class="py-3 text-center">1</td>
+                    <td class="py-3 text-center">5</td>
+                    <td class="py-3 text-center">Custom</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3">Support</td>
+                    <td class="py-3 text-center">Community</td>
+                    <td class="py-3 text-center">Email</td>
+                    <td class="py-3 text-center">Priority Email</td>
+                    <td class="py-3 text-center">Dedicated</td>
+                  </tr>
+                </tbody>
+              </table>
+        </div>
+          </section>
+
+      <!-- FAQ (two-column, centered to match table/cards) -->
+      <section class="mt-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+          <h3 class="text-lg font-semibold">Frequently Asked Questions</h3>
+          <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-600">
+            <div>
+              <div class="font-medium">Can I cancel my subscription anytime?</div>
+              <div class="mt-1">Yes — you can cancel at any time from your billing settings.</div>
+            </div>
+            <div>
+              <div class="font-medium">Do you offer discounts for nonprofits?</div>
+              <div class="mt-1">Yes — contact sales for nonprofit & academic pricing.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <CTABand>
+      <template #title>Ready to upgrade?</template>
+      <template #subtitle>Pick a plan that suits your organization.</template>
+      <template #actions>
+        <router-link to="/signup" class="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold">Start Free</router-link>
+      </template>
+    </CTABand>
+  </main>
 </template>
+

@@ -1,14 +1,9 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useSimulationStore } from '../../simulation/stores/simulation';
 import { useAuthStore } from '@/features/auth/stores/auth';
-import SummaryCards from '../components/results/SummaryCards.vue';
-import SimulationSummary from '../components/results/SimulationSummary.vue';
-import StatisticalSummary from '../components/results/StatisticalSummary.vue';
-import SimulationChart from '../components/results/SimulationChart.vue';
-import SpendingChangeChart from '../components/results/SpendingChangeChart.vue';
-import ResultsDataTable from '../components/results/ResultsDataTable.vue';
+import SimulationResults from '../components/results/layouts/SimulationResults.vue';
 
 const route = useRoute();
 const sim = useSimulationStore();
@@ -16,6 +11,63 @@ const authStore = useAuthStore();
 
 function run() { 
   sim.runSimulation(); 
+}
+
+// Share link state
+const isCopying = ref(false);
+const copySuccess = ref(false);
+const shareUrl = ref('');
+
+async function handleCopyLink() {
+  if (!sim.results) return;
+  isCopying.value = true;
+  copySuccess.value = false;
+  try {
+    // Try to create a short share link via the API. If the endpoint doesn't exist
+    // we'll fall back to copying the current full URL.
+    const payload = {
+      payloadType: 'results',
+      payloadRef: (sim.results && (sim.results.id || sim.results.simulationId)) || null,
+      // default expiry (days) can be handled server-side
+      expiresInDays: 30
+    };
+
+    const res = await fetch('/api/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      // Server may return either { url } or { token }
+      if (data.url) shareUrl.value = data.url;
+      else if (data.token) shareUrl.value = `${window.location.origin}/s/${data.token}`;
+      else shareUrl.value = window.location.href;
+    } else {
+      // fallback: use current page
+      shareUrl.value = window.location.href;
+    }
+
+    // copy to clipboard
+    try {
+      await navigator.clipboard.writeText(shareUrl.value);
+      copySuccess.value = true;
+    } catch (err) {
+      // last resort: select and prompt copy
+      console.warn('Clipboard API failed, falling back to prompt', err);
+      // eslint-disable-next-line no-alert
+      window.prompt('Copy this link', shareUrl.value);
+      copySuccess.value = true;
+    }
+  } catch (err) {
+    console.error('Failed to create share link, falling back to current URL', err);
+    shareUrl.value = window.location.href;
+    try { await navigator.clipboard.writeText(shareUrl.value); copySuccess.value = true; } catch(e){ /* ignore */ }
+  } finally {
+    isCopying.value = false;
+    setTimeout(() => (copySuccess.value = false), 2500);
+  }
 }
 
 // Track if component is mounted to prevent state updates after unmount
@@ -40,19 +92,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <main class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
+  <main class="min-h-screen bg-slate-50 py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">Monte Carlo Analysis</h1>
-        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-2">Monte Carlo Analysis</h1>
+        <p class="text-lg text-slate-700 leading-7 max-w-2xl mx-auto">
           Run sophisticated simulations to evaluate your endowment's long-term sustainability
         </p>
         <div class="mt-6 flex items-center justify-center">
-          <div class="flex items-center bg-white rounded-full px-4 py-2 shadow-md">
+          <div class="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
             <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
               <span class="text-blue-600 font-semibold text-sm">4</span>
             </div>
-            <span class="text-gray-700 font-medium">Results & Analysis</span>
+            <span class="text-slate-700 font-medium">Results & Analysis</span>
           </div>
         </div>
       </div>
@@ -141,14 +193,7 @@ onUnmounted(() => {
           </p>
         </div>
 
-        <!-- Results Components -->
-        <SummaryCards :results="sim.results" />
-        <SimulationSummary :results="sim.results" />
-        <StatisticalSummary :results="sim.results" />
-        <SimulationChart :results="sim.results" />
-        <SpendingChangeChart v-if="sim.results?.spendingPolicy?.[0]?.length >= 1" :results="sim.results" />
-        <ResultsDataTable :results="sim.results" />
-
+<SimulationResults :results="sim.results" />
         <!-- Export & Share Options -->
         <div class="card p-6 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200">
           <div class="flex items-center justify-between">
@@ -156,18 +201,26 @@ onUnmounted(() => {
               <h3 class="text-lg font-semibold text-gray-900 mb-2">Share Your Analysis</h3>
               <p class="text-gray-600 text-sm">Export results for presentations or share with stakeholders</p>
             </div>
-            <div class="flex space-x-3">
-              <button class="btn-secondary py-2 px-4 text-sm hover:bg-gray-200 transition-colors">
-                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                Export PDF
-              </button>
-              <button class="btn-secondary py-2 px-4 text-sm hover:bg-gray-200 transition-colors">
-                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center space-x-3">
+              <button
+                @click="handleCopyLink"
+                :disabled="isCopying"
+                class="inline-flex items-center gap-2 py-2 px-4 text-sm bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors rounded-md"
+                aria-live="polite"
+              >
+                <svg v-if="!isCopying && !copySuccess" class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
                 </svg>
-                Copy Link
+                <svg v-else-if="isCopying" class="w-4 h-4 inline animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <svg v-else-if="copySuccess" class="w-4 h-4 inline text-green-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L9 11.586 6.707 9.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l7-7a1 1 0 000-1.414z" clip-rule="evenodd"/></svg>
+                <span>
+                  <span v-if="isCopying">Creating link...</span>
+                  <span v-else-if="copySuccess">Copied!</span>
+                  <span v-else>Copy Link</span>
+                </span>
               </button>
             </div>
           </div>

@@ -19,7 +19,9 @@
         </div>
       </div>
       <div class="opacity-30 pointer-events-none">
-        <GrantTargets />
+        <div class="bg-white border border-slate-100 rounded-lg p-6">
+          <GrantTargets />
+        </div>
       </div>
     </div>
     <GrantTargets v-else />

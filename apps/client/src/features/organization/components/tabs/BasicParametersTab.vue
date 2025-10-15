@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-6">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Financial Foundation Card -->
-      <div class="card p-6 hover:shadow-md transition-shadow">
+  <!-- Financial Foundation Card -->
+  <div class="bg-white border border-slate-100 rounded-lg p-6 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center">
             <div class="w-6 h-6 rounded-md bg-green-100 flex items-center justify-center mr-3">
@@ -12,7 +12,7 @@
             </div>
             <div>
               <h3 class="text-lg font-semibold text-gray-900">Financial Foundation</h3>
-              <p class="text-sm text-gray-600">Core endowment financial parameters</p>
+              <p class="text-sm text-slate-700">Core endowment financial parameters</p>
             </div>
           </div>
           <div class="flex items-center">
@@ -40,7 +40,7 @@
         <div class="space-y-4">
           <!-- Initial Endowment Value -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Initial Endowment Value</label>
+            <label class="block text-sm font-medium text-slate-800 mb-2">Initial Endowment Value</label>
             <div class="relative">
               <input 
                 type="number" 
@@ -59,7 +59,7 @@
                 @input="$emit('update:inputs', inputs)"
               />
               <div class="absolute inset-y-0 left-0 pl-1 pr-1 flex items-center pointer-events-none">
-                <span class="text-gray-500 sm:text-sm">$</span>
+                <span class="text-slate-600 sm:text-sm">$</span>
               </div>
               <div v-if="inputs.initialEndowment && inputs.initialEndowment >= 1000000" class="absolute inset-y-0 right-0 pr-3 flex items-center">
                 <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,7 +74,7 @@
 
           <!-- Spending Policy Rate -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Spending Policy Rate (%)</label>
+            <label class="block text-sm font-medium text-slate-800 mb-2">Spending Policy Rate (%)</label>
             <input 
               type="number" 
               v-model.number="inputs.spendingPolicyRate" 
@@ -97,7 +97,7 @@
 
           <!-- Investment Expense Rate -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Investment Expense Rate (%)</label>
+            <label class="block text-sm font-medium text-slate-800 mb-2">Investment Expense Rate (%)</label>
             <input 
               type="number" 
               v-model.number="inputs.investmentExpenseRate" 
@@ -120,8 +120,8 @@
         </div>
       </div>
 
-      <!-- Operational Expenses Card -->
-      <div class="card p-6 hover:shadow-md transition-shadow">
+  <!-- Operational Expenses Card -->
+  <div class="bg-white border border-slate-100 rounded-lg p-6 hover:shadow-md transition-shadow">
         <div class="flex items-center mb-6">
           <div class="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center mr-3">
             <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,14 +130,14 @@
           </div>
           <div>
             <h3 class="text-lg font-semibold text-gray-900">Operational Expenses</h3>
-            <p class="text-sm text-gray-600">Annual operating costs and commitments</p>
+            <p class="text-sm text-slate-700">Annual operating costs and commitments</p>
           </div>
         </div>
         
         <div class="space-y-4">
           <!-- Initial Operating Expense -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Initial Operating Expense</label>
+            <label class="block text-sm font-medium text-slate-800 mb-2">Initial Operating Expense</label>
             <div class="relative">
               <input 
                 type="number" 
@@ -164,7 +164,7 @@
 
           <!-- Initial Grant Amount -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Initial Grant Amount</label>
+            <label class="block text-sm font-medium text-slate-800 mb-2">Initial Grant Amount</label>
             <div class="relative">
               <input 
                 type="number" 
@@ -192,8 +192,8 @@
       </div>
     </div>
 
-    <!-- Simulation Timeline Card -->
-    <div class="card p-6 hover:shadow-md transition-shadow">
+  <!-- Simulation Timeline Card -->
+  <div class="bg-white border border-slate-100 rounded-lg p-6 hover:shadow-md transition-shadow">
       <div class="flex items-center mb-6">
         <div class="w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center mr-3">
           <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,13 +202,13 @@
         </div>
         <div>
           <h3 class="text-lg font-semibold text-gray-900">Simulation Timeline</h3>
-          <p class="text-sm text-gray-600">Define the projection period and starting year</p>
+          <p class="text-sm text-slate-700">Define the projection period and starting year</p>
         </div>
       </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Number of Years</label>
+          <label class="block text-sm font-medium text-slate-800 mb-2">Number of Years</label>
           <input 
             type="number" 
             v-model.number="options.years" 
@@ -220,7 +220,7 @@
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Starting Year</label>
+          <label class="block text-sm font-medium text-slate-800 mb-2">Starting Year</label>
           <input 
             type="number" 
             v-model.number="options.startYear" 

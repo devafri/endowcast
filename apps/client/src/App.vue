@@ -24,11 +24,11 @@ async function handleLogout() {
 
 <template>
   <div id="app" class="min-h-screen">
-    <!-- Show SideNav on all routes except landing page -->
-    <SideNav v-if="route.path !== '/'" />
-    <div :class="route.path !== '/' ? 'lg:pl-64' : ''">
-      <!-- Show TheHeader only on landing page -->
-      <TheHeader v-if="route.path === '/'" />
+    <!-- Show SideNav on all routes except landing page and pricing page -->
+    <SideNav v-if="route.path !== '/' && route.path !== '/pricing'" />
+    <div :class="route.path !== '/' && route.path !== '/pricing' ? 'lg:pl-64' : ''">
+      <!-- Show TheHeader on landing page and pricing page -->
+      <TheHeader v-if="route.path === '/' || route.path === '/pricing'" />
       <main class="min-h-[60vh]">
         <RouterView />
       </main>

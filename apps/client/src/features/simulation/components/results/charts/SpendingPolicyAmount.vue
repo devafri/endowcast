@@ -92,11 +92,10 @@ watch(() => props.results, buildChart, { deep: true });
 </script>
 
 <template>
-  <div class="card p-6 mb-8" style="height: 380px;">
-    <div class="flex justify-between items-center mb-3">
-  <h3 class="text-lg font-semibold">Spending Policy Amount</h3>
+  <div class="p-6 bg-white border border-gray-200 rounded-xl shadow-lg h-128 mb-8" style="height: 360px;">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold">Spending Policy Projection</h3>
     </div>
     <canvas ref="canvasRef"></canvas>
   </div>
-
 </template>

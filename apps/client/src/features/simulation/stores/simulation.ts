@@ -9,6 +9,8 @@ import { medoidByFinalValue, nearestToPointwiseMedian, pointwiseMedian } from '.
 export const useSimulationStore = defineStore('simulation', () => {
   const inputs = reactive({
     initialEndowment: 50000000,
+    // Risk-free rate (percent). Used for Sharpe/Sortino calculations and benchmarking.
+    riskFreeRate: 2,
     spendingPolicyRate: 5,
     investmentExpenseRate: 1,
     initialOperatingExpense: 1000000,
@@ -118,6 +120,7 @@ export const useSimulationStore = defineStore('simulation', () => {
           years: Math.max(1, Math.min(30, options.years || 10)),
           startYear: Math.max(2000, Math.min(2100, options.startYear || new Date().getFullYear())),
           initialValue: Math.max(0, payload.initialEndowment || 0),
+          riskFreeRate: payload.riskFreeRate ?? 2,
           spendingRate: Math.max(0, Math.min(1, (payload.spendingPolicyRate || 5) / 100)), // Convert percentage to decimal
           spendingGrowth: 0, // Default value
           equityReturn: 0.07, // Default assumption (7%)
@@ -288,6 +291,7 @@ export const useSimulationStore = defineStore('simulation', () => {
       
       // Update inputs with scenario data
       inputs.initialEndowment = Number(simulation.initialValue) || 50000000;
+  inputs.riskFreeRate = Number(simulation.riskFreeRate) ?? inputs.riskFreeRate;
       inputs.spendingPolicyRate = Number(simulation.spendingRate) * 100 || 5; // Convert to percentage
       
       // Update options

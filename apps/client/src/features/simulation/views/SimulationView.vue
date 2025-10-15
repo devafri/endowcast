@@ -9,7 +9,7 @@ import GrantTargets from '../components/inputs/GrantTargets.vue';
 import SummaryCards from '../components/results/SummaryCards.vue';
 import SimulationSummary from '../components/results/SimulationSummary.vue';
 import StatisticalSummary from '../components/results/StatisticalSummary.vue';
-import SimulationChart from '../components/results/SimulationChart.vue';
+import EndowmentValueChart from '../components/results/charts/EndowmentValueChart.vue';
 import ResultsDataTable from '../components/results/ResultsDataTable.vue';
 import EnhancedRiskAnalysis from '../components/results/EnhancedRiskAnalysis.vue';
 import { runMonteCarlo, type EngineOptions, type SimulationOutputs, assetClasses } from '../lib/monteCarlo';
