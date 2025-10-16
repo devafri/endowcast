@@ -85,7 +85,7 @@
             <select 
               v-model="benchmarkConfig.type" 
               @change="$emit('update:benchmark-config', benchmarkConfig)"
-              class="input-field w-full p-3 rounded-md"
+              class="input-field w-full p-3 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100"
             >
               <option value="cpi_plus">CPI + Fixed Return</option>
               <option value="fixed">Fixed Annual Return</option>
@@ -102,7 +102,7 @@
                 type="number" 
                 v-model.number="benchmarkConfig.value" 
                 @input="$emit('update:benchmark-config', benchmarkConfig)"
-                class="input-field w-full p-3 rounded-md" 
+                class="input-field w-full p-3 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                 placeholder="6" 
                 step="0.1" 
                 min="-5" 
@@ -120,7 +120,7 @@
                 type="number" 
                 v-model.number="benchmarkConfig.value" 
                 @input="$emit('update:benchmark-config', benchmarkConfig)"
-                class="input-field w-full p-3 rounded-md" 
+                class="input-field w-full p-3 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                 placeholder="6" 
                 step="0.1" 
                 min="-10" 
@@ -137,7 +137,7 @@
               <select 
                 v-model="benchmarkConfig.assetKey" 
                 @change="$emit('update:benchmark-config', benchmarkConfig)"
-                class="input-field w-full p-3 rounded-md"
+                class="input-field w-full p-3 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100"
               >
                 <option v-for="asset in assetClasses" :key="asset.key" :value="asset.key">
                   {{ asset.label }}
@@ -158,7 +158,7 @@
                     type="number" 
                     v-model.number="benchmarkConfig.blended![asset.key]" 
                     @input="$emit('update:benchmark-config', benchmarkConfig)"
-                    class="input-field w-full p-2 rounded-md" 
+                    class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                     placeholder="0" 
                     step="1" 
                     min="0" 
@@ -190,7 +190,7 @@
                 type="text" 
                 v-model="benchmarkConfig.label" 
                 @input="$emit('update:benchmark-config', benchmarkConfig)"
-                class="input-field w-full p-3 rounded-md" 
+                class="input-field w-full p-3 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                 placeholder="Leave blank for auto-generated label" 
               />
               <p class="text-xs text-gray-500 mt-1">Custom name to display in charts and legends</p>

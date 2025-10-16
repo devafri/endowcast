@@ -14,7 +14,7 @@
             min="0"
             v-model.number="sim.inputs.riskFreeRate"
             aria-label="Risk-free rate percent"
-            class="w-28 px-2 py-1 rounded text-sm bg-white border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            class="w-28 px-2 py-1 rounded text-sm bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100"
           />
           <div class="text-xs">%</div>
         </div>
@@ -60,11 +60,11 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Expected Return (%)</label>
-                <input type="number" disabled class="input-field w-full p-2 rounded-md bg-gray-100" />
+                <input type="number" disabled class="input-field w-full p-2 rounded-md bg-gray-100 border border-slate-100" />
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Volatility (%)</label>
-                <input type="number" disabled class="input-field w-full p-2 rounded-md bg-gray-100" />
+                <input type="number" disabled class="input-field w-full p-2 rounded-md bg-gray-100 border border-slate-100" />
               </div>
             </div>
           </div>

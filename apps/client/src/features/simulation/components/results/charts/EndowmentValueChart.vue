@@ -74,8 +74,8 @@ function buildChart() {
       const high = 100 - low;
       const opacity = 0.04 + 0.18 * (1 - (Math.abs(50 - low) / 50));
       const grad = ctx.createLinearGradient(0, 0, 0, chartHeight);
-      grad.addColorStop(0, `rgba(14,165,233,${opacity + 0.04})`);
-      grad.addColorStop(1, `rgba(14,165,233,${opacity})`);
+      grad.addColorStop(0, `rgba(138,138,138,${opacity + 0.04})`);
+      grad.addColorStop(1, `rgba(138,138,138,${opacity})`);
       bandGradients[`${low}_${high}`] = grad;
     }
   }
@@ -176,7 +176,11 @@ function buildChart() {
             return rankLabel(labelA) - rankLabel(labelB);
           },
           callbacks: {
-            label: (ctx) => { const value = ctx.parsed.y; return `${ctx.dataset.label}: ${formatMoney(value)}`; },
+            label: (ctx) => {
+              const value = ctx.parsed.y;
+              if (value === null || value === undefined) return `${ctx.dataset.label}: —`;
+              return `${ctx.dataset.label}: ${formatMoney(Number(value))}`;
+            },
             labelColor: (ctx) => {
               const ds: any = ctx.dataset || {};
               // prefer borderColor, fall back to backgroundColor, otherwise default

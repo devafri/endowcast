@@ -91,7 +91,7 @@
             <div v-for="(shock, index) in stressConfig.equityShocks" :key="index" class="flex items-center gap-3 bg-white rounded p-3">
               <div class="flex-1">
                 <label class="block text-xs font-medium text-gray-700 mb-1">Asset Class</label>
-                <select v-model="shock.assetKey" class="input-field w-full p-2 rounded-md" @change="$emit('update:stress-config', stressConfig)">
+                <select v-model="shock.assetKey" class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" @change="$emit('update:stress-config', stressConfig)">
                   <option v-for="asset in assetClasses" :key="asset.key" :value="asset.key">
                     {{ asset.label }}
                   </option>
@@ -105,7 +105,7 @@
                   step="1" 
                   min="-90" 
                   max="50" 
-                  class="input-field w-full p-2 rounded-md" 
+                  class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                   placeholder="e.g. -30"
                   @input="$emit('update:stress-config', stressConfig)"
                 />
@@ -117,12 +117,12 @@
                   v-model.number="shock.year" 
                   :min="1" 
                   :max="maxYears" 
-                  class="input-field w-full p-2 rounded-md" 
+                  class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                   placeholder="e.g. 2"
                   @input="$emit('update:stress-config', stressConfig)"
                 />
               </div>
-              <button type="button" @click="$emit('remove-equity-shock', index)" class="text-red-600 hover:text-red-800 p-1">
+              <button type="button" @click="$emit('remove-equity-shock', index)" class="text-red-600 hover:text-red-800 p-1 focus:outline-none focus:ring-2 focus:ring-red-200 rounded">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                 </svg>
@@ -160,7 +160,7 @@
                   step="0.5" 
                   min="-10" 
                   max="10" 
-                  class="input-field w-full p-2 rounded-md" 
+                  class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                   placeholder="e.g. 2.5"
                   @input="$emit('update:stress-config', stressConfig)"
                 />
@@ -172,7 +172,7 @@
                   v-model.number="shift.from" 
                   :min="1" 
                   :max="maxYears" 
-                  class="input-field w-full p-2 rounded-md" 
+                  class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                   placeholder="e.g. 3"
                   @input="$emit('update:stress-config', stressConfig)"
                 />
@@ -184,12 +184,12 @@
                   v-model.number="shift.to" 
                   :min="shift.from || 1" 
                   :max="maxYears" 
-                  class="input-field w-full p-2 rounded-md" 
+                  class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                   placeholder="e.g. 10"
                   @input="$emit('update:stress-config', stressConfig)"
                 />
               </div>
-              <button type="button" @click="$emit('remove-cpi-shock', index)" class="text-red-600 hover:text-red-800 p-1">
+              <button type="button" @click="$emit('remove-cpi-shock', index)" class="text-red-600 hover:text-red-800 p-1 focus:outline-none focus:ring-2 focus:ring-red-200 rounded">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                 </svg>

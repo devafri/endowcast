@@ -46,7 +46,7 @@
                 type="number" 
                 v-model.number="inputs.initialEndowment" 
                 :class="[
-                  'input-field w-full p-3 pl-14 pr-10 rounded-md',
+                  'input-field w-full p-3 pl-14 pr-10 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100',
                   inputs.initialEndowment && inputs.initialEndowment < 1000000 
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
                     : inputs.initialEndowment && inputs.initialEndowment >= 1000000
@@ -79,7 +79,7 @@
               type="number" 
               v-model.number="inputs.spendingPolicyRate" 
               :class="[
-                'input-field w-full p-3 rounded-md',
+                'input-field w-full p-3 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100',
                 inputs.spendingPolicyRate && (inputs.spendingPolicyRate < 0 || inputs.spendingPolicyRate > 15)
                   ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
                   : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
@@ -102,7 +102,7 @@
               type="number" 
               v-model.number="inputs.investmentExpenseRate" 
               :class="[
-                'input-field w-full p-3 rounded-md',
+                'input-field w-full p-3 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100',
                 inputs.investmentExpenseRate && (inputs.investmentExpenseRate < 0 || inputs.investmentExpenseRate > 5)
                   ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
                   : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'

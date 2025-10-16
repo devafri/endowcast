@@ -93,7 +93,7 @@
             <select 
               :value="props.options.spendingPolicy?.type || 'simple'" 
               @change="updateNestedOption(['spendingPolicy', 'type'], ($event.target as HTMLSelectElement).value)" 
-              class="input-field w-full p-3 rounded-md border-gray-300"
+              class="input-field w-full p-3 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100"
             >
               <option value="simple">Simple (current market value)</option>
               <option value="avgMV3">3-year average market value</option>
@@ -112,7 +112,7 @@
                   max="50" 
                   v-model.number="options.spendingPolicy!.floorYoY" 
                   @input="$emit('update:options', options)"
-                  class="input-field w-full p-2 rounded-md" 
+                  class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                   placeholder="e.g. -5" 
                 />
               </div>
@@ -125,7 +125,7 @@
                   max="200" 
                   v-model.number="options.spendingPolicy!.capYoY" 
                   @input="$emit('update:options', options)"
-                  class="input-field w-full p-2 rounded-md" 
+                  class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                   placeholder="e.g. 10" 
                 />
               </div>
@@ -156,7 +156,7 @@
                   max="25" 
                   v-model.number="options.rebalancing!.bandPct" 
                   @input="$emit('update:options', options)"
-                  class="input-field w-full p-2 rounded-md" 
+                  class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                   placeholder="e.g. 5" 
                 />
                 <p class="text-xs text-gray-500 mt-1">Trigger rebalancing when allocations drift beyond this threshold</p>
@@ -166,7 +166,7 @@
                 <select 
                   :value="props.options.rebalancing?.frequency || 'annual'" 
                   @change="updateNestedOption(['rebalancing', 'frequency'], ($event.target as HTMLSelectElement).value)" 
-                  class="input-field w-full p-2 rounded-md"
+                  class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 >
                   <option value="annual">Annual Review</option>
                   <option value="never">Never (Buy & Hold)</option>
@@ -200,7 +200,7 @@
                   type="number" 
                   v-model.number="options.corpus!.initialValue" 
                   @input="$emit('update:options', options)"
-                  class="input-field w-full p-2 rounded-md" 
+                  class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                   placeholder="246900000" 
                   step="1000000" 
                   min="0" 
@@ -215,7 +215,7 @@
                   type="number" 
                   v-model.number="options.seed" 
                   @input="$emit('update:options', options)"
-                  class="input-field w-full p-2 rounded-md" 
+                  class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
                   placeholder="e.g. 12345" 
                 />
                 <p class="text-xs text-gray-500 mt-1">Use same seed for identical results across runs</p>
