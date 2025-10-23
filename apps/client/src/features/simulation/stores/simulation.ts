@@ -264,8 +264,11 @@ export const useSimulationStore = defineStore('simulation', () => {
       // Increment simulation usage after successful simulation
       authStore.incrementSimulationUsage();
 
-      // Return the computed results so callers can await and navigate as needed
-      return simulationResults;
+      // Return the computed results WITH the simulation ID so callers can navigate correctly
+      return {
+        ...simulationResults,
+        simulationId // Include the ID so the results object has it for navigation
+      };
       
     } catch (err: any) {
       console.error('Simulation failed', err);

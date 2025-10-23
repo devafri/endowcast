@@ -347,12 +347,13 @@ async function runSimulation() {
     // Increment simulation usage after successful simulation
     authStore.incrementSimulationUsage();
 
-    // If we have results, navigate to the consolidated Results page so users can view/share
-    if (results.value) {
-      // If the server created a simulation record earlier, we may have an id on results
-      const scenarioId = (results.value && (results.value.id || results.value.simulationId)) || null;
-  if (scenarioId) router.push({ name: 'ResultsById', params: { scenarioId } });
-  else router.push({ name: 'Results' });
+    // Navigate to results page
+    // If we have a saved simulationId from the database, use the path param route
+    // Otherwise, go to the basic results page (in-memory results)
+    if (simulationId) {
+      router.push({ name: 'ResultsById', params: { scenarioId: simulationId } });
+    } else {
+      router.push({ name: 'Results' });
     }
     
   } catch (err: any) {
