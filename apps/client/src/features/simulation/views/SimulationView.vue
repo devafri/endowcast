@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onBeforeUnmount, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { RouterLink } from 'vue-router';
 import TheHeader from '../../../shared/components/layout/TheHeader.vue';
 import PageHeader from '../../../shared/components/layout/PageHeader.vue';
@@ -201,6 +202,8 @@ function normalizeOptions(): EngineOptions {
   return norm;
 }
 
+const router = useRouter();
+
 async function runSimulation() {
   // Check if user can run simulation
   if (!authStore.canRunSimulation) {
@@ -343,6 +346,14 @@ async function runSimulation() {
 
     // Increment simulation usage after successful simulation
     authStore.incrementSimulationUsage();
+
+    // If we have results, navigate to the consolidated Results page so users can view/share
+    if (results.value) {
+      // If the server created a simulation record earlier, we may have an id on results
+      const scenarioId = (results.value && (results.value.id || results.value.simulationId)) || null;
+  if (scenarioId) router.push({ name: 'ResultsById', params: { scenarioId } });
+  else router.push({ name: 'Results' });
+    }
     
   } catch (err: any) {
     console.error('Simulation failed', err);

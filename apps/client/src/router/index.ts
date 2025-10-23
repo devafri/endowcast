@@ -54,13 +54,20 @@ const router = createRouter({
     component: () => import('../features/simulation/views/AllocationView.vue'),
     meta: { requiresAuth: true }
   },
+  // Route for creating a new simulation / viewing results without an ID
   { 
     path: '/results', 
     name: 'Results', 
     component: () => import('../features/simulation/views/ResultsView.vue'),
     meta: { requiresAuth: true },
-    // Support legacy /simulation links that want to create a new simulation
     alias: ['/simulation', '/simulation/results']
+  },
+  // Named route for viewing a specific saved scenario by id (permalink)
+  {
+    path: '/results/:scenarioId',
+    name: 'ResultsById',
+    component: () => import('../features/simulation/views/ResultsView.vue'),
+    meta: { requiresAuth: true }
   },
   { 
     path: '/history', 
@@ -86,7 +93,11 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
     // If user is not authenticated, try to initialize auth first
     if (!authStore.isAuthenticated) {
-      await authStore.initializeAuth()
+      try {
+        await authStore.initializeAuth()
+      } catch (err) {
+        console.error('Auth initialization failed:', err)
+      }
     }
     
     // If still not authenticated after initialization, redirect to login

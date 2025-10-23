@@ -114,7 +114,7 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
       <div class="text-center">
         <div class="text-sm text-text-secondary mb-1 flex items-center justify-center gap-1">
           Annualized Return
-          <Tooltip text="The compound annual growth rate of the portfolio over the simulation period" position="top" />
+          <Tooltip content="The compound annual growth rate of the portfolio over the simulation period" position="top" />
         </div>
         <div class="text-3xl font-bold">{{ pct(medianReturn) }}</div>
         <div class="text-xs text-text-secondary mt-1">Portfolio median</div>
@@ -122,7 +122,7 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
       <div class="text-center">
         <div class="text-sm text-text-secondary mb-1 flex items-center justify-center gap-1">
           Sharpe Ratio
-          <Tooltip text="Risk-adjusted performance measure. >1.0 = Excellent, 0.5-1.0 = Good, <0.5 = Poor" position="top" />
+          <Tooltip content="Risk-adjusted performance measure. >1.0 = Excellent, 0.5-1.0 = Good, <0.5 = Poor" position="top" />
         </div>
         <div class="text-3xl font-bold">{{ isFinite(sharpeRatio) ? sharpeRatio.toFixed(2) : '-' }}</div>
         <div class="text-xs text-text-secondary mt-1">Risk-adjusted performance</div>
@@ -136,21 +136,21 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">
             Maximum Drawdown
-            <Tooltip text="Largest peak-to-trough decline during worst market period. Shows potential losses during downturns." position="top" />
+            <Tooltip content="Largest peak-to-trough decline during worst market period. Shows potential losses during downturns." position="top" />
           </div>
           <div class="text-lg font-semibold text-red-600">{{ pct(median(maxDrawdowns)) }}</div>
         </div>
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">
             Value at Risk (5%)
-            <Tooltip text="Minimum endowment value in worst 5% of scenarios. Helps with stress testing and worst-case planning." position="top" />
+            <Tooltip content="Minimum endowment value in worst 5% of scenarios. Helps with stress testing and worst-case planning." position="top" />
           </div>
           <div class="text-lg font-semibold">{{ formatMoney(valueAtRisk5) }}</div>
         </div>
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">
             Real Value Preservation
-            <Tooltip text="Probability endowment maintains purchasing power after ~3% inflation. Target: >70% for sustainability." position="top" />
+            <Tooltip content="Probability endowment maintains purchasing power after ~3% inflation. Target: >70% for sustainability." position="top" />
           </div>
           <div class="text-lg font-semibold" :class="probRealPreservation >= 0.7 ? 'text-green-600' : probRealPreservation >= 0.5 ? 'text-yellow-600' : 'text-red-600'">
             {{ pct(probRealPreservation) }}
@@ -159,7 +159,7 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">
             Years of Coverage
-            <Tooltip text="How many years the final endowment value could support current spending levels." position="top" />
+            <Tooltip content="How many years the final endowment value could support current spending levels." position="top" />
           </div>
           <div class="text-lg font-semibold">{{ isFinite(yearsOfCoverage) ? yearsOfCoverage.toFixed(1) : '-' }}</div>
         </div>
@@ -173,7 +173,7 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">
             Sustainable Spending Rate
-            <Tooltip text="Probability of maintaining at least 4% annual spending. >80% = High confidence, <50% = High risk of cuts." position="top" />
+            <Tooltip content="Probability of maintaining at least 4% annual spending. >80% = High confidence, <50% = High risk of cuts." position="top" />
           </div>
           <div class="text-lg font-semibold" :class="probSpendingBelow4Pct <= 0.2 ? 'text-green-600' : probSpendingBelow4Pct <= 0.4 ? 'text-yellow-600' : 'text-red-600'">
             {{ pct(1 - probSpendingBelow4Pct) }}
@@ -183,7 +183,7 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">
             Total Mission Spending
-            <Tooltip text="Cumulative amount available for programs and grants over the simulation period." position="top" />
+            <Tooltip content="Cumulative amount available for programs and grants over the simulation period." position="top" />
           </div>
           <div class="text-lg font-semibold">{{ formatMoney(totalSpendPol) }}</div>
           <div class="text-xs text-text-secondary mt-1">{{ years }}-year cumulative</div>
@@ -191,7 +191,7 @@ const totalSpendPol = medSpendPol.reduce((a,b)=>a+(b||0),0);
         <div class="p-4 rounded-lg border border-border bg-white/50">
           <div class="text-xs text-text-secondary mb-1 flex items-center gap-1">
             Total Grants
-            <Tooltip text="Cumulative grant distributions over the simulation period, including any additional grants to meet targets." position="top" />
+            <Tooltip content="Cumulative grant distributions over the simulation period, including any additional grants to meet targets." position="top" />
           </div>
           <div class="text-lg font-semibold text-blue-800">{{ formatMoney(totalGrants) }}</div>
           <div class="text-xs text-text-secondary mt-1">{{ years }}-year cumulative</div>

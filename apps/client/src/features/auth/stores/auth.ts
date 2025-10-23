@@ -172,10 +172,11 @@ export const useAuthStore = defineStore('auth', () => {
         await refreshUsage();
         return true;
       }
+      console.warn('Token verification returned invalid response:', response);
       return false;
     } catch (err) {
       console.error('Token verification failed:', err);
-      await logout();
+      // Don't logout on verification error - let the user navigate to login
       return false;
     }
   }
@@ -216,7 +217,8 @@ export const useAuthStore = defineStore('auth', () => {
         subscription.value = { ...subscription.value, ...usage.subscription };
       }
     } catch (err) {
-      console.error('Failed to refresh usage:', err);
+      console.warn('Failed to refresh usage stats (non-blocking):', err);
+      // Don't throw - this is a secondary operation
     }
   }
 

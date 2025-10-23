@@ -1,16 +1,27 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useSimulationStore } from '../../simulation/stores/simulation';
 import { useAuthStore } from '@/features/auth/stores/auth';
 import SimulationResults from '../components/results/layouts/SimulationResults.vue';
 
 const route = useRoute();
+const router = useRouter();
 const sim = useSimulationStore();
 const authStore = useAuthStore();
 
 function run() { 
-  sim.runSimulation(); 
+  // Await the store run so we can react after completion if needed
+  sim.runSimulation().then((res:any) => {
+    if (res) {
+      // If the run produced results with an id, ensure the URL contains scenarioId (path param)
+      const scenarioId = (res && (res.id || res.simulationId)) || null;
+  if (scenarioId) router.replace({ name: 'ResultsById', params: { scenarioId } });
+    }
+  }).catch((e:any)=>{
+    // runSimulation already sets error message; no-op here
+    console.error('Run from ResultsView failed:', e);
+  });
 }
 
 // Share link state
@@ -77,9 +88,24 @@ let isMounted = false;
 onMounted(async () => {
   isMounted = true;
   try {
-    const scenarioId = route.query.scenarioId as string;
+    // If a scenarioId is provided in the path, load that saved scenario.
+    const pathId = route.params.scenarioId as string | undefined;
+    const queryId = route.query.scenarioId as string | undefined;
+    const scenarioId = pathId || queryId;
+
     if (scenarioId && isMounted) {
       await sim.loadScenario(scenarioId);
+      // If the id came from query, replace URL with canonical path route
+      if (!pathId && queryId) {
+        router.replace({ name: 'ResultsById', params: { scenarioId } });
+      }
+      return;
+    }
+
+    // If no id was provided, but there's in-memory results (user ran simulation), prefer that
+    if (!scenarioId && sim.results) {
+      // nothing to load — just show the results already in the store
+      return;
     }
   } catch (error) {
     console.error('Error loading scenario:', error);

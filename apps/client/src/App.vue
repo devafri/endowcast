@@ -24,7 +24,9 @@ const shouldHideSideNav = computed(() => {
 
 // Initialize auth state when app loads
 onMounted(async () => {
+  console.log('🚀 App.vue mounted');
   await authStore.initializeAuth();
+  console.log('✓ Auth initialized in App.vue');
 });
 
 async function handleLogout() {
@@ -33,7 +35,12 @@ async function handleLogout() {
 </script>
 
 <template>
-  <div id="app" class="min-h-screen">
+  <div id="app" class="min-h-screen flex flex-col">
+    <!-- Debug indicator (visible only if app mounts) -->
+    <div class="fixed top-0 left-0 z-50 bg-green-500 text-white px-2 py-1 text-xs rounded-br">
+      ✓ App mounted
+    </div>
+    
     <!-- Show SideNav on all routes except landing page -->
     <SideNav v-if="!shouldHideSideNav" />
     <div :class="!shouldHideSideNav ? 'lg:pl-64' : ''">
@@ -43,8 +50,9 @@ async function handleLogout() {
         <RouterView />
       </main>
     </div>
-  </div>
-      <footer class="mt-16 border-t border-slate-200">
+    
+    <!-- Footer moved inside app wrapper -->
+    <footer class="mt-16 border-t border-slate-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
         <div class="text-sm text-slate-500">© {{ new Date().getFullYear() }}  EndowCast — Professional endowment analysis platform</div>
         <div class="flex items-center gap-4">
@@ -54,5 +62,6 @@ async function handleLogout() {
         </div>
       </div>
     </footer>
+  </div>
 </template>
 

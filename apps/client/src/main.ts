@@ -10,10 +10,26 @@ import router from './router'
 const app = createApp(App)
 const pinia = createPinia()
 
+// Global error handling
+app.config.errorHandler = (err, instance, info) => {
+  console.error('Vue error:', { error: err, info, instance })
+}
+
+app.config.warnHandler = (msg, instance, trace) => {
+  console.warn('Vue warning:', msg, trace)
+}
+
 app.use(pinia)
 app.use(router)
 
-app.mount('#app')
+// Mount app to DOM
+const rootElement = document.getElementById('app')
+if (rootElement) {
+  app.mount(rootElement)
+  console.log('✓ App mounted successfully')
+} else {
+  console.error('✗ Root element #app not found in DOM')
+}
 
 // Initialize auth after the app is fully mounted
 import { useAuthStore } from './features/auth/stores/auth'
@@ -21,5 +37,16 @@ import { useAuthStore } from './features/auth/stores/auth'
 // Initialize auth asynchronously - don't block app startup
 setTimeout(async () => {
   const authStore = useAuthStore()
-  await authStore.initializeAuth()
+  console.log('Initializing auth...')
+  try {
+    await authStore.initializeAuth()
+    console.log('✓ Auth initialized, isAuthenticated:', authStore.isAuthenticated)
+  } catch (err) {
+    console.error('✗ Auth initialization error:', err)
+  }
 }, 0)
+
+// Global unhandled rejection handler
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason)
+})

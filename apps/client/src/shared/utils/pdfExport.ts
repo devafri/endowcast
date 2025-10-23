@@ -137,7 +137,7 @@ export async function exportToPDF(elementId: string, options: ExportOptions = {}
     const canvases = clonedElement.querySelectorAll('canvas');
     console.log(`Found ${canvases.length} canvas elements`);
     
-    for (const canvas of canvases) {
+    for (const canvas of Array.from(canvases) as HTMLCanvasElement[]) {
       try {
         const dataURL = (canvas as HTMLCanvasElement).toDataURL('image/png');
         const img = document.createElement('img');

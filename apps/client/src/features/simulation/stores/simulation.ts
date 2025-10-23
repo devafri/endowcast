@@ -263,6 +263,9 @@ export const useSimulationStore = defineStore('simulation', () => {
 
       // Increment simulation usage after successful simulation
       authStore.incrementSimulationUsage();
+
+      // Return the computed results so callers can await and navigate as needed
+      return simulationResults;
       
     } catch (err: any) {
       console.error('Simulation failed', err);
@@ -276,6 +279,7 @@ export const useSimulationStore = defineStore('simulation', () => {
           console.error('Failed to cleanup simulation record:', cleanupErr);
         }
       }
+      return null;
     } finally {
       isLoading.value = false;
     }

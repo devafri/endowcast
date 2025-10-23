@@ -287,7 +287,7 @@ const {
 
         <!-- Actions -->
         <div v-if="!comparisonMode" class="flex space-x-2">
-          <RouterLink :to="`/results?scenarioId=${scenario.id}`" class="btn-primary-sm flex-1 text-center">
+          <RouterLink :to="{ name: 'ResultsById', params: { scenarioId: scenario.id } }" class="btn-primary-sm flex-1 text-center">
             {{ scenario.isCompleted ? 'View Results' : 'Continue' }}
           </RouterLink>
           <button @click.stop="duplicateScenario(scenario)" class="btn-secondary-sm flex-1">
@@ -314,7 +314,7 @@ const {
         <p class="text-sm mb-6">
           {{ searchQuery || filterStatus !== 'all' ? 'Try adjusting your filters or create a new scenario.' : 'Get started by creating your first scenario.' }}
         </p>
-        <RouterLink to="/results" class="btn-primary">
+        <RouterLink :to="{ name: 'Results' }" class="btn-primary">
           ➕ Create New Scenario
         </RouterLink>
       </div>

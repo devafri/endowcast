@@ -66,6 +66,11 @@ onMounted(async () => {
 function goToSettings() {
 	router.push({ name: 'Settings' });
 }
+
+function reloadPage() {
+	// Use global window object to reload; called from template
+	window.location.reload();
+}
 </script>
 
 <template>
@@ -96,7 +101,7 @@ function goToSettings() {
 
 			<div class="mt-6 flex justify-center gap-3">
 				<button @click="goToSettings" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Go to Settings</button>
-				<button @click="() => window.location.reload()" class="px-4 py-2 border rounded-md">Refresh</button>
+				<button @click="reloadPage" class="px-4 py-2 border rounded-md">Refresh</button>
 			</div>
 		</div>
 	</div>
