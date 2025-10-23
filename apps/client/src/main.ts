@@ -26,7 +26,6 @@ app.use(router)
 const rootElement = document.getElementById('app')
 if (rootElement) {
   app.mount(rootElement)
-  console.log('✓ App mounted successfully')
 } else {
   console.error('✗ Root element #app not found in DOM')
 }

@@ -36,10 +36,6 @@ async function handleLogout() {
 
 <template>
   <div id="app" class="min-h-screen flex flex-col">
-    <!-- Debug indicator (visible only if app mounts) -->
-    <div class="fixed top-0 left-0 z-50 bg-green-500 text-white px-2 py-1 text-xs rounded-br">
-      ✓ App mounted
-    </div>
     
     <!-- Show SideNav on all routes except landing page -->
     <SideNav v-if="!shouldHideSideNav" />
