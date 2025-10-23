@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import ExecutiveSummary from '../sections/ExecutiveSummary.vue';
-import RiskPolicyCompliance from '../sections/RiskPolicyCompliance.vue';
+
 import StatisticalSummarySection from '../tables/StatisticalSummary.vue';
-import InsightsRecommendations from '../sections/InsightsRecommendations.vue';
 import SimulationDataByPercentile from '../tables/SimulationDataByPercentile.vue';
 import EndowmentValueChart from '../charts/EndowmentValueChart.vue';
 import SpendingPolicyAmount from '../charts/SpendingPolicyAmount.vue';
+import SimulationInputs from '../sections/SimulationInputs.vue';
+import KeyMetrics from '../sections/KeyMetrics.vue';
+import TailRisk from '../sections/TailRisk.vue';
+import MethodologyNotes from '../sections/MethodologyNotes.vue';
+import PolicyRangeAndWeights from '../sections/PolicyRangeAndWeights.vue';
 
 const props = defineProps<{ results: any; forceMock?: boolean }>();
 import { computed } from 'vue';
+
 
 // Simple mock data to render layout in dev when real results aren't available
 const mockResults = {
@@ -38,14 +42,23 @@ const dataToUse = computed(() => {
   <div class="space-y-8">
     <div v-if="dataToUse === undefined" class="text-sm text-gray-500">No results available</div>
     <div v-else-if="(props.forceMock || !props.results)" class="mb-2 p-2 text-xs bg-yellow-50 border border-yellow-200 text-yellow-700 rounded">Using mock results for layout preview (dev only)</div>
-
-    <ExecutiveSummary :results="dataToUse" />
-    <RiskPolicyCompliance :results="dataToUse" />
-    <InsightsRecommendations :results="dataToUse" />
+ 
+    <section class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+    <SimulationInputs :results="dataToUse" />
+    <KeyMetrics :results="dataToUse" />
+ </section>
+  <PolicyRangeAndWeights :results="dataToUse" />
+    
     <EndowmentValueChart :results="dataToUse" />
     <SpendingPolicyAmount v-if="dataToUse?.spendingPolicy?.[0]?.length >= 1" :results="dataToUse" />
     <StatisticalSummarySection :results="dataToUse" />
     <SimulationDataByPercentile :results="dataToUse" />
+
+    <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <TailRisk :results="dataToUse" />
+      <PolicyRangeWeights :results="dataToUse" />
+    </section>
+    <MethodologyNotes :results="dataToUse" />
 
   </div>
 </template>

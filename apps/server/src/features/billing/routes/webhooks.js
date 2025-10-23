@@ -15,6 +15,14 @@ router.post('/stripe', async (req, res) => {
   
   let event;
   
+  // Diagnostics: log incoming webhook metadata (safe to log headers except secret)
+  try {
+    const rawPreview = (req.body && typeof req.body === 'string') ? req.body.slice(0, 200) : JSON.stringify(req.body || {}).slice(0,200);
+    console.log('Stripe webhook received: headers:', { 'stripe-signature': !!sig }, 'bodyPreview:', rawPreview, 'bodyLength:', req.body ? (req.body.length || JSON.stringify(req.body).length) : 0);
+  } catch (diagErr) {
+    console.warn('Failed to log webhook preview:', diagErr.message || diagErr);
+  }
+
   try {
     // Verify webhook signature using raw body
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
@@ -28,6 +36,7 @@ router.post('/stripe', async (req, res) => {
   try {
     switch (event.type) {
       case 'checkout.session.completed':
+        console.log('Handling checkout.session.completed for id:', event.data.object.id);
         await handleCheckoutCompleted(event.data.object);
         break;
         
@@ -64,9 +73,10 @@ async function handleCheckoutCompleted(session) {
   const organizationId = session.client_reference_id;
   const customerId = session.customer;
   const subscriptionId = session.subscription;
+  console.log('checkout.session details: client_reference_id=', organizationId, 'customer=', customerId, 'subscription=', subscriptionId);
   
   if (!organizationId) {
-    console.error('No organization ID in checkout session');
+    console.error('No organization ID in checkout session. session metadata:', session.metadata || {});
     return;
   }
 
@@ -76,50 +86,65 @@ async function handleCheckoutCompleted(session) {
   
   // Map Stripe price ID to our plan type
   const priceId = subscription.items.data[0].price.id;
-  const planType = await getPlanTypeFromPriceId(priceId);
+  let planType = null;
+  try {
+    planType = await getPlanTypeFromPriceId(priceId);
+  } catch (e) {
+    console.error('Error mapping priceId to planType:', priceId, e.message || e);
+  }
   
   if (!planType) {
-    console.error('Unknown price ID:', priceId);
+    console.error('Unknown price ID:', priceId, ' - ensure STRIPE_PRICE_IDS includes this price. subscription.items:', subscription.items.data);
     return;
   }
 
   // Update or create subscription record
-  await prisma.subscription.upsert({
-    where: { organizationId },
-    update: {
-      planType,
-      status: subscription.status,
-      stripeCustomerId: customerId,
-      stripeSubscriptionId: subscriptionId,
-      stripePriceId: priceId,
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-    },
-    create: {
-      organizationId,
-      planType,
-      status: subscription.status,
-      stripeCustomerId: customerId,
-      stripeSubscriptionId: subscriptionId,
-      stripePriceId: priceId,
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      simulationsUsed: 0,
-      simulationsReset: new Date(),
-    }
-  });
+  try {
+    const upsertResult = await prisma.subscription.upsert({
+      where: { organizationId },
+      update: {
+        planType,
+        status: subscription.status,
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscriptionId,
+        stripePriceId: priceId,
+        currentPeriodStart: new Date(subscription.current_period_start * 1000),
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      },
+      create: {
+        organizationId,
+        planType,
+        status: subscription.status,
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscriptionId,
+        stripePriceId: priceId,
+        currentPeriodStart: new Date(subscription.current_period_start * 1000),
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        simulationsUsed: 0,
+        simulationsReset: new Date(),
+      }
+    });
+    console.log('Upserted subscription result:', { id: upsertResult.id, organizationId: upsertResult.organizationId, planType: upsertResult.planType });
+  } catch (e) {
+    console.error('Failed to upsert subscription for org', organizationId, e.message || e);
+  }
 
   // Create payment record
-  await prisma.payment.create({
-    data: {
-      organizationId,
-      amount: session.amount_total / 100, // Convert from cents
-      currency: session.currency,
-      status: 'succeeded',
-      stripePaymentIntentId: session.payment_intent,
-      description: `Subscription: ${planType}`,
-    }
-  });
+  try {
+    const payment = await prisma.payment.create({
+      data: {
+        organizationId,
+        amount: session.amount_total / 100, // Convert from cents
+        currency: session.currency,
+        status: 'succeeded',
+        stripePaymentIntentId: session.payment_intent,
+        description: `Subscription: ${planType}`,
+      }
+    });
+    console.log('Created payment record id:', payment.id, 'amount:', payment.amount);
+  } catch (e) {
+    console.error('Failed to create payment record for org', organizationId, e.message || e);
+  }
 
   console.log(`Subscription created/updated for org ${organizationId}: ${planType}`);
 }

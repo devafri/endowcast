@@ -32,7 +32,7 @@ async function selectPlan(plan: any) {
   if (authStore.isAuthenticated) {
     if (plan.planType === 'FREE') return router.push('/organization');
     if (!authStore.isAdmin) { alert('Only organization admins can upgrade.'); return router.push('/organization'); }
-    try { const resp = await apiService.createCheckoutSession(plan.planType, 'card'); if (resp?.url) window.location.href = resp.url; } catch (e) { console.error(e); alert('Unable to start checkout.'); }
+  try { const resp = await apiService.createCheckoutSession(plan.planType, billingCycle.value.toUpperCase() as any, 'card'); if (resp?.url) window.location.href = resp.url; } catch (e) { console.error(e); alert('Unable to start checkout.'); }
   } else {
     router.push(`/signup?plan=${plan.planType}`);
   }

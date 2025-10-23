@@ -1,5 +1,5 @@
 <template>
-  <main class="mt-10">
+  <main class="mt-12">
     <section class="max-w-7xl mx-auto px-4 sm:px-6">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
         <div class="space-y-6">
@@ -57,7 +57,7 @@
             </div>
           </div>
 
-          <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="flex items-center gap-4 text-sm text-slate-500 mt-4">
             <div class="p-4 rounded-lg bg-white border border-slate-100 shadow-sm">
               <div class="font-semibold text-sm">Stochastic Modeling Engine</div>
               <p class="text-xs text-slate-500 mt-2">Thousands of forward-looking scenario simulations.</p>

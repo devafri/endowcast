@@ -31,13 +31,15 @@ const limiter = rateLimit({
   max: parseInt(process.env.RATE_LIMIT_MAX) || 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
 });
-app.use('/api/', limiter);
 
 // CORS configuration
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 }));
+
+// Apply rate limiter after CORS so CORS headers are present on rate-limited responses
+app.use('/api/', limiter);
 
 // Body parsing middleware
 // For Stripe webhooks we need the raw body to verify signatures

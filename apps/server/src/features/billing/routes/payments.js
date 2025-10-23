@@ -153,6 +153,188 @@ router.post('/create-checkout-session', authenticateForPayments, async (req, res
   }
 });
 
+// Confirm a checkout session server-side (useful for demo / immediate confirmation)
+router.post('/confirm-session', authenticateForPayments, async (req, res) => {
+  const { sessionId } = req.body;
+  if (!sessionId) return res.status(400).json({ error: 'sessionId required' });
+
+  if (!process.env.STRIPE_SECRET_KEY) return res.status(500).json({ error: 'Stripe not configured' });
+
+  try {
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    // Retrieve checkout session
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (!session) return res.status(404).json({ error: 'Checkout session not found' });
+
+    const organizationId = session.client_reference_id || session.client_reference_id;
+    const subscriptionId = session.subscription;
+
+    console.log('Confirming session:', sessionId, 'org:', organizationId, 'subscription:', subscriptionId);
+
+    if (!organizationId) {
+      console.warn('confirm-session: no client_reference_id on session', sessionId, session.metadata || {});
+      return res.status(400).json({ error: 'Session missing organization client_reference_id' });
+    }
+
+    if (!subscriptionId) {
+      console.warn('confirm-session: session has no subscription yet (maybe payment not finalized)', sessionId);
+      // Still create a payment record if possible
+    }
+
+    // If we have a subscription id, fetch subscription details
+    let planType = null;
+    let priceId = null;
+    let stripeSubscription = null;
+    if (subscriptionId) {
+      // Expand price and latest_invoice so we can reliably find priceId and period timestamps
+      stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId, {
+        expand: ['items.data.price', 'latest_invoice']
+      });
+      priceId = stripeSubscription.items?.data?.[0]?.price?.id;
+      // Map priceId to planType
+      try {
+        const priceMap = JSON.parse(process.env.STRIPE_PRICE_IDS || '{}');
+        for (const [k, v] of Object.entries(priceMap)) {
+          if (v === priceId) {
+            // Normalize plan key like 'FOUNDATION_ANNUAL' -> 'FOUNDATION'
+            planType = k.split('_')[0];
+            console.log('confirm-session: mapped priceId to planType =>', planType, 'priceKey:', k, 'priceId:', priceId);
+            break;
+          }
+        }
+      } catch (e) {
+        console.error('confirm-session: failed to parse STRIPE_PRICE_IDS', e.message || e);
+      }
+    } else {
+      // try to read priceId from session's line_items or metadata
+      priceId = session.display_items?.[0]?.price?.id || session.metadata?.priceId || null;
+
+      // Prefer explicit metadata.planType (we set this when creating the session) so
+      // confirm-session can upsert subscriptions even if Stripe hasn't attached a
+      // subscription id yet. This fixes local/browser flows where webhooks may lag.
+      if (session.metadata && session.metadata.planType) {
+        // metadata.planType is expected to be the base plan like 'ANALYST_PRO'
+        planType = session.metadata.planType;
+        console.log('confirm-session: using session.metadata.planType =>', planType);
+      } else {
+        // Map priceId to plan key (older envs may store keys like 'ANALYST_PRO_MONTHLY').
+        try {
+          const priceMap = JSON.parse(process.env.STRIPE_PRICE_IDS || '{}');
+          for (const [k, v] of Object.entries(priceMap)) {
+            if (v === priceId) {
+              // Normalize: if key includes billing cycle (e.g. 'ANALYST_PRO_MONTHLY'),
+              // extract the base plan name before the first underscore.
+              planType = k.split('_')[0];
+              console.log('confirm-session: mapped priceId to planType =>', planType, 'priceKey:', k, 'priceId:', priceId);
+              break;
+            }
+          }
+        } catch (e) {
+          console.error('confirm-session: failed to parse STRIPE_PRICE_IDS', e.message || e);
+        }
+      }
+    }
+
+    // Upsert subscription record
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+
+    if (planType || subscriptionId) {
+      const upsertData = {
+        where: { organizationId },
+        update: {},
+        create: {
+          organizationId,
+          planType: planType || 'FREE',
+          status: stripeSubscription?.status || 'active',
+          stripeCustomerId: session.customer || null,
+          stripeSubscriptionId: subscriptionId || null,
+          stripePriceId: priceId || null,
+          simulationsUsed: 0,
+        }
+      };
+
+      if (stripeSubscription) {
+        // Protect against missing or non-numeric period timestamps returned by Stripe
+        // subscription may not include period timestamps immediately; attempt fallbacks
+        let cpsRaw = stripeSubscription.current_period_start;
+        let cpeRaw = stripeSubscription.current_period_end;
+
+        // Fallback: use latest invoice period if available
+        if ((!cpsRaw || !cpeRaw) && stripeSubscription.latest_invoice) {
+          const inv = stripeSubscription.latest_invoice;
+          // invoice may have period_start/period_end or lines with period
+          cpsRaw = cpsRaw || inv.period_start || inv.lines?.data?.[0]?.period?.start;
+          cpeRaw = cpeRaw || inv.period_end || inv.lines?.data?.[0]?.period?.end;
+          if (cpsRaw || cpeRaw) {
+            console.log('confirm-session: derived period timestamps from latest_invoice', { cpsRaw, cpeRaw });
+          }
+        }
+        let cpsDate = null;
+        let cpeDate = null;
+
+        if (cpsRaw !== undefined && cpsRaw !== null) {
+          const cpsNum = Number(cpsRaw);
+          if (Number.isFinite(cpsNum) && !Number.isNaN(cpsNum)) cpsDate = new Date(cpsNum * 1000);
+        }
+
+        if (cpeRaw !== undefined && cpeRaw !== null) {
+          const cpeNum = Number(cpeRaw);
+          if (Number.isFinite(cpeNum) && !Number.isNaN(cpeNum)) cpeDate = new Date(cpeNum * 1000);
+        }
+
+        if (!cpsDate || !cpeDate) {
+          console.warn('confirm-session: stripe subscription missing/invalid period timestamps', { current_period_start: cpsRaw, current_period_end: cpeRaw });
+        }
+
+        upsertData.update = {
+          planType: planType || undefined,
+          status: stripeSubscription.status,
+          stripeCustomerId: session.customer || null,
+          stripeSubscriptionId: subscriptionId,
+          stripePriceId: priceId || null,
+          ...(cpsDate ? { currentPeriodStart: cpsDate } : {}),
+          ...(cpeDate ? { currentPeriodEnd: cpeDate } : {}),
+        };
+
+        if (cpsDate) upsertData.create.currentPeriodStart = cpsDate;
+        if (cpeDate) upsertData.create.currentPeriodEnd = cpeDate;
+      }
+
+      try {
+        const result = await prisma.subscription.upsert(upsertData);
+        console.log('confirm-session: upserted subscription', { id: result.id, org: result.organizationId, planType: result.planType });
+      } catch (e) {
+        console.error('confirm-session: failed upsert subscription', e.message || e);
+      }
+    }
+
+    // Create payment record if session has amount info
+    try {
+      if (session.amount_total) {
+        const payment = await prisma.payment.create({
+          data: {
+            organizationId,
+            amount: session.amount_total / 100,
+            currency: session.currency || 'usd',
+            status: 'succeeded',
+            stripePaymentIntentId: session.payment_intent || null,
+            description: `Checkout session confirmation ${sessionId}`
+          }
+        });
+        console.log('confirm-session: created payment', payment.id);
+      }
+    } catch (e) {
+      console.error('confirm-session: failed to create payment record', e.message || e);
+    }
+
+    res.json({ success: true, message: 'Session confirmed (server-side)', sessionId });
+  } catch (error) {
+    console.error('confirm-session error:', error.message || error);
+    res.status(500).json({ error: 'Failed to confirm session' });
+  }
+});
+
 // Request invoice for subscription
 router.post('/request-invoice', authenticateForPayments, async (req, res) => {
   const { planType, billingCycle = 'MONTHLY', dueDate } = req.body;

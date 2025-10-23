@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { apiService, ApiError } from '@/shared/services/api';
+import router from '@/router';
 
 export interface User {
   id: string;
@@ -55,7 +56,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   const currentPlanLimits = computed(() => {
     if (!subscription.value) return planLimits.FREE;
-    return planLimits[subscription.value.planType];
+    // Defensive: subscription.planType might be missing or not in planLimits
+    const key = subscription.value.planType as keyof typeof planLimits;
+    return (key && planLimits[key]) ? planLimits[key] : planLimits.FREE;
   });
 
   const canRunSimulation = computed(() => {
@@ -71,8 +74,8 @@ export const useAuthStore = defineStore('auth', () => {
   });
 
   const hasFeature = (feature: string) => {
-    const limits = currentPlanLimits.value;
-    return limits.features.includes(feature);
+    const limits = currentPlanLimits.value || planLimits.FREE;
+    return Array.isArray(limits.features) && limits.features.includes(feature);
   };
 
   async function login(email: string, password: string, rememberMe = false) {
@@ -149,6 +152,13 @@ export const useAuthStore = defineStore('auth', () => {
       subscription.value = null;
       usageStats.value = null;
       error.value = null;
+      // Redirect to landing (unauthenticated) view after logout
+      try {
+        router.push({ name: 'Landing' });
+      } catch (e) {
+        // fallback to root path
+        window.location.href = '/';
+      }
     }
   }
 

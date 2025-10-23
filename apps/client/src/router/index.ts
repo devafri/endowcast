@@ -14,7 +14,7 @@ const router = createRouter({
   
   // Authentication
   { path: '/login', name: 'Login', component: () => import('../features/auth/views/LoginView.vue') },
-  { path: '/signup', name: 'Signup', component: () => import('../features/auth/views/SignupView.vue') },
+  { path: '/register', name: 'Signup', component: () => import('../features/auth/views/SignupView.vue') },
   { path: '/verify-email', name: 'VerifyEmail', component: () => import('../features/auth/views/VerifyEmailView.vue') },
   { path: '/accept-invitation', name: 'AcceptInvitation', component: () => import('../features/organization/views/AcceptInvitationView.vue') },
   

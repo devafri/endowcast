@@ -217,10 +217,10 @@ class ApiService {
   }
 
   // Payments
-  async createCheckoutSession(planType: string, paymentMethod: 'card' | 'invoice' = 'card') {
+  async createCheckoutSession(planType: string, billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY', paymentMethod: 'card' | 'invoice' = 'card') {
     return this.request('/payments/create-checkout-session', {
       method: 'POST',
-      body: JSON.stringify({ planType, paymentMethod }),
+      body: JSON.stringify({ planType, billingCycle, paymentMethod }),
     });
   }
 

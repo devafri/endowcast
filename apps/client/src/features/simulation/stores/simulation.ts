@@ -182,6 +182,22 @@ export const useSimulationStore = defineStore('simulation', () => {
       const medianAnnualizedReturn = sortedGeo.length ? sortedGeo[Math.floor(sortedGeo.length/2)] : 0;
       // Use the same calculation for both - median of CAGRs is the industry standard
       const annualizedReturn = medianAnnualizedReturn;
+
+      // Compute per-simulation volatility (sample std), annualize, and take median
+      const perSimVol = (out.portfolioReturns ?? []).map((rets: number[]) => {
+        if (!rets?.length) return NaN;
+        const n = rets.length;
+        const mean = rets.reduce((s, v) => s + v, 0) / n;
+        // sample variance (ddof = 1)
+        const variance = n > 1 ? rets.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1) : 0;
+        return Math.sqrt(variance);
+      }).filter((v: number) => isFinite(v));
+      // Assume monthly returns; adjust periodsPerYear if returns are at a different frequency
+      const periodsPerYear = 12;
+      const annualizedVols = perSimVol.map(v => v * Math.sqrt(periodsPerYear));
+      const sortedVols = annualizedVols.sort((a: number, b: number) => a - b);
+      const medianAnnualizedVol = sortedVols.length ? sortedVols[Math.floor(sortedVols.length / 2)] : 0;
+
       const eqCount = normOpts.stress?.equityShocks?.length ?? 0;
       const cpiCount = normOpts.stress?.cpiShifts?.length ?? 0;
       const stressApplied = eqCount + cpiCount > 0;
@@ -205,6 +221,8 @@ export const useSimulationStore = defineStore('simulation', () => {
           probabilityOfLoss: lossProb,
           medianAnnualizedReturn: medianAnnualizedReturn * 100, // Median of per-simulation CAGRs
           annualizedReturn: annualizedReturn * 100, // Now also median of per-simulation CAGRs (industry standard)
+          annualizedVolatility: medianAnnualizedVol * 100, // Annualized volatility as percentage
+          riskFreeRate: inputs.riskFreeRate, // Risk-free rate used (in percent)
         }
       };
 

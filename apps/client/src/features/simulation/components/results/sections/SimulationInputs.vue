@@ -64,66 +64,63 @@ const numericSortino = computed(() => {
 </script>
 
 <template>
-  <h3 class="text-lg font-semibold">Risk & Policy Compliance</h3>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="p-6 bg-white border border-gray-200 rounded-xl shadow-lg">
-        <h4 class="text-sm font-semibold text-gray-900 mb-2">Investment Risk</h4>
-        <div class="text-sm text-gray-700 space-y-3">
-          <!-- Value at Risk -->
+            <div class="rounded-lg border border-slate-200 bg-white p-4 order-last xl:order-first"> <div class="flex items-center justify-between mb-2">
+            <h3 class="font-semibold">Simulation Inputs</h3>
+            <span class="chip bg-slate-100 text-slate-700">Assumptions</span>
+          </div>
+          <div class="text-sm text-gray-700 space-y-3">
+                                  <!-- Initial Endowment -->
           <MetricItem
-            label="Value at Risk (5%)"
-            :value="formatMoney(valueAtRisk5)"
-            tip="The 5th percentile of final endowment values across simulations — 5% of simulations fall below this value."
-            id="tt-var-5"
+            label="Initial Endowment"
+            :value="`${inputs.initialEndowment?.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }) ?? '$0'}`"
+            tip="The initial amount of the endowment fund."
+            id="tt-initial-endowment"
           />
-
-          <!-- Annualized Volatility -->
+            <!-- Horizon (years) -->
           <MetricItem
-            label="Annualized Volatility"
-            :value="returnVolatility"
-            tip="Standard deviation of annualized returns across simulations (higher = more variability)."
-            id="tt-vol"
+            label="Horizon (years)"
+            :value="`${props.results?.yearLabels?.length ? props.results.yearLabels.length - 1 : '—'}`"
+            tip="The number of years the simulation was run."
+            id="tt-horizon-years"
           />
-
+            <!-- Simulations -->
+            <MetricItem
+            label="Simulations"
+            :value="`${props.results?.simulations?.length ?? 0}`"
+            tip="The number of simulation runs performed."
+            id="tt-simulations"
+          />
+            <!-- Spending Rate -->
+          <MetricItem
+            label="Spending Rate"
+            :value="`${inputs.spendingPolicyRate != null ? inputs.spendingPolicyRate.toFixed(1) + '%' : '—'}`"
+            tip="The percentage of the endowment spent each year."
+            id="tt-spending-rate"
+          />
+            <!-- Investment Expense Rate -->
+          <MetricItem
+            label="Investment Expense Rate"
+            :value="`${inputs.investmentExpenseRate != null ? inputs.investmentExpenseRate.toFixed(1) + '%' : '—'}`"
+            tip="The annual percentage cost of investment management."
+            id="tt-investment-expense-rate"
+          />
           <!-- Risk-Free Rate -->
           <MetricItem
-            label="Risk-Free Rate (Assumption)"
+            label="Risk-Free Rate"
             :value="`${riskFreeRatePct.toFixed(1)}%`"
             tip="The assumed risk-free rate used in Sharpe and Sortino calculations."
             id="tt-risk-free"
           />
-
-          <!-- Sharpe -->
+            <!-- Inflation (for preservation) -->
           <MetricItem
-            label="Sharpe ratio (median)"
-            :value="Number.isFinite(numericSharpe) ? numericSharpe : '—'"
-            tip="Sharpe is computed per simulation as (annualized return − risk‑free) / volatility. Card shows the median across simulations; the Statistical Summary table shows percentiles."
-            id="tt-sharpe"
+            label="Inflation (for preservation)"
+            :value="`${inputs.inflationRate != null ? inputs.inflationRate.toFixed(2) + '%' : '—'}`"
+            tip="The assumed annual inflation rate used for corpus preservation calculations."
+            id="tt-inflation-rate"
           />
-
-          <!-- Sortino -->
-          <MetricItem
-            label="Sortino Ratio"
-            :value="Number.isFinite(numericSortino) ? numericSortino : '—'"
-            tip="Sortino uses downside deviation relative to the risk-free target; higher is better."
-            id="tt-sortino"
-          />
-
-          <!-- Stress -->
-          <MetricItem
-            label="Stress Test (2008 Scenario)"
-            value="—"
-            tip="Result under a historical 2008-like stress scenario (if available)."
-            id="tt-stress"
-          />
+          </div>
+          <footer class="text-xs text-slate-500 mt-4 pt-3 border-t">
+            Generated: <span id="gen-time">—</span>
+          </footer>
         </div>
-      </div>
-    <div class="p-6 bg-white border border-gray-200 rounded-xl shadow-lg">
-      <h4 class="text-sm font-semibold text-gray-900 mb-2">Spending Policy Compliance</h4>
-      <ul class="text-sm text-gray-700 space-y-2">
-      <p class="text-sm text-gray-700">Policy Target: <strong>{{ (props.results?.inputs?.spendingPolicyRate ?? 0) * 100 }}%</strong></p>
-      <p class="text-sm text-text-secondary mt-2">Actual metrics and probability of violation shown in detailed view.</p>
-        </ul>
-    </div>
-  </div>
 </template>

@@ -1,12 +1,26 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute } from 'vue-router';
-import { onMounted } from 'vue';
+import { onMounted, computed } from 'vue';
 import TheHeader from './shared/components/layout/TheHeader.vue';
 import SideNav from './shared/components/layout/SideNav.vue';
 import { useAuthStore } from '@/features/auth/stores/auth';
 
 const route = useRoute();
 const authStore = useAuthStore();
+// Define the paths where TheHeader should be visible
+const headerPaths = ['/', '/register', '/privacy','/login','/pricing'];
+
+const shouldShowHeader = computed(() => {
+  return headerPaths.includes(route.path);
+});
+
+// Define the paths where SideNav should be hidden
+const hiddenNavPaths = ['/', '/register', '/privacy', '/login', '/pricing']; 
+
+const shouldHideSideNav = computed(() => {
+  return hiddenNavPaths.includes(route.path);
+});
+
 
 // Initialize auth state when app loads
 onMounted(async () => {
@@ -15,20 +29,16 @@ onMounted(async () => {
 
 async function handleLogout() {
   await authStore.logout();
-  // Redirect to home after logout
-  if (route.path !== '/') {
-    window.location.href = '/';
-  }
 }
 </script>
 
 <template>
   <div id="app" class="min-h-screen">
-    <!-- Show SideNav on all routes except landing page and pricing page -->
-    <SideNav v-if="route.path !== '/' && route.path !== '/pricing'" />
-    <div :class="route.path !== '/' && route.path !== '/pricing' ? 'lg:pl-64' : ''">
-      <!-- Show TheHeader on landing page and pricing page -->
-      <TheHeader v-if="route.path === '/' || route.path === '/pricing'" />
+    <!-- Show SideNav on all routes except landing page -->
+    <SideNav v-if="!shouldHideSideNav" />
+    <div :class="!shouldHideSideNav ? 'lg:pl-64' : ''">
+      <!-- Show TheHeader only on landing page -->
+      <TheHeader v-if="shouldShowHeader" />
       <main class="min-h-[60vh]">
         <RouterView />
       </main>
@@ -46,8 +56,3 @@ async function handleLogout() {
     </footer>
 </template>
 
-<style>
-/* You can place global styles here or import a main CSS file */
-/* For example, import the styles from your original project */
-@import './shared/assets/main.css'; 
-</style>

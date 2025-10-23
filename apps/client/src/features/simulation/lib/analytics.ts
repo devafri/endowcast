@@ -231,6 +231,31 @@ export function medianFinalValue(simulations: number[][]): number {
 }
 
 /**
+ * Median of per-simulation maximum drawdowns.
+ * Returns decimal drawdown (e.g., 0.25 == 25%).
+ */
+export function medianMaxDrawdown(simulations: number[][]): number {
+  if (!simulations?.length) return NaN;
+  const perSimMax: number[] = [];
+  for (const sim of simulations) {
+    if (!sim?.length) continue;
+    let peak = sim[0];
+    let maxDd = 0;
+    for (const v of sim) {
+      if (v > peak) peak = v;
+      else {
+        const dd = (peak - v) / peak;
+        if (dd > maxDd) maxDd = dd;
+      }
+    }
+    if (isFinite(maxDd)) perSimMax.push(maxDd);
+  }
+  if (!perSimMax.length) return NaN;
+  perSimMax.sort((a, b) => a - b);
+  return perSimMax[Math.floor(perSimMax.length / 2)];
+}
+
+/**
  * Probability that final < threshold (e.g., initial value)
  */
 export function probabilityOfLoss(simulations: number[][], threshold: number): number {
@@ -361,6 +386,32 @@ export function medianAnnualizedReturnFromReturns(portfolioReturns?: number[][])
   if (!perSim.length) return NaN;
   perSim.sort((a, b) => a - b);
   return perSim[Math.floor(perSim.length / 2)];
+}
+
+/**
+ * Median annualized volatility across simulations.
+ * - portfolioReturns: array [sim][periodReturns]
+ * - periodsPerYear: number of periods per year (e.g., 12 for monthly returns)
+ * - useSample: whether to use sample std (ddof=1) when computing per-sim std; defaults to false (population)
+ * Returns decimal volatility (e.g., 0.15 == 15%)
+ */
+export function medianAnnualizedVolatility(portfolioReturns?: number[][], periodsPerYear: number = 12, useSample: boolean = false): number {
+  if (!portfolioReturns || !portfolioReturns.length) return NaN;
+  const perSimVols: number[] = [];
+  for (const rets of portfolioReturns) {
+    if (!rets || !rets.length) continue;
+    // compute variance
+    const n = rets.length;
+    const mean = rets.reduce((a, b) => a + b, 0) / n;
+    const variance = rets.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (useSample && n > 1 ? (n - 1) : n);
+    const sd = Math.sqrt(variance);
+    // annualize
+    const ann = sd * Math.sqrt(periodsPerYear);
+    if (isFinite(ann)) perSimVols.push(ann);
+  }
+  if (!perSimVols.length) return NaN;
+  perSimVols.sort((a, b) => a - b);
+  return perSimVols[Math.floor(perSimVols.length / 2)];
 }
 
 /**

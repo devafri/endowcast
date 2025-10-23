@@ -17,6 +17,14 @@ router.post('/', async (req, res) => {
   }
 
   let event;
+  // Diagnostic preview
+  try {
+    const rawPreview = (req.rawBody && req.rawBody.toString) ? req.rawBody.toString().slice(0,200) : JSON.stringify(req.body || {}).slice(0,200);
+    console.log('Payments webhook received. hasSig:', !!sig, 'bodyPreview:', rawPreview, 'rawLength:', req.rawBody ? (req.rawBody.length || 0) : 0);
+  } catch (dE) {
+    console.warn('Failed to preview webhook body:', dE.message || dE);
+  }
+
   try {
     event = stripe.webhooks.constructEvent(req.rawBody, sig, webhookSecret);
   } catch (err) {
@@ -29,35 +37,43 @@ router.post('/', async (req, res) => {
     try {
       switch (event.type) {
         case 'checkout.session.completed': {
-          const session = event.data.object;
-          // Update/create subscription record for organization
-          const orgId = session.client_reference_id;
-          const customerId = session.customer;
-          const subscriptionId = session.subscription;
-          const priceId = session.display_items?.[0]?.price?.id || session.metadata?.priceId || null;
+            const session = event.data.object;
+            const orgId = session.client_reference_id;
+            const customerId = session.customer;
+            const subscriptionId = session.subscription;
+            const priceId = session.display_items?.[0]?.price?.id || session.metadata?.priceId || null;
 
-          if (orgId) {
-            await prisma.subscription.upsert({
-              where: { organizationId: orgId },
-              update: {
-                stripeCustomerId: customerId,
-                stripeSubscriptionId: subscriptionId,
-                stripePriceId: priceId,
-                status: 'active'
-              },
-              create: {
-                organizationId: orgId,
-                stripeCustomerId: customerId,
-                stripeSubscriptionId: subscriptionId,
-                stripePriceId: priceId,
-                status: 'active',
-                simulationsUsed: 0
+            console.log('Received checkout.session.completed for session:', session.id, 'orgId:', orgId, 'customer:', customerId, 'subscription:', subscriptionId, 'priceId:', priceId);
+
+            if (orgId) {
+              try {
+                const up = await prisma.subscription.upsert({
+                  where: { organizationId: orgId },
+                  update: {
+                    stripeCustomerId: customerId,
+                    stripeSubscriptionId: subscriptionId,
+                    stripePriceId: priceId,
+                    status: 'active'
+                  },
+                  create: {
+                    organizationId: orgId,
+                    stripeCustomerId: customerId,
+                    stripeSubscriptionId: subscriptionId,
+                    stripePriceId: priceId,
+                    status: 'active',
+                    simulationsUsed: 0
+                  }
+                });
+                console.log('paymentsWebhook: upsert result for org', orgId, '->', { id: up.id, planType: up.planType, status: up.status });
+              } catch (e) {
+                console.error('paymentsWebhook: failed to upsert subscription for org', orgId, e.message || e);
               }
-            });
-          }
+            } else {
+              console.warn('paymentsWebhook: checkout.session.completed missing client_reference_id. session metadata:', session.metadata || {});
+            }
 
-          break;
-        }
+            break;
+          }
         case 'invoice.paid': {
           const invoice = event.data.object;
           // Create Payment record if possible

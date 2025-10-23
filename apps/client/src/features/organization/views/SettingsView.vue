@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { useSimulationStore } from '../../simulation/stores/simulation';
 import { useAuthStore } from '../../auth/stores/auth';
 import { assetClasses } from '../../simulation/lib/monteCarlo';
@@ -30,6 +31,7 @@ import {
 
 const sim = useSimulationStore();
 const auth = useAuthStore();
+const route = useRoute();
 const activeTab = ref('basic');
 const showOnboardingTip = ref(true);
 
@@ -84,6 +86,20 @@ const stressConfig = computed(() => ({
 const correlationMatrix = ref((sim.options as any).correlationMatrix || defaultCorrelationMatrix);
 
 const assetOverrideData = computed(() => (sim.options as any).assetOverrides || {});
+
+// If Stripe redirected back here with a session id, optimistically confirm it server-side
+onMounted(async () => {
+  const sessionId = (route.query.session_id || route.query.sessionId) as string | undefined;
+  if (!sessionId) return;
+  try {
+    // best-effort: server will still accept webhooks as source-of-truth
+    const { apiService } = await import('@/shared/services/api');
+    await apiService.post('/billing/confirm-session', { sessionId });
+    console.log('SettingsView: requested confirm-session for', sessionId);
+  } catch (e) {
+    console.warn('SettingsView: confirm-session request failed:', e);
+  }
+});
 </script>
 
 <template>
