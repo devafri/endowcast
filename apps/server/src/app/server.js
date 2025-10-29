@@ -38,6 +38,18 @@ app.use(cors({
   credentials: true,
 }));
 
+// *** NEW MIDDLEWARE TO EXPLICITLY HANDLE OPTIONS PREFLIGHT ***
+app.use('/api/', (req, res, next) => {
+    // This explicitly ensures the OPTIONS method is handled for all /api/ routes
+    if (req.method === 'OPTIONS') {
+        // Since cors() has already set the headers, we just send a 204 No Content
+        // and end the request, which satisfies the preflight check.
+        res.status(204).end(); 
+        return; // Important: terminate the request
+    }
+    next();
+});
+
 // Apply rate limiter after CORS so CORS headers are present on rate-limited responses
 app.use('/api/', limiter);
 
@@ -57,6 +69,31 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
+});
+
+// DB connectivity test endpoint
+app.get('/api/health/db', async (req, res) => {
+  try {
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+    
+    // Try a simple query
+    const result = await prisma.organization.findFirst();
+    
+    res.json({
+      status: 'OK',
+      message: 'Database connection successful',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('DB health check error:', error.message);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Database connection failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // API Routes
