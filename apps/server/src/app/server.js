@@ -5,6 +5,17 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
+// Normalize DATABASE_URL and DIRECT_URL if they were stored with surrounding quotes
+// Some CI / hosting providers (or manual edits) may include surrounding quotes which
+// become part of the environment value and break parsers that expect the URL to
+// start with postgres:// or postgresql://. Strip surrounding double quotes here.
+if (process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL.replace(/^\"|\"$/g, '');
+}
+if (process.env.DIRECT_URL) {
+  process.env.DIRECT_URL = process.env.DIRECT_URL.replace(/^\"|\"$/g, '');
+}
+
 const authRoutes = require('../features/auth/routes/auth');
 const userRoutes = require('../features/users/routes/users');
 const simulationRoutes = require('../features/simulations/routes/simulations');
