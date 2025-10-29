@@ -1,0 +1,18 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with gradient -->
+  <rect width="32" height="32" rx="8" fill="url(#gradient)"/>
+  
+  <!-- Define gradient -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0369a1"/> <!-- sky-700 -->
+      <stop offset="100%" stop-color="#e2e8f0"/> <!-- slate-200 -->
+    </linearGradient>
+  </defs>
+  
+  <!-- Icon bars -->
+  <rect x="8" y="8" width="16" height="3" fill="white" rx="1"/>
+  <rect x="8" y="15" width="12" height="3" fill="white" rx="0"/>
+<rect x="8" y="15" width="3" height="9" fill="white" rx="1"/>
+  <rect x="8" y="22" width="16" height="3" fill="white" rx="1"/>
+</svg>

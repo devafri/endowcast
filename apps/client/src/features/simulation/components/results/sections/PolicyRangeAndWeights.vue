@@ -1,9 +1,9 @@
 
 
       <template>
-<section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+<section class="grid grid-cols-1 xl:grid-cols-2 gap-6 ">
         <!-- Allocation vs Policy -->
-        <div class="rounded-lg border border-slate-200 p-4">
+        <div class="rounded-lg border border-slate-200 p-4 bg-white shadow-md">
           <div class="flex items-center justify-between mb-3">
             <h3 class="font-semibold">Policy Ranges & Current Weights (Inputs)</h3>
             <div class="text-xs text-slate-500">Sum: <span class="font-medium" :class="{'text-emerald-600': Math.abs(weightsSum-100) < 1e-8, 'text-red-600': Math.abs(weightsSum-100) >= 1e-8}">{{ weightsSum }}</span></div>
@@ -15,7 +15,7 @@
                 <span class="text-slate-500">{{ a.pct }}% ({{ a.min }}–{{ a.max }}%)</span>
               </div>
               <div class="relative h-3 rounded bg-slate-100 overflow-hidden">
-                <div class="absolute inset-y-0 bg-slate-200" :style="{ left: a.min + '%', width: (a.max - a.min) + '%' }"></div>
+                <div class="absolute inset-y-0 bg-slate-300" :style="{ left: a.min + '%', width: (a.max - a.min) + '%' }"></div>
                 <div class="absolute inset-y-0 bg-blue-600" :style="{ left: a.pct + '%', width: '2px' }"></div>
               </div>
             </div>
@@ -23,7 +23,7 @@
         </div>
 
         <!-- Risk Contributions -->
-        <div class="rounded-lg border border-slate-200 p-4">
+        <div class="rounded-lg border border-slate-200 p-4 bg-white shadow-md">
           <div class="flex items-center justify-between mb-3">
             <h3 class="font-semibold">Risk Contributions (approximate)</h3>
             <span class="text-xs text-slate-500">Sum = 100%</span>

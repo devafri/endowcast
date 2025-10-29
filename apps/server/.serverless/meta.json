@@ -1,0 +1,496 @@
+{
+  "/Users/felixisuk/Desktop/Coding_Projects/endowment-commerical/apps/server/serverless.yml": {
+    "versionFramework": "4.22.0",
+    "servicePath": "/Users/felixisuk/Desktop/Coding_Projects/endowment-commerical/apps/server/serverless.yml",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "endowcast-backend",
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs18.x",
+        "region": "us-east-1",
+        "stage": "dev",
+        "timeout": 30,
+        "memorySize": 512,
+        "environment": {
+          "DATABASE_URL": "${ssm:/endowcast/dev/database-url}",
+          "JWT_SECRET": "<REDACTED>",
+          "JWT_EXPIRES_IN": "7d",
+          "FRONTEND_URL": "${ssm:/endowcast/dev/frontend-url}",
+          "EMAIL_FROM": "${ssm:/endowcast/dev/email-from}",
+          "SES_REGION": "us-east-1",
+          "RECAPTCHA_SECRET_KEY": "<REDACTED>",
+          "STRIPE_SECRET_KEY": "<REDACTED>",
+          "STRIPE_PUBLISHABLE_KEY": "${ssm:/endowcast/dev/stripe-publishable-key}",
+          "STRIPE_WEBHOOK_SECRET": "<REDACTED>",
+          "CLIENT_URL": "${ssm:/endowcast/dev/client-url}",
+          "NODE_ENV": "production"
+        },
+        "iamRoleStatements": [
+          {
+            "Effect": "Allow",
+            "Action": [
+              "rds-data:ExecuteStatement",
+              "rds-data:BatchExecuteStatement",
+              "rds-data:BeginTransaction",
+              "rds-data:CommitTransaction",
+              "rds-data:RollbackTransaction"
+            ],
+            "Resource": "*"
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+              "ses:SendEmail",
+              "ses:SendRawEmail",
+              "ses:GetSendQuota",
+              "ses:GetSendStatistics"
+            ],
+            "Resource": "*"
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+              "ssm:GetParameter",
+              "ssm:GetParameters"
+            ],
+            "Resource": "arn:aws:ssm:us-east-1:*:parameter/endowcast/dev/*"
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+              "logs:CreateLogGroup",
+              "logs:CreateLogStream",
+              "logs:PutLogEvents"
+            ],
+            "Resource": "arn:aws:logs:us-east-1:*:*"
+          }
+        ]
+      },
+      "package": {
+        "exclude": [
+          "node_modules/aws-sdk/**",
+          ".git/**",
+          "README.md",
+          ".env*",
+          "test/**",
+          "coverage/**",
+          "*.md"
+        ]
+      },
+      "functions": {
+        "health": {
+          "handler": "src/lambda/health.handler",
+          "events": [
+            {
+              "httpApi": {
+                "path": "/health",
+                "method": "get",
+                "cors": true
+              }
+            }
+          ]
+        },
+        "createPaymentIntent": {
+          "handler": "src/lambda/payments.createPaymentIntent",
+          "timeout": 30,
+          "events": [
+            {
+              "httpApi": {
+                "path": "/payments/create-intent",
+                "method": "post",
+                "cors": true
+              }
+            }
+          ]
+        },
+        "confirmPayment": {
+          "handler": "src/lambda/payments.confirmPayment",
+          "timeout": 30,
+          "events": [
+            {
+              "httpApi": {
+                "path": "/payments/confirm",
+                "method": "post",
+                "cors": true
+              }
+            }
+          ]
+        },
+        "getPaymentHistory": {
+          "handler": "src/lambda/payments.getPaymentHistory",
+          "timeout": 30,
+          "events": [
+            {
+              "httpApi": {
+                "path": "/payments/history",
+                "method": "get",
+                "cors": true
+              }
+            }
+          ]
+        },
+        "cancelSubscription": {
+          "handler": "src/lambda/payments.cancelSubscription",
+          "timeout": 30,
+          "events": [
+            {
+              "httpApi": {
+                "path": "/payments/cancel",
+                "method": "post",
+                "cors": true
+              }
+            }
+          ]
+        },
+        "login": {
+          "handler": "src/lambda/auth.login",
+          "events": [
+            {
+              "http": {
+                "path": "auth/login",
+                "method": "post",
+                "cors": {
+                  "origin": "${self:provider.environment.FRONTEND_URL}",
+                  "credentials": "<REDACTED>"
+                }
+              }
+            }
+          ]
+        },
+        "register": {
+          "handler": "src/lambda/auth.register",
+          "timeout": 60,
+          "events": [
+            {
+              "http": {
+                "path": "auth/register",
+                "method": "post",
+                "cors": {
+                  "origin": "${self:provider.environment.FRONTEND_URL}",
+                  "credentials": "<REDACTED>"
+                }
+              }
+            }
+          ]
+        },
+        "verifyEmail": {
+          "handler": "src/lambda/auth.verifyEmail",
+          "events": [
+            {
+              "http": {
+                "path": "auth/verify-email",
+                "method": "post",
+                "cors": {
+                  "origin": "${self:provider.environment.FRONTEND_URL}",
+                  "credentials": "<REDACTED>"
+                }
+              }
+            }
+          ]
+        },
+        "resendVerification": {
+          "handler": "src/lambda/auth.resendVerification",
+          "timeout": 60,
+          "events": [
+            {
+              "http": {
+                "path": "auth/resend-verification",
+                "method": "post",
+                "cors": {
+                  "origin": "${self:provider.environment.FRONTEND_URL}",
+                  "credentials": "<REDACTED>"
+                }
+              }
+            }
+          ]
+        },
+        "forgotPassword": "<REDACTED>",
+        "resetPassword": "<REDACTED>",
+        "getUserProfile": {
+          "handler": "src/lambda/users.getProfile",
+          "events": [
+            {
+              "http": {
+                "path": "users/profile",
+                "method": "get",
+                "cors": {
+                  "origin": "${self:provider.environment.FRONTEND_URL}",
+                  "credentials": "<REDACTED>"
+                }
+              }
+            }
+          ]
+        },
+        "updateUserProfile": {
+          "handler": "src/lambda/users.updateProfile",
+          "events": [
+            {
+              "http": {
+                "path": "users/profile",
+                "method": "put",
+                "cors": {
+                  "origin": "${self:provider.environment.FRONTEND_URL}",
+                  "credentials": "<REDACTED>"
+                }
+              }
+            }
+          ]
+        },
+        "createSimulation": {
+          "handler": "src/lambda/simulations.create",
+          "timeout": 120,
+          "memorySize": 1024,
+          "events": [
+            {
+              "http": {
+                "path": "simulations",
+                "method": "post",
+                "cors": {
+                  "origin": "${self:provider.environment.FRONTEND_URL}",
+                  "credentials": "<REDACTED>"
+                }
+              }
+            }
+          ]
+        },
+        "getSimulations": {
+          "handler": "src/lambda/simulations.list",
+          "events": [
+            {
+              "http": {
+                "path": "simulations",
+                "method": "get",
+                "cors": {
+                  "origin": "${self:provider.environment.FRONTEND_URL}",
+                  "credentials": "<REDACTED>"
+                }
+              }
+            }
+          ]
+        },
+        "getSimulation": {
+          "handler": "src/lambda/simulations.get",
+          "events": [
+            {
+              "http": {
+                "path": "simulations/{id}",
+                "method": "get",
+                "cors": {
+                  "origin": "${self:provider.environment.FRONTEND_URL}",
+                  "credentials": "<REDACTED>"
+                }
+              }
+            }
+          ]
+        },
+        "updateSimulation": {
+          "handler": "src/lambda/simulations.update",
+          "events": [
+            {
+              "http": {
+                "path": "simulations/{id}",
+                "method": "put",
+                "cors": {
+                  "origin": "${self:provider.environment.FRONTEND_URL}",
+                  "credentials": "<REDACTED>"
+                }
+              }
+            }
+          ]
+        },
+        "deleteSimulation": {
+          "handler": "src/lambda/simulations.delete",
+          "events": [
+            {
+              "http": {
+                "path": "simulations/{id}",
+                "method": "delete",
+                "cors": {
+                  "origin": "${self:provider.environment.FRONTEND_URL}",
+                  "credentials": "<REDACTED>"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "resources": {
+        "Resources": {
+          "DatabaseCluster": {
+            "Type": "AWS::RDS::DBCluster",
+            "Properties": {
+              "DatabaseName": "endowcast",
+              "Engine": "aurora-postgresql",
+              "EngineVersion": 15.4,
+              "EngineMode": "provisioned",
+              "ServerlessV2ScalingConfiguration": {
+                "MinCapacity": 0.5,
+                "MaxCapacity": 16
+              },
+              "MasterUsername": "endowcast_admin",
+              "MasterUserPassword": "<REDACTED>",
+              "BackupRetentionPeriod": 7,
+              "DeletionProtection": false,
+              "StorageEncrypted": true,
+              "VpcSecurityGroupIds": [
+                {
+                  "Ref": "DatabaseSecurityGroup"
+                }
+              ],
+              "DBSubnetGroupName": "default",
+              "EnableCloudwatchLogsExports": [
+                "postgresql"
+              ]
+            }
+          },
+          "DatabaseInstance": {
+            "Type": "AWS::RDS::DBInstance",
+            "Properties": {
+              "DBInstanceClass": "db.serverless",
+              "DBClusterIdentifier": {
+                "Ref": "DatabaseCluster"
+              },
+              "Engine": "aurora-postgresql",
+              "PubliclyAccessible": false
+            }
+          },
+          "DatabaseSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+              "GroupDescription": "Security group for EndowCast RDS database",
+              "VpcId": {
+                "Ref": "AWS::EC2::VPC::Default"
+              },
+              "SecurityGroupIngress": [
+                {
+                  "IpProtocol": "tcp",
+                  "FromPort": 5432,
+                  "ToPort": 5432,
+                  "CidrIp": "10.0.0.0/8",
+                  "Description": "Allow PostgreSQL access from private subnets"
+                }
+              ],
+              "Tags": [
+                {
+                  "Key": "Name",
+                  "Value": "endowcast-db-sg-dev"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "plugins": [
+        "serverless-offline",
+        "serverless-dotenv-plugin",
+        "serverless-prune-plugin"
+      ],
+      "custom": {
+        "deletionProtection": {
+          "prod": true,
+          "dev": false
+        },
+        "prune": {
+          "automatic": true,
+          "number": 5
+        },
+        "serverless-offline": {
+          "httpPort": 3001,
+          "host": "0.0.0.0",
+          "stage": "local"
+        }
+      }
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs18.x",
+      "region": "us-east-1",
+      "stage": "dev",
+      "timeout": 30,
+      "memorySize": 512,
+      "environment": {
+        "DATABASE_URL": "${ssm:/endowcast/dev/database-url}",
+        "JWT_SECRET": "<REDACTED>",
+        "JWT_EXPIRES_IN": "7d",
+        "FRONTEND_URL": "${ssm:/endowcast/dev/frontend-url}",
+        "EMAIL_FROM": "${ssm:/endowcast/dev/email-from}",
+        "SES_REGION": "us-east-1",
+        "RECAPTCHA_SECRET_KEY": "<REDACTED>",
+        "STRIPE_SECRET_KEY": "<REDACTED>",
+        "STRIPE_PUBLISHABLE_KEY": "${ssm:/endowcast/dev/stripe-publishable-key}",
+        "STRIPE_WEBHOOK_SECRET": "<REDACTED>",
+        "CLIENT_URL": "${ssm:/endowcast/dev/client-url}",
+        "NODE_ENV": "production"
+      },
+      "iamRoleStatements": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "rds-data:ExecuteStatement",
+            "rds-data:BatchExecuteStatement",
+            "rds-data:BeginTransaction",
+            "rds-data:CommitTransaction",
+            "rds-data:RollbackTransaction"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "ses:SendEmail",
+            "ses:SendRawEmail",
+            "ses:GetSendQuota",
+            "ses:GetSendStatistics"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "ssm:GetParameter",
+            "ssm:GetParameters"
+          ],
+          "Resource": "arn:aws:ssm:us-east-1:*:parameter/endowcast/dev/*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents"
+          ],
+          "Resource": "arn:aws:logs:us-east-1:*:*"
+        }
+      ]
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": true,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "error": {
+      "message": "Failed to resolve variable '/endowcast/dev/recaptcha-secret' with resolver 'ssm' and provider 'default-aws-credential-resolver': AccessDeniedException: User: arn:aws:iam::273545363146:user/endowcast-ses-user is not authorized to perform: ssm:GetParameter on resource: arn:aws:ssm:us-east-1:273545363146:parameter/endowcast/dev/recaptcha-secret because no identity-based policy allows the ssm:GetParameter action",
+      "stack": "Error: Failed to resolve variable '/endowcast/dev/recaptcha-secret' with resolver 'ssm' and provider 'default-aws-credential-resolver': AccessDeniedException: User: arn:aws:iam::273545363146:user/endowcast-ses-user is not authorized to perform: ssm:GetParameter on resource: arn:aws:ssm:us-east-1:273545363146:parameter/endowcast/dev/recaptcha-secret because no identity-based policy allows the ssm:GetParameter action\n    at #resolveKey (file:///Users/felixisuk/.serverless/releases/4.22.0/package/dist/sf-core.js:720:25918)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async _ResolverManager.resolve (file:///Users/felixisuk/.serverless/releases/4.22.0/package/dist/sf-core.js:720:31908)\n    at async #handlePlaceholderNode (file:///Users/felixisuk/.serverless/releases/4.22.0/package/dist/sf-core.js:720:30453)\n    at async file:///Users/felixisuk/.serverless/releases/4.22.0/package/dist/sf-core.js:720:28325\n    at async processNodeAndHandleCompletion (file:///Users/felixisuk/.serverless/releases/4.22.0/package/dist/sf-core.js:720:16859)",
+      "code": "RESOLVER_RESOLVE_VARIABLE_ERROR"
+    },
+    "serviceRawFile": "service: endowcast-backend\n\nprovider:\n  name: aws\n  runtime: nodejs18.x\n  region: us-east-1\n  stage: ${opt:stage, 'dev'}\n  \n  # Lambda function configuration\n  timeout: 30\n  memorySize: 512\n  \n  # Environment variables\n  environment:\n    DATABASE_URL: ${ssm:/endowcast/${self:provider.stage}/database-url}\n    JWT_SECRET: ${ssm:/endowcast/${self:provider.stage}/jwt-secret}\n    JWT_EXPIRES_IN: 7d\n    FRONTEND_URL: ${ssm:/endowcast/${self:provider.stage}/frontend-url}\n    EMAIL_FROM: ${ssm:/endowcast/${self:provider.stage}/email-from}\n    SES_REGION: ${self:provider.region}\n    RECAPTCHA_SECRET_KEY: ${ssm:/endowcast/${self:provider.stage}/recaptcha-secret}\n    STRIPE_SECRET_KEY: ${ssm:/endowcast/${self:provider.stage}/stripe-secret-key}\n    STRIPE_PUBLISHABLE_KEY: ${ssm:/endowcast/${self:provider.stage}/stripe-publishable-key}\n    STRIPE_WEBHOOK_SECRET: ${ssm:/endowcast/${self:provider.stage}/stripe-webhook-secret}\n    CLIENT_URL: ${ssm:/endowcast/${self:provider.stage}/client-url}\n    NODE_ENV: production\n  \n  # IAM permissions\n  iamRoleStatements:\n    # RDS permissions\n    - Effect: Allow\n      Action:\n        - rds-data:ExecuteStatement\n        - rds-data:BatchExecuteStatement\n        - rds-data:BeginTransaction\n        - rds-data:CommitTransaction\n        - rds-data:RollbackTransaction\n      Resource: \"*\"\n    \n    # SES permissions for email sending\n    - Effect: Allow\n      Action:\n        - ses:SendEmail\n        - ses:SendRawEmail\n        - ses:GetSendQuota\n        - ses:GetSendStatistics\n      Resource: \"*\"\n    \n    # SSM Parameter Store permissions\n    - Effect: Allow\n      Action:\n        - ssm:GetParameter\n        - ssm:GetParameters\n      Resource: \"arn:aws:ssm:${self:provider.region}:*:parameter/endowcast/${self:provider.stage}/*\"\n    \n    # CloudWatch permissions\n    - Effect: Allow\n      Action:\n        - logs:CreateLogGroup\n        - logs:CreateLogStream\n        - logs:PutLogEvents\n      Resource: \"arn:aws:logs:${self:provider.region}:*:*\"\n\n# Package configuration - exclude unnecessary files\npackage:\n  exclude:\n    - node_modules/aws-sdk/**\n    - .git/**\n    - README.md\n    - .env*\n    - test/**\n    - coverage/**\n    - \"*.md\"\n\n# Lambda functions\nfunctions:\n    # Health check endpoint\n  health:\n    handler: src/lambda/health.handler\n    events:\n      - httpApi:\n          path: /health\n          method: get\n          cors: true\n\n  # Payment processing endpoints  \n  createPaymentIntent:\n    handler: src/lambda/payments.createPaymentIntent\n    timeout: 30\n    events:\n      - httpApi:\n          path: /payments/create-intent\n          method: post\n          cors: true\n\n  confirmPayment:\n    handler: src/lambda/payments.confirmPayment\n    timeout: 30\n    events:\n      - httpApi:\n          path: /payments/confirm\n          method: post\n          cors: true\n\n  getPaymentHistory:\n    handler: src/lambda/payments.getPaymentHistory  \n    timeout: 30\n    events:\n      - httpApi:\n          path: /payments/history\n          method: get\n          cors: true\n\n  cancelSubscription:\n    handler: src/lambda/payments.cancelSubscription\n    timeout: 30\n    events:\n      - httpApi:\n          path: /payments/cancel\n          method: post\n          cors: true\n  \n  # Authentication functions\n  login:\n    handler: src/lambda/auth.login\n    events:\n      - http:\n          path: auth/login\n          method: post\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n  \n  register:\n    handler: src/lambda/auth.register\n    timeout: 60  # Email sending might take longer\n    events:\n      - http:\n          path: auth/register\n          method: post\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n  \n  verifyEmail:\n    handler: src/lambda/auth.verifyEmail\n    events:\n      - http:\n          path: auth/verify-email\n          method: post\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n  \n  resendVerification:\n    handler: src/lambda/auth.resendVerification\n    timeout: 60\n    events:\n      - http:\n          path: auth/resend-verification\n          method: post\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n  \n  forgotPassword:\n    handler: src/lambda/auth.forgotPassword\n    timeout: 60\n    events:\n      - http:\n          path: auth/forgot-password\n          method: post\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n  \n  resetPassword:\n    handler: src/lambda/auth.resetPassword\n    events:\n      - http:\n          path: auth/reset-password\n          method: post\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n  \n  # User management functions\n  getUserProfile:\n    handler: src/lambda/users.getProfile\n    events:\n      - http:\n          path: users/profile\n          method: get\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n  \n  updateUserProfile:\n    handler: src/lambda/users.updateProfile\n    events:\n      - http:\n          path: users/profile\n          method: put\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n  \n  # Simulation functions\n  createSimulation:\n    handler: src/lambda/simulations.create\n    timeout: 120  # Longer timeout for Monte Carlo calculations\n    memorySize: 1024  # More memory for calculations\n    events:\n      - http:\n          path: simulations\n          method: post\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n  \n  getSimulations:\n    handler: src/lambda/simulations.list\n    events:\n      - http:\n          path: simulations\n          method: get\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n  \n  getSimulation:\n    handler: src/lambda/simulations.get\n    events:\n      - http:\n          path: simulations/{id}\n          method: get\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n  \n  updateSimulation:\n    handler: src/lambda/simulations.update\n    events:\n      - http:\n          path: simulations/{id}\n          method: put\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n  \n  deleteSimulation:\n    handler: src/lambda/simulations.delete\n    events:\n      - http:\n          path: simulations/{id}\n          method: delete\n          cors:\n            origin: ${self:provider.environment.FRONTEND_URL}\n            credentials: true\n\n# CloudFormation resources\nresources:\n  Resources:\n    # RDS Serverless V2 Cluster\n    DatabaseCluster:\n      Type: AWS::RDS::DBCluster\n      Properties:\n        DatabaseName: endowcast\n        Engine: aurora-postgresql\n        EngineVersion: 15.4\n        EngineMode: provisioned\n        ServerlessV2ScalingConfiguration:\n          MinCapacity: 0.5  # Auto-pauses when not used\n          MaxCapacity: 16   # Scales up under load\n        MasterUsername: endowcast_admin\n        MasterUserPassword: ${ssm:/endowcast/${self:provider.stage}/db-password}\n        BackupRetentionPeriod: 7\n        DeletionProtection: ${self:custom.deletionProtection.${self:provider.stage}, false}\n        StorageEncrypted: true\n        VpcSecurityGroupIds:\n          - Ref: DatabaseSecurityGroup\n        DBSubnetGroupName: default\n        EnableCloudwatchLogsExports:\n          - postgresql\n    \n    # Database instance\n    DatabaseInstance:\n      Type: AWS::RDS::DBInstance\n      Properties:\n        DBInstanceClass: db.serverless\n        DBClusterIdentifier:\n          Ref: DatabaseCluster\n        Engine: aurora-postgresql\n        PubliclyAccessible: false\n    \n    # Security group for database\n    DatabaseSecurityGroup:\n      Type: AWS::EC2::SecurityGroup\n      Properties:\n        GroupDescription: Security group for EndowCast RDS database\n        VpcId: \n          Ref: AWS::EC2::VPC::Default\n        SecurityGroupIngress:\n          - IpProtocol: tcp\n            FromPort: 5432\n            ToPort: 5432\n            CidrIp: 10.0.0.0/8\n            Description: Allow PostgreSQL access from private subnets\n        Tags:\n          - Key: Name\n            Value: endowcast-db-sg-${self:provider.stage}\n\n# Plugins\nplugins:\n  - serverless-offline\n  - serverless-dotenv-plugin\n  - serverless-prune-plugin\n\n# Custom configuration\ncustom:\n  # Enable deletion protection for production\n  deletionProtection:\n    prod: true\n    dev: false\n  \n  # Prune old versions to save storage costs\n  prune:\n    automatic: true\n    number: 5\n  \n  # Serverless offline configuration for local development\n  serverless-offline:\n    httpPort: 3001\n    host: 0.0.0.0\n    stage: local\n",
+    "command": [
+      "deploy"
+    ],
+    "options": {},
+    "orgId": "2794a5a5-8361-4f20-aeeb-0a3ba1237443",
+    "orgName": "endowcast",
+    "userId": "r0lYlzNqXKnc9fwYhB",
+    "userName": "endowcast",
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}

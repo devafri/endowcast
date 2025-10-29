@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Tooltip from './Tooltip.vue';
-const props = defineProps<{ label: string; value: string | number; tip?: string; id?: string }>();
+const props = defineProps<{ label: string; value: string | number; tip?: string; id?: string; compact?: boolean }>();
 </script>
 
 <template>
