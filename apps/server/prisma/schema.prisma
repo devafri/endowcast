@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_POSTGRES_PRISMA_URL")
 }
 
 // Organization model - the central tenant in our multi-tenant architecture
