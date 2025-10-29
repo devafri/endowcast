@@ -8,6 +8,9 @@
     "start:prod": "npx prisma migrate deploy && node src/app/server.js",
     "dev": "nodemon src/app/server.js",
     "build": "npx prisma generate",
+    "vercel-build": "npx prisma generate",
+    "postinstall": "npx prisma generate",
+    "deploy": "serverless deploy",
     "migrate": "npx prisma migrate dev",
     "migrate:deploy": "npx prisma migrate deploy",
     "generate": "npx prisma generate",
@@ -26,6 +29,7 @@
   "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^6.17.1",
+    "@supabase/supabase-js": "^2.76.1",
     "@types/bcrypt": "^6.0.0",
     "aws-sdk": "^2.1692.0",
     "bcrypt": "^6.0.0",

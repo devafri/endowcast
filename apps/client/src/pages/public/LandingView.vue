@@ -6,19 +6,33 @@
           <h1 class="text-4xl sm:text-5xl font-extrabold text-slate-900 leading-tight">Institutional-Grade Endowment Analytics</h1>
           <p class="text-lg text-slate-600 max-w-2xl">Leverage sophisticated Monte Carlo simulations to fortify your endowment strategy and navigate market uncertainty with confidence.</p>
 
-          <div class="flex flex-col sm:flex-row gap-3">
-            <RouterLink to="/pricing" class="inline-flex items-center justify-center rounded-md px-6 py-3 bg-gradient-to-r from-sky-500 to-sky-700 text-white font-semibold shadow">Choose a plan</RouterLink>
-            <RouterLink to="/instructions" class="inline-flex items-center justify-center rounded-md px-6 py-3 border border-slate-200 text-slate-800">Explore Platform</RouterLink>
-          </div>
+<div class="flex flex-col sm:flex-row gap-3">
+  <!-- Primary Button -->
+  <RouterLink
+    to="/pricing"
+    style="background-color: #0369a1; border-color: #0369a1;"
+    class="inline-flex items-center justify-center rounded-lg px-6 py-3 text-white font-medium shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:ring-offset-2 hover:bg-sky-800"
+  >
+    Choose a plan
+  </RouterLink>
 
-          <div class="flex items-center gap-4 text-sm text-slate-500 mt-4">
-            <span>Trusted by</span>
-            <div class="flex gap-3 items-center">
-              <div class="h-8 w-20 bg-slate-200 rounded-md flex items-center justify-center text-xs">Foundation A</div>
-              <div class="h-8 w-20 bg-slate-200 rounded-md flex items-center justify-center text-xs">University B</div>
-              <div class="h-8 w-20 bg-slate-200 rounded-md flex items-center justify-center text-xs">Endowment C</div>
-            </div>
-          </div>
+  <!-- Secondary Button -->
+  <RouterLink
+    to="/instructions"
+    style="border-color: #0c4a6e; color: #0c4a6e;"
+    class="inline-flex items-center justify-center rounded-lg px-6 py-3 border bg-white font-medium shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:ring-offset-2 hover:bg-slate-50"
+  >
+    Explore Platform
+  </RouterLink>
+</div>
+<div class="mt-6">
+  <p class="text-sm text-slate-500 font-medium">Built for:</p>
+  <div class="mt-3 flex flex-wrap gap-4 text-slate-400 text-sm">
+    <span class="px-3 py-1 rounded-md border border-slate-200 bg-white">Private Foundations</span>
+    <span class="px-3 py-1 rounded-md border border-slate-200 bg-white">University Endowments</span>
+    <span class="px-3 py-1 rounded-md border border-slate-200 bg-white">Family Offices</span>
+  </div>
+</div>
         </div>
 
         <div>
@@ -57,18 +71,24 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-4 text-sm text-slate-500 mt-4">
-            <div class="p-4 rounded-lg bg-white border border-slate-100 shadow-sm">
-              <div class="font-semibold text-sm">Stochastic Modeling Engine</div>
-              <p class="text-xs text-slate-500 mt-2">Thousands of forward-looking scenario simulations.</p>
+          <div class="flex items-stretch gap-4 text-sm text-slate-500 mt-4 landing-features">
+            <div class="p-4 rounded-lg bg-white border border-slate-100 shadow-sm flex-1 flex flex-col justify-between">
+              <div>
+                <div class="font-semibold text-sm">Stochastic Modeling Engine</div>
+                <p class="text-xs text-slate-500 mt-2">Thousands of forward-looking scenario simulations.</p>
+              </div>
             </div>
-            <div class="p-4 rounded-lg bg-white border border-slate-100 shadow-sm">
-              <div class="font-semibold text-sm">Dynamic Assumptions</div>
-              <p class="text-xs text-slate-500 mt-2">Customize market assumptions and spending policy scenarios.</p>
+            <div class="p-4 rounded-lg bg-white border border-slate-100 shadow-sm flex-1 flex flex-col justify-between">
+              <div>
+                <div class="font-semibold text-sm">Dynamic Assumptions</div>
+                <p class="text-xs text-slate-500 mt-2">Customize market assumptions and spending policy scenarios.</p>
+              </div>
             </div>
-            <div class="p-4 rounded-lg bg-white border border-slate-100 shadow-sm">
-              <div class="font-semibold text-sm">Board-Ready Reporting</div>
-              <p class="text-xs text-slate-500 mt-2">Clean exportable reports for committees and boards.</p>
+            <div class="p-4 rounded-lg bg-white border border-slate-100 shadow-sm flex-1 flex flex-col justify-between">
+              <div>
+                <div class="font-semibold text-sm">Board-Ready Reporting</div>
+                <p class="text-xs text-slate-500 mt-2">Clean exportable reports for committees and boards.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -102,4 +122,8 @@ import { RouterLink } from 'vue-router';
   background: rgba(255,255,255,0.7);
   backdrop-filter: blur(6px);
 }
+</style>
+
+<style scoped>
+/* rely on flexbox stretch to equalize heights; no fixed min-height */
 </style>

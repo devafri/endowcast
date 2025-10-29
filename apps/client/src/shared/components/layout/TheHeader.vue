@@ -43,9 +43,11 @@ async function handleLogout() {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
       <div class="flex justify-between items-center">
         <RouterLink to="/" class="flex items-center gap-3 group">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-800 to-slate-800 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
-          <span class="text-white font-bold text-lg">E</span>
-        </div>
+<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-700 to-slate-200 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow">
+  <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M6 5H18V8H6V5ZM6 10H15V13H6V10ZM6 15H18V18H6V15Z"/>
+  </svg>
+</div>
         <div>
           <div class="text-xl font-bold text-gray-900 leading-tight">EndowCast</div>
           <div class="text-sm text-gray-600 font-medium">Endowment Analytics</div>

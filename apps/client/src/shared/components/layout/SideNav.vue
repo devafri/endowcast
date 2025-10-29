@@ -44,9 +44,11 @@ async function handleLogout() {
   <aside :class="['hidden lg:flex lg:flex-col lg:fixed lg:top-0 lg:left-0 lg:h-screen lg:z-20 bg-white border-r border-gray-200 transition-all duration-200', collapsed ? 'lg:w-20' : 'lg:w-64']" aria-expanded="false">
     <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
       <RouterLink to="/" class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-800 to-slate-800 flex items-center justify-center shadow">
-          <span class="text-white font-bold">E</span>
-        </div>
+ <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-700 to-slate-200 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow">
+  <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M6 5H18V8H6V5ZM6 10H15V13H6V10ZM6 15H18V18H6V15Z"/>
+  </svg>
+</div>
         <div v-if="!collapsed" class="transition-all duration-150">
           <div class="text-sm font-bold">EndowCast</div>
           <div class="text-xs text-gray-500">Endowment Analytics</div>

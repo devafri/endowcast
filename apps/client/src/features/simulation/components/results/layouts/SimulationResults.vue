@@ -54,10 +54,9 @@ const dataToUse = computed(() => {
     <StatisticalSummarySection :results="dataToUse" />
     <SimulationDataByPercentile :results="dataToUse" />
 
-    <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <TailRisk :results="dataToUse" />
-      <PolicyRangeWeights :results="dataToUse" />
-    </section>
+    
+    <TailRisk :results="dataToUse" />
+    
     <MethodologyNotes :results="dataToUse" />
 
   </div>

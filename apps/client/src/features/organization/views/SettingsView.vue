@@ -22,7 +22,6 @@ import {
 } from '../components/ui';
 import {
   BasicParametersTab,
-  SpendingPolicyTab,
   StressTestingTab,
   AssetClassesTab,
   AdvancedTab,
@@ -36,8 +35,7 @@ const activeTab = ref('basic');
 const showOnboardingTip = ref(true);
 
 const tabs: TabConfig[] = [
-  { id: 'basic', label: 'Basic Parameters', icon: '📊', feature: 'basic' },
-  { id: 'spending', label: 'Spending & Policy', icon: '💰', feature: 'stress' },
+  { id: 'basic', label: 'Parameters & Policy', icon: '�', feature: 'basic' },
   { id: 'stress', label: 'Stress Testing', icon: '⚠️', feature: 'stress' },
   { id: 'assets', label: 'Asset Classes', icon: '📈', feature: 'advanced' },
   { id: 'advanced', label: 'Advanced', icon: '⚙️', feature: 'advanced' },
@@ -142,23 +140,29 @@ onMounted(async () => {
           <div class="space-y-6 mt-4">
         <!-- Basic Parameters Tab -->
         <BasicParametersTab
-          v-show="activeTab === 'basic'"
+          v-if="activeTab === 'basic'"
           :inputs="sim.inputs"
           :options="sim.options as any"
           @update:inputs="(inputs: any) => Object.assign(sim.inputs, inputs)"
           @update:options="(options: any) => Object.assign(sim.options, options)"
         />
 
-        <!-- Spending & Policy Tab -->
-        <SpendingPolicyTab
-          v-show="activeTab === 'spending'"
-          :can-access-tab="canAccessTab('spending')"
+        <!-- Spending & Policy is consolidated into Basic Parameters tab -->
+        <!-- Asset Classes Tab -->
+        <AssetClassesTab
+          v-if="activeTab === 'assets'"
+          :can-access-tab="canAccessTab('assets')"
+          :asset-classes="assetClasses as any"
+          :asset-overrides="assetOverrideData"
+          @set-override-mean-pct="(assetKey: string, event: Event) => assetOverrides.setOverrideMean(assetKey, event)"
+          @set-override-sd-pct="(assetKey: string, event: Event) => assetOverrides.setOverrideStdDev(assetKey, event)"
+          @get-override-mean-pct="(assetKey: string) => assetOverrides.getOverrideMean(assetKey)"
+          @get-override-sd-pct="(assetKey: string) => assetOverrides.getOverrideStdDev(assetKey)"
         />
-
         <!-- Placeholder for other tabs - to be implemented -->
         <!-- Stress Testing Tab -->
         <StressTestingTab
-          v-show="activeTab === 'stress'"
+          v-if="activeTab === 'stress'"
           :can-access-tab="canAccessTab('stress')"
           :stress-config="stressConfig"
           :asset-classes="assetClasses as any"
@@ -175,17 +179,7 @@ onMounted(async () => {
           @remove-cpi-shock="stressTesting.removeCpiShockHandler"
         />
 
-        <!-- Asset Classes Tab -->
-        <AssetClassesTab
-          v-show="activeTab === 'assets'"
-          :can-access-tab="canAccessTab('assets')"
-          :asset-classes="assetClasses as any"
-          :asset-overrides="assetOverrideData"
-          @set-override-mean-pct="(assetKey: string, event: Event) => assetOverrides.setOverrideMean(assetKey, event)"
-          @set-override-sd-pct="(assetKey: string, event: Event) => assetOverrides.setOverrideStdDev(assetKey, event)"
-          @get-override-mean-pct="(assetKey: string) => assetOverrides.getOverrideMean(assetKey)"
-          @get-override-sd-pct="(assetKey: string) => assetOverrides.getOverrideStdDev(assetKey)"
-        />
+
 
         <!-- Advanced Tab -->
         <AdvancedTab
@@ -194,7 +188,7 @@ onMounted(async () => {
           :options="sim.options as any"
           :correlation-matrix="correlationMatrix"
           @update:options="(options: any) => Object.assign(sim.options, options)"
-          @update:correlation-matrix="(matrix: number[][]) => correlationMatrix = matrix"
+          @update:correlation-matrix="(matrix: number[][]) => { correlationMatrix.value = matrix }"
           @copy-share-link="() => {
             // Copy functionality would be implemented here
           }"

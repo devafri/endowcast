@@ -237,12 +237,30 @@ export const useSimulationStore = defineStore('simulation', () => {
         const nearMedian = nearestToPointwiseMedian(out.simulations || []);
         const pwMedian = pointwiseMedian(out.simulations || []);
 
+        // To avoid blocking the main thread by serializing very large arrays
+        // (the worker returns thousands of simulations and portfolio returns),
+        // we persist a lightweight representation to the database here and
+        // avoid sending the full `simulations` and `portfolioReturns` arrays
+        // from the browser. This prevents UI stalls caused by JSON.stringify
+        // and large object copies between worker <-> main thread.
         const resultsData = {
-          simulations: out.simulations,
-          portfolioReturns: out.portfolioReturns,
+          // Send counts so the server knows full-size without requiring the full payload
+          simulationsCount: Array.isArray(out.simulations) ? out.simulations.length : 0,
+          portfolioReturnsCount: Array.isArray(out.portfolioReturns) ? out.portfolioReturns.length : 0,
+          // Optionally include a very small sample (first 50 sims) to help quick previews
+          simulationsSample: Array.isArray(out.simulations) ? out.simulations.slice(0, 50) : [],
+          // Keep full summary/metadata and representative paths (small)
           spendingPolicy: out.spendingPolicy,
+          inputs: {
+            ...payload,
+            riskFreeRate: payload.riskFreeRate,
+            spendingPolicyRate: payload.spendingPolicyRate,
+            investmentExpenseRate: payload.investmentExpenseRate,
+            portfolioWeights: { ...payload.portfolioWeights },
+          },
           summary: {
             ...simulationResults.summary,
+            allocationPolicy: Object.fromEntries(Object.entries(allocationPolicy).map(([k, v]) => [k, { min: v.min, max: v.max, default: v.default }])) as any,
             worstCuts: worstCuts,
             worstCutsSummary: worstSummary,
             representative: {
@@ -254,9 +272,12 @@ export const useSimulationStore = defineStore('simulation', () => {
             }
           },
           stress: simulationResults.stress,
-          yearLabels: simulationResults.yearLabels
+          yearLabels: simulationResults.yearLabels,
+          // Mark that the browser trimmed full results so server/operator tooling
+          // can decide whether to request full payload via a different channel.
+          fullResultsTrimmed: true,
         };
-        console.log('Results data to save:', resultsData);
+        console.log('Results data to save (trimmed):', { ...resultsData, simulationsSampleLength: resultsData.simulationsSample.length });
         await apiService.saveSimulationResults(simulationId, resultsData);
         console.log('Successfully saved simulation results');
       }
@@ -391,10 +412,22 @@ try {
   watch(() => s.options.years, (nv: any) => {
     const y = Math.max(1, Math.min(10, Math.floor(Number(nv) || 10)));
     const cur = s.inputs.grantTargets.slice();
+    // If the current length already matches target, nothing to do
     if (cur.length === y) return;
+
+    // If we need more years, safely extend with zeros
     if (cur.length < y) {
       s.inputs.grantTargets = [...cur, ...Array(y - cur.length).fill(0)] as any;
-    } else {
+      return;
+    }
+
+    // If the array is longer than requested, only truncate when the
+    // extra entries are all zeros. This avoids clobbering manual
+    // per-year overrides which could otherwise cause reactive update
+    // loops between components (and heavy synchronous reassignments).
+    const tail = cur.slice(y);
+    const tailHasNonZero = tail.some(v => Number(v) !== 0);
+    if (!tailHasNonZero) {
       s.inputs.grantTargets = cur.slice(0, y) as any;
     }
   });
