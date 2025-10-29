@@ -138,9 +138,13 @@ router.post('/register', validateRegister, async (req, res) => {
       expiresIn: process.env.JWT_EXPIRES_IN || '7d'
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Registration error:', error.message);
+    console.error('Error details:', error);
+    console.error('Error code:', error.code);
+    console.error('Error meta:', error.meta);
     res.status(500).json({ 
-      error: 'Failed to register user and organization'
+      error: 'Failed to register user and organization',
+      details: error.message // Include error message for debugging
     });
   }
 });
