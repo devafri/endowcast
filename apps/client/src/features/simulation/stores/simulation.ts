@@ -212,6 +212,101 @@ export const useSimulationStore = defineStore('simulation', () => {
         baseYear ? String(baseYear + i) : (i === 0 ? 'Start' : `Year ${i}`)
       );
 
+      // Compute additional metrics for the summary (so charts render correctly after array cleanup)
+      // Sharpe Ratio (50th percentile of per-simulation Sharpe ratios)
+      const rfVal = inputs.riskFreeRate ?? 2;
+      const rf = rfVal > 1 ? rfVal / 100 : rfVal;
+      const sharpeValues = (out.portfolioReturns ?? []).map((r: number[]) => {
+        if (!r?.length) return NaN;
+        const mean = r.reduce((s, v) => s + v, 0) / r.length;
+        const variance = r.reduce((s, v) => s + (v - mean) ** 2, 0) / r.length;
+        const std = Math.sqrt(variance);
+        return std > 0 ? (mean - rf) / std : NaN;
+      }).filter(isFinite);
+      const sharpeMedian = sharpeValues.length ? sharpeValues.sort((a, b) => a - b)[Math.floor(sharpeValues.length / 2)] : 0;
+
+      // Maximum Drawdown (median across simulations)
+      const maxDrawdowns = (out.simulations ?? []).map((sim: number[]) => {
+        let maxVal = sim[0];
+        let maxDD = 0;
+        for (const val of sim) {
+          if (val > maxVal) maxVal = val;
+          const dd = (maxVal - val) / maxVal;
+          if (dd > maxDD) maxDD = dd;
+        }
+        return maxDD;
+      }).filter(isFinite);
+      const medianMaxDrawdown = maxDrawdowns.length ? maxDrawdowns.sort((a, b) => a - b)[Math.floor(maxDrawdowns.length / 2)] : 0;
+
+      // CVaR 95% (average of worst 5% outcomes)
+      const sortedFinal = [...lastValues].filter(isFinite).sort((a, b) => a - b);
+      const cvar95Index = Math.floor(sortedFinal.length * 0.05);
+      const cvar95Value = sortedFinal.length > 0 ? sortedFinal.slice(0, Math.max(1, cvar95Index)).reduce((a, b) => a + b, 0) / Math.max(1, cvar95Index) : 0;
+
+      // Sortino Ratio (median across simulations)
+      const sortinoValues = (out.portfolioReturns ?? []).map((r: number[]) => {
+        if (!r?.length) return NaN;
+        const mean = r.reduce((s, v) => s + v, 0) / r.length;
+        const downsideVariance = r.reduce((s, v) => s + Math.pow(Math.min(v - rf, 0), 2), 0) / r.length;
+        const downsideStd = Math.sqrt(downsideVariance);
+        return downsideStd > 0 ? (mean - rf) / downsideStd : NaN;
+      }).filter(isFinite);
+      const sortinoRatioMedian = sortinoValues.length ? sortinoValues.sort((a, b) => a - b)[Math.floor(sortinoValues.length / 2)] : 0;
+
+      // Inflation-Adjusted Preservation (median final / (initial * inflation factor))
+      const inflationFactor = Math.pow(1 + (rfVal > 1 ? rfVal / 100 : rfVal), yCount);
+      const inflationPreservation = (medianFinal / (initial * inflationFactor)) * 100;
+
+      // Final value percentiles
+      const finalP10 = sortedFinal[Math.floor(sortedFinal.length * 0.1)];
+      const finalP90 = sortedFinal[Math.floor(sortedFinal.length * 0.9)];
+
+      // Tail Risk Metrics - percentiles of final values
+      const finalP1 = sortedFinal[Math.floor(sortedFinal.length * 0.01)];
+      const finalP5 = sortedFinal[Math.floor(sortedFinal.length * 0.05)];
+
+      // Loss threshold probabilities (used by TailRisk component)
+      const totalSims = sortedFinal.length;
+      const lossThresholds = [
+        {
+          label: '5%+ Loss',
+          threshold: initial * 0.95,
+          probability: sortedFinal.filter(v => v < initial * 0.95).length / totalSims,
+          count: sortedFinal.filter(v => v < initial * 0.95).length
+        },
+        {
+          label: '10%+ Loss',
+          threshold: initial * 0.90,
+          probability: sortedFinal.filter(v => v < initial * 0.90).length / totalSims,
+          count: sortedFinal.filter(v => v < initial * 0.90).length
+        },
+        {
+          label: '15%+ Loss',
+          threshold: initial * 0.85,
+          probability: sortedFinal.filter(v => v < initial * 0.85).length / totalSims,
+          count: sortedFinal.filter(v => v < initial * 0.85).length
+        },
+        {
+          label: '20%+ Loss',
+          threshold: initial * 0.80,
+          probability: sortedFinal.filter(v => v < initial * 0.80).length / totalSims,
+          count: sortedFinal.filter(v => v < initial * 0.80).length
+        },
+        {
+          label: '30%+ Loss',
+          threshold: initial * 0.70,
+          probability: sortedFinal.filter(v => v < initial * 0.70).length / totalSims,
+          count: sortedFinal.filter(v => v < initial * 0.70).length
+        }
+      ];
+
+      // Average depletion magnitude and range
+      const shortfalls = sortedFinal.filter(v => v < initial).map(v => initial - v);
+      const averageDepletionMagnitude = shortfalls.length ? shortfalls.reduce((a, b) => a + b, 0) / shortfalls.length : 0;
+      const sortedShortfalls = shortfalls.sort((a, b) => a - b);
+      const depletionP25 = sortedShortfalls[Math.floor(sortedShortfalls.length * 0.25)];
+      const depletionP75 = sortedShortfalls[Math.floor(sortedShortfalls.length * 0.75)];
+
       const simulationResults = {
         ...out,
         yearLabels,
@@ -223,6 +318,20 @@ export const useSimulationStore = defineStore('simulation', () => {
           annualizedReturn: annualizedReturn * 100, // Now also median of per-simulation CAGRs (industry standard)
           annualizedVolatility: medianAnnualizedVol * 100, // Annualized volatility as percentage
           riskFreeRate: inputs.riskFreeRate, // Risk-free rate used (in percent)
+          sharpeMedian,
+          medianMaxDrawdown,
+          cvar95: cvar95Value,
+          sortino: sortinoRatioMedian,
+          inflationPreservation,
+          finalP10,
+          finalP90,
+          // Tail risk metrics for TailRisk component
+          worst1Pct: finalP1,
+          worst5Pct: finalP5,
+          worst10Pct: finalP10,
+          lossThresholds,
+          averageDepletionMagnitude,
+          depletionMagnitudeRange: { p25: depletionP25, p75: depletionP75 },
         }
       };
 

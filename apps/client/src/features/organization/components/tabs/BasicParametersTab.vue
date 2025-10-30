@@ -17,12 +17,12 @@
       <label class="block text-sm font-medium text-slate-800 mb-2">Number of Years</label>
       <input 
         type="number" 
-        v-model.number="options.years" 
+        :value="years" 
+        @input="e => years = parseInt((e.target as HTMLInputElement).value) || 10"
         class="input-field w-full p-3 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
         placeholder="10" 
         min="1" 
         max="30" 
-        @input="$emit('update:options', options)"
       />
     </div>
 
@@ -31,12 +31,12 @@
       <label class="block text-sm font-medium text-slate-800 mb-2">Starting Year</label>
       <input 
         type="number" 
-        v-model.number="options.startYear" 
+        :value="startYear" 
+        @input="e => startYear = parseInt((e.target as HTMLInputElement).value) || new Date().getFullYear()"
         class="input-field w-full p-3 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100" 
         :placeholder="String(new Date().getFullYear())" 
         min="2000" 
         max="2100" 
-        @input="$emit('update:options', options)"
       />
     </div>
   </div>
@@ -283,6 +283,31 @@ interface Emits {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
+
+// Create getter/setter computed properties for two-way binding on props
+const years = computed({
+  get: () => props.options.years || 10,
+  set: (value: any) => {
+    const numValue = typeof value === 'number' ? value : parseInt(String(value), 10);
+    // Only emit if the value actually changed to avoid infinite update loops
+    if (!isNaN(numValue) && numValue >= 1 && numValue <= 30 && numValue !== props.options.years) {
+      const newOptions = { ...props.options, years: numValue };
+      emit('update:options', newOptions);
+    }
+  }
+});
+
+const startYear = computed({
+  get: () => props.options.startYear || new Date().getFullYear(),
+  set: (value: any) => {
+    const numValue = typeof value === 'number' ? value : parseInt(String(value), 10);
+    // Only emit if the value actually changed to avoid infinite update loops
+    if (!isNaN(numValue) && numValue >= 2000 && numValue <= 2100 && numValue !== props.options.startYear) {
+      const newOptions = { ...props.options, startYear: numValue };
+      emit('update:options', newOptions);
+    }
+  }
+});
 
 // Computed properties for validation states
 const isFinancialSectionComplete = computed(() => {

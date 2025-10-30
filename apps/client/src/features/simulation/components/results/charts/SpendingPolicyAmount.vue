@@ -30,9 +30,11 @@ function buildChart() {
   if (!ctx) return;
   if (chart) { chart.destroy(); chart = null; }
 
-  const spend = props.results.spendingPolicy as number[][]; // [sim][year] amounts
+  const spend = (props.results.spendingPolicy as number[][] | undefined) ?? []; // [sim][year] amounts
   const Y = years.value;
-  if (Y < 1) return;
+  
+  // If no spending data, don't render the chart
+  if (Y < 1 || !spend.length) return;
   
   // Debug logging
   console.log('Spending chart debug:');

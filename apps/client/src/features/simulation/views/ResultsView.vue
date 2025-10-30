@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSimulationStore } from '../../simulation/stores/simulation';
 import { useAuthStore } from '@/features/auth/stores/auth';
@@ -16,7 +16,11 @@ function run() {
     if (res) {
       // If the run produced results with an id, ensure the URL contains scenarioId (path param)
       const scenarioId = (res && (res.id || res.simulationId)) || null;
-  if (scenarioId) router.replace({ name: 'ResultsById', params: { scenarioId } });
+      if (scenarioId) {
+        // Use push instead of replace to ensure proper history navigation
+        // Then the watcher below will automatically load the scenario
+        router.push({ name: 'ResultsById', params: { scenarioId } });
+      }
     }
   }).catch((e:any)=>{
     // runSimulation already sets error message; no-op here
@@ -83,6 +87,18 @@ async function handleCopyLink() {
 
 // Track if component is mounted to prevent state updates after unmount
 let isMounted = false;
+let cleanupTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+// Watch for route changes and load scenario when scenarioId param changes
+watch(() => route.params.scenarioId as string | undefined, async (newScenarioId) => {
+  if (newScenarioId && isMounted) {
+    try {
+      await sim.loadScenario(newScenarioId);
+    } catch (error) {
+      console.error('Error loading scenario from route:', error);
+    }
+  }
+});
 
 // Check for scenarioId query parameter and load scenario on mount
 onMounted(async () => {
@@ -104,7 +120,7 @@ onMounted(async () => {
 
     // If no id was provided, but there's in-memory results (user ran simulation), prefer that
     if (!scenarioId && sim.results) {
-      // nothing to load — just show the results already in the store
+      // Don't schedule cleanup on mount - keep arrays for chart rendering
       return;
     }
   } catch (error) {
@@ -112,8 +128,40 @@ onMounted(async () => {
   }
 });
 
+// Schedule cleanup of large arrays only when leaving the page
+function scheduleMemoryCleanup() {
+  if (!sim.results) return;
+  
+  // Clear only after a very long delay (30 seconds) or when user leaves the page
+  // This gives plenty of time for all charts and tables to render
+  if (cleanupTimeoutId) clearTimeout(cleanupTimeoutId);
+  cleanupTimeoutId = setTimeout(() => {
+    if (sim.results && isMounted) {
+      // Clear the large simulation arrays to free memory
+      (sim.results as any).simulations = [];
+      (sim.results as any).portfolioReturns = [];
+      (sim.results as any).benchmarks = [];
+      (sim.results as any).corpusPaths = [];
+      (sim.results as any).spendingPolicy = [];
+      console.log('✅ Memory cleanup: cleared large simulation arrays after 30 seconds');
+    }
+  }, 30000);
+}
+
 onUnmounted(() => {
   isMounted = false;
+  // Clean up timeout if user leaves before it executes
+  if (cleanupTimeoutId) {
+    clearTimeout(cleanupTimeoutId);
+  }
+  // Clear arrays immediately when leaving the page
+  if (sim.results) {
+    (sim.results as any).simulations = [];
+    (sim.results as any).portfolioReturns = [];
+    (sim.results as any).benchmarks = [];
+    (sim.results as any).corpusPaths = [];
+    (sim.results as any).spendingPolicy = [];
+  }
 });
 </script>
 

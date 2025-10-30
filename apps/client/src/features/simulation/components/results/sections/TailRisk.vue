@@ -58,7 +58,7 @@ const riskMetrics = computed(() => {
 });
 
 const worst1Value = computed(() => {
-  if (riskMetrics.value?.tailRiskMetrics?.worst1Pct != null) return riskMetrics.value.tailRiskMetrics.worst1Pct;
+  if (props.results?.summary?.worst1Pct != null) return props.results.summary.worst1Pct;
   if (!sims.value.length) return NaN;
   const yearsN = sims.value[0].length;
   const finals = sims.value.map(s => s[yearsN - 1]).filter(isFinite).sort((a, b) => a - b);
@@ -66,7 +66,7 @@ const worst1Value = computed(() => {
 });
 
 const worst5Value = computed(() => {
-  if (riskMetrics.value?.tailRiskMetrics?.worst5Pct != null) return riskMetrics.value.tailRiskMetrics.worst5Pct;
+  if (props.results?.summary?.worst5Pct != null) return props.results.summary.worst5Pct;
   if (!sims.value.length) return NaN;
   const yearsN = sims.value[0].length;
   const finals = sims.value.map(s => s[yearsN - 1]).filter(isFinite).sort((a, b) => a - b);
@@ -74,7 +74,7 @@ const worst5Value = computed(() => {
 });
 
 const worst10Value = computed(() => {
-  if (riskMetrics.value?.tailRiskMetrics?.worst10Pct != null) return riskMetrics.value.tailRiskMetrics.worst10Pct;
+  if (props.results?.summary?.worst10Pct != null) return props.results.summary.worst10Pct;
   if (!sims.value.length) return NaN;
   const yearsN = sims.value[0].length;
   const finals = sims.value.map(s => s[yearsN - 1]).filter(isFinite).sort((a, b) => a - b);
@@ -82,6 +82,18 @@ const worst10Value = computed(() => {
 });
 
 const lossThresholds = computed(() => {
+  // Use pre-computed loss thresholds from summary if available
+  if (props.results?.summary?.lossThresholds?.length) {
+    return (props.results.summary.lossThresholds as any[]).map(loss => ({
+      label: loss.label,
+      description: loss.label,
+      threshold: loss.threshold,
+      probability: loss.probability,
+      lossCount: loss.count,
+      totalSimulations: 5000 // Store tracks this
+    }));
+  }
+
   if (!sims.value.length || !isFinite(initialEndowment.value)) return [];
 
   const yearsN = sims.value[0].length;
@@ -113,6 +125,11 @@ const lossThresholds = computed(() => {
 });
 
 const inflationAdjustedPreservationFrac = computed(() => {
+  // Use pre-computed value from summary (stored as percentage, convert back to fraction)
+  if (props.results?.summary?.inflationPreservation != null) {
+    return props.results.summary.inflationPreservation / 100;
+  }
+
   if (!sims.value.length || !isFinite(initialEndowment.value)) return NaN;
   const finalValues = sims.value.map(sim => sim[sim.length - 1]);
   const medianFinal = percentile(finalValues, 50);

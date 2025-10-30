@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 
 const props = defineProps({
   modelValue: {
@@ -20,10 +20,21 @@ const emit = defineEmits(['update:modelValue']);
 // Local copy to avoid mutating prop directly
 const targets = ref([...props.modelValue.slice(0, props.years), ...Array(Math.max(0, props.years - props.modelValue.length)).fill(0)]);
 
-watch(() => props.modelValue, (nv) => {
-  targets.value = [...nv.slice(0, props.years)];
-}, { deep: true });
+// Watch for changes to both modelValue and years
+watch(() => ({ modelValue: props.modelValue, years: props.years }), 
+  ({ modelValue, years }) => {
+    // Resize targets array to match current years value
+    const newTargets = [...modelValue.slice(0, years)];
+    // Pad with zeros if needed
+    while (newTargets.length < years) {
+      newTargets.push(0);
+    }
+    targets.value = newTargets;
+  }, 
+  { deep: true }
+);
 
+// Emit updates when targets change
 watch(targets, (nv) => {
   emit('update:modelValue', nv.map(v => Number(v) || 0));
 }, { deep: true });

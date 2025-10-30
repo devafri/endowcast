@@ -39,15 +39,23 @@ const tabs = [90, 75, 50, 25, 10];
 const active = ref(50);
 
 // Get percentile series for core data
-const simSer = computed(() => percentileSeries(props.results?.simulations ?? [], active.value));
+const simSer = computed(() => {
+  const sims = props.results?.simulations ?? [];
+  if (!sims.length) return [];
+  return percentileSeries(sims, active.value);
+});
 
-// Get the matrices
+// Get the matrices - add defensive null checks
 const opExMatrix = props.results?.operatingExpenses ?? [];
 const grantsMatrix = props.results?.grants ?? [];
 const spendingPolicyMatrix = props.results?.spendingPolicy ?? [];
 const invExpMatrix = props.results?.investmentExpenses ?? [];
 // Note: totalSpendings is derived from (spendingPolicy + invExp) or (actualSpending + invExp)
-const totalSpendSer = computed(() => percentileSeries(props.results?.totalSpendings ?? [], active.value));
+const totalSpendSer = computed(() => {
+  const totalSpendings = props.results?.totalSpendings ?? [];
+  if (!totalSpendings.length) return [];
+  return percentileSeries(totalSpendings, active.value);
+});
 
 // Actual Spending (OpEx + Grants) for display. Grants include any grant targets (gt) logic applied.
 const actualSpending = computed(() => {
@@ -60,8 +68,15 @@ const actualSpending = computed(() => {
     return [];
 });
 
-const opExSer = computed(() => percentileSeries(opExMatrix, active.value));
-const grantsSer = computed(() => percentileSeries(grantsMatrix, active.value));
+const opExSer = computed(() => {
+  if (!opExMatrix.length) return [];
+  return percentileSeries(opExMatrix, active.value);
+});
+
+const grantsSer = computed(() => {
+  if (!grantsMatrix.length) return [];
+  return percentileSeries(grantsMatrix, active.value);
+});
 
 // Spending Policy Expense Row: OpEx + Grants
 const spendingSer = computed(() => {
@@ -70,10 +85,16 @@ const spendingSer = computed(() => {
         return percentileSeries(actualSpending.value, active.value);
     }
     // Fallback logic for older data or missing components: use spendingPolicy (which includes both)
-    return percentileSeries(spendingPolicyMatrix, active.value);
+    if (spendingPolicyMatrix.length) {
+      return percentileSeries(spendingPolicyMatrix, active.value);
+    }
+    return [];
 });
 
-const invExpSer = computed(() => percentileSeries(invExpMatrix, active.value));
+const invExpSer = computed(() => {
+  if (!invExpMatrix.length) return [];
+  return percentileSeries(invExpMatrix, active.value);
+});
 
 // Generate dynamic year labels
 const yearLabels = computed(() => {

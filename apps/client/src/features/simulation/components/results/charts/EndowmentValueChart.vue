@@ -23,9 +23,13 @@ function buildChart() {
   if (!ctx) return;
   if (chart) { chart.destroy(); chart = null; }
 
-  const sims = props.results.simulations as number[][];
-  const benchmarks = props.results.benchmarks as number[][];
-  const corpus = (props.results.corpusPaths as number[][]).filter((p: number[]) => Array.isArray(p) && p.every(v => isFinite(v)));
+  const sims = (props.results.simulations as number[][] | undefined) ?? [];
+  const benchmarks = (props.results.benchmarks as number[][] | undefined) ?? [];
+  const corpus = ((props.results.corpusPaths as number[][] | undefined) ?? []).filter((p: number[]) => Array.isArray(p) && p.every(v => isFinite(v)));
+  
+  // If no simulations, don't render the chart
+  if (!sims.length) return;
+  
   const benchmarkLabel = props.results.benchmark?.label || 'Benchmark (CPI + 6%)';
   const benchmarkEnabled = props.results.benchmark?.enabled !== false;
   const corpusEnabled = props.results.corpus?.enabled !== false;
