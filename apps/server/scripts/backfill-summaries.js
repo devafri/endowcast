@@ -154,7 +154,10 @@ async function backfill({ dry = true, limit = 0 } = {}){
       if (dry) {
         console.log(`[DRY] Would update simulation ${s.id} with summary keys:`, Object.keys(newSummary));
       } else {
-        await prisma.simulation.update({ where: { id: s.id }, data: { summary: newSummary } });
+        // Use raw SQL to update only the summary column to avoid schema mismatch issues
+        // Cast the JSON string to JSONB for the database
+        const summaryJson = JSON.stringify(newSummary);
+        await prisma.$executeRawUnsafe(`UPDATE simulations SET summary = $1::jsonb WHERE id = $2`, summaryJson, s.id);
         console.log(`Updated simulation ${s.id}`);
         updated++;
       }
