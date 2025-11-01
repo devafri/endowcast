@@ -15,7 +15,7 @@ const plans = [
   { name: 'Free', planType: 'FREE', price: 0, description: 'Try EndowCast with limited features.', features: ['10 simulations per month'], buttonText: 'Start Free', popular: false },
   { name: 'Analyst Pro', planType: 'ANALYST_PRO', price: 49, description: 'For individual analysts', features: ['50 simulations / month'], buttonText: 'Start Analyst Pro', popular: false },
   { name: 'Foundation', planType: 'FOUNDATION', price: 249, description: 'For mid-size endowments', features: ['250 simulations / month'], buttonText: 'Start Foundation', popular: true },
-  { name: 'Foundation Pro', planType: 'FOUNDATION_PRO', price: 449, description: 'Enterprise features', features: ['500 simulations / month'], buttonText: 'Contact Sales', popular: false },
+  { name: 'Foundation Pro', planType: 'FOUNDATION_PRO', price: 449, description: 'Enterprise features', features: ['5000 simulations / month'], buttonText: 'Contact Sales', popular: false },
 ];
 
 function annualPrice(monthly: number) {
@@ -108,7 +108,7 @@ async function selectPlan(plan: any) {
                     <td class="py-3 text-center">5</td>
                     <td class="py-3 text-center">50</td>
                     <td class="py-3 text-center">250</td>
-                    <td class="py-3 text-center">500</td>
+                    <td class="py-3 text-center">5000</td>
                   </tr>
                   <tr>
                     <td class="py-3">Custom assumptions</td>

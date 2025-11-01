@@ -165,8 +165,12 @@ export const useSimulationStore = defineStore('simulation', () => {
         
         grantTargets: payload.grantTargets?.length ? payload.grantTargets : null,
         
-        // Important: keep at or below 500 so backend includes simulation paths in response
-        numSimulations: 500 // Can be made configurable
+        // Default number of Monte Carlo paths to request from backend.
+        // NOTE: the backend currently includes full simulation `paths` in the response
+        // only when `numSimulations <= 500` to avoid extremely large payloads.
+        // We request 5000 simulations by default for better percentile stability;
+        // if you need the individual paths for inspection, set this to 500 or lower.
+        numSimulations: 5000 // Can be made configurable
       };
 
 

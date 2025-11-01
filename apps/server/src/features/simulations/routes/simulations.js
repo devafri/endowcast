@@ -62,7 +62,7 @@ router.post('/execute', trackSimulationUsage, [
       equityShock = 0,
       cpiShift = 0,
       grantTargets = null,
-      numSimulations = 500
+      numSimulations = 5000
     } = req.body;
     
     // Safety check for riskFreeRate from another input field, falling back to 2%
