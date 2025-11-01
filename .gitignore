@@ -82,6 +82,9 @@ coverage/
 # dotenv environment variables file
 .env.test
 
+# Local env backups (do not commit)
+apps/server/.env.old
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
