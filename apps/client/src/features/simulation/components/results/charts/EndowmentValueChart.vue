@@ -39,9 +39,9 @@ function buildChart() {
 
   function getPercentile(arrs: number[][], pct: number) {
     const n = arrs.length;
-    if (!n) return [initialValue];
+    if (!n) return [];
     const Y = arrs[0].length;
-    const out = [initialValue];
+    const out = [];
     for (let y = 0; y < Y; ++y) {
       const vals = arrs.map(a => a[y]).sort((a, b) => a - b);
       const idx = Math.floor((pct / 100) * (n - 1));
@@ -55,19 +55,21 @@ function buildChart() {
     percentiles[pct] = getPercentile(sims, pct);
   }
   const p50 = percentiles[50];
-  const benchmarkMean = [initialValue, ...Array.from({ length: Y }, (_, i) => {
+  const benchmarkMean = Array.from({ length: Y }, (_, i) => {
     const arr = benchmarks.map(b => b[i]);
     return arr.reduce((a, b) => a + b, 0) / arr.length;
-  })];
+  });
   const hasCorpus = corpusEnabled && corpus.length > 0;
-  const corpusMean = hasCorpus ? [initialValue, ...Array.from({ length: Y }, (_, i) => {
+  const corpusMean = hasCorpus ? Array.from({ length: Y }, (_, i) => {
     const arr = corpus.map(c => c[i]);
     return arr.reduce((a, b) => a + b, 0) / arr.length;
-  })] : [];
+  }) : [];
 
-  const labels = (props.results?.yearLabels && props.results.yearLabels.length === Y + 1)
+  // yearLabels should be length Y (2025, 2026, ..., 2034 for Y=10)
+  // These represent the years during which simulation occurs
+  const labels = (props.results?.yearLabels && props.results.yearLabels.length === Y)
     ? props.results.yearLabels
-    : [2025, ...Array.from({ length: Y }, (_, i) => 2025 + i + 1)];
+    : Array.from({ length: Y }, (_, i) => String(2025 + i));
   const datasets: any[] = [];
 
 // Gradients for fan chart bands
@@ -113,13 +115,13 @@ function buildChart() {
     const rep = props.results?.summary?.representative;
     if (rep) {
       if (Array.isArray(rep.medoidPath) && rep.medoidPath.length) {
-        datasets.push({ label: 'Representative (Medoid)', data: [initialValue, ...rep.medoidPath], borderColor: '#EF4444', borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.3, order: 100 });
+        datasets.push({ label: 'Representative (Medoid)', data: rep.medoidPath, borderColor: '#EF4444', borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.3, order: 100 });
       }
       if (Array.isArray(rep.nearestToMedianPath) && rep.nearestToMedianPath.length) {
-        datasets.push({ label: 'Nearest to Median (actual path)', data: [initialValue, ...rep.nearestToMedianPath], borderColor: '#D946EF', borderWidth: 2, borderDash: [6,4], pointRadius: 0, fill: false, tension: 0.3, order: 101 });
+        datasets.push({ label: 'Nearest to Median (actual path)', data: rep.nearestToMedianPath, borderColor: '#D946EF', borderWidth: 2, borderDash: [6,4], pointRadius: 0, fill: false, tension: 0.3, order: 101 });
       }
       if (Array.isArray(rep.pointwiseMedian) && rep.pointwiseMedian.length) {
-        datasets.push({ label: 'Pointwise Median (abstract)', data: [initialValue, ...rep.pointwiseMedian], borderColor: '#0EA5E9', borderWidth: 2, borderDash: [2,4], pointRadius: 0, fill: false, tension: 0.3, order: 99, borderOpacity: 0.7 });
+        datasets.push({ label: 'Pointwise Median (abstract)', data: rep.pointwiseMedian, borderColor: '#0EA5E9', borderWidth: 2, borderDash: [2,4], pointRadius: 0, fill: false, tension: 0.3, order: 99, borderOpacity: 0.7 });
       }
     }
   } catch (e) {}

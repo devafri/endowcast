@@ -41,6 +41,18 @@ function buildChart() {
   console.log('Y (spending years):', Y);
   console.log('yearLabels:', props.results?.yearLabels);
   console.log('yearLabels length:', props.results?.yearLabels?.length);
+  console.log('spendingPolicy data:', props.results?.spendingPolicy);
+  console.log('spendingPolicy length:', props.results?.spendingPolicy?.length);
+  if (props.results?.spendingPolicy?.length > 0) {
+    console.log('First spending path:', props.results.spendingPolicy[0]);
+    console.log('Second spending path:', props.results.spendingPolicy[1]);
+    
+    // Check the actual values
+    const firstPath = Array.from(props.results.spendingPolicy[0]);
+    const secondPath = Array.from(props.results.spendingPolicy[1]);
+    console.log('First path (array):', firstPath);
+    console.log('Second path (array):', secondPath);
+  }
 
   // Compute per-year percentiles on absolute spending amounts
   const median = Array.from({ length: Y }, (_, i) => percentile(spend.map(s => s[i]), 50));
@@ -48,6 +60,21 @@ function buildChart() {
   const p25 = Array.from({ length: Y }, (_, i) => percentile(spend.map(s => s[i]), 25));
   const p75 = Array.from({ length: Y }, (_, i) => percentile(spend.map(s => s[i]), 75));
   const p90 = Array.from({ length: Y }, (_, i) => percentile(spend.map(s => s[i]), 90));
+
+  console.log('Spending Percentiles:', {
+    median,
+    p10,
+    p25,
+    p75,
+    p90,
+  });
+  
+  // Log the values being used for percentile calculation for year 2 (index 1)
+  if (Y > 1) {
+    const year2Values = spend.map(s => s[1]);
+    console.log('Year 2 spending values (first 10):', year2Values.slice(0, 10));
+    console.log('Year 2 spending - Min:', Math.min(...year2Values), 'Max:', Math.max(...year2Values));
+  }
 
   const labels = (props.results?.yearLabels && props.results.yearLabels.length > Y)
     ? props.results.yearLabels.slice(0, Y) // Take first Y years for spending (spending happens during each year)
@@ -58,10 +85,10 @@ function buildChart() {
   console.log('Final labels for spending chart:', labels);
 
   const datasets: any[] = [
-    { label: 'Median Spending', data: median, borderColor: '#0EA5E9', backgroundColor: 'rgba(14,165,233,0.1)', borderWidth: 2.5, pointRadius: 0, fill: true, tension: 0.35 },
-    { label: '75th percentile', data: p75, borderColor: '#16A34A', backgroundColor: 'rgba(22,163,74,0.05)', borderWidth: 1.5, pointRadius: 0, fill: '+-1', tension: 0.35 },
-    { label: '25th percentile', data: p25, borderColor: '#DC2626', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.35 },
     { label: '90th percentile', data: p90, borderColor: '#15803D', borderWidth: 1.5, borderDash: [6,4], pointRadius: 0, fill: false, tension: 0.35 },
+    { label: '75th percentile', data: p75, borderColor: '#16A34A', backgroundColor: 'rgba(22,163,74,0.05)', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.35 },
+    { label: 'Median Spending', data: median, borderColor: '#0EA5E9', backgroundColor: 'rgba(14,165,233,0.1)', borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.35 },
+    { label: '25th percentile', data: p25, borderColor: '#DC2626', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.35 },
     { label: '10th percentile', data: p10, borderColor: '#B91C1C', borderWidth: 1.5, borderDash: [6,4], pointRadius: 0, fill: false, tension: 0.35 },
   ];
 

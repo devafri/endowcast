@@ -12,10 +12,10 @@ const authStore = useAuthStore();
 const billingCycle = ref<'monthly' | 'annual'>('monthly');
 
 const plans = [
-  { name: 'Free', planType: 'FREE', price: 0, description: 'Try EndowCast with limited features.', features: ['5 simulations per month'], buttonText: 'Start Free', popular: false },
+  { name: 'Free', planType: 'FREE', price: 0, description: 'Try EndowCast with limited features.', features: ['10 simulations per month'], buttonText: 'Start Free', popular: false },
   { name: 'Analyst Pro', planType: 'ANALYST_PRO', price: 49, description: 'For individual analysts', features: ['50 simulations / month'], buttonText: 'Start Analyst Pro', popular: false },
-  { name: 'Foundation', planType: 'FOUNDATION', price: 249, description: 'For mid-size endowments', features: ['500 simulations / month'], buttonText: 'Start Foundation', popular: true },
-  { name: 'Foundation Pro', planType: 'FOUNDATION_PRO', price: 449, description: 'Enterprise features', features: ['Unlimited simulations'], buttonText: 'Contact Sales', popular: false },
+  { name: 'Foundation', planType: 'FOUNDATION', price: 249, description: 'For mid-size endowments', features: ['250 simulations / month'], buttonText: 'Start Foundation', popular: true },
+  { name: 'Foundation Pro', planType: 'FOUNDATION_PRO', price: 449, description: 'Enterprise features', features: ['500 simulations / month'], buttonText: 'Contact Sales', popular: false },
 ];
 
 function annualPrice(monthly: number) {
@@ -46,16 +46,17 @@ async function selectPlan(plan: any) {
       <template #subtitle>Start with a free trial — then upgrade to unlock advanced features.</template>
       <template #controls>
         <div class="inline-flex items-center bg-white rounded-full p-1 shadow-sm border border-slate-100">
-          <button @click.prevent="setBillingCycle('monthly')" :class="billingCycle === 'monthly' ? 'px-4 py-2 rounded-full bg-slate-800 text-white text-sm' : 'px-4 py-2 rounded-full text-sm text-slate-600'" class="transition-colors duration-150 hover:bg-slate-100">Monthly</button>
-          <button @click.prevent="setBillingCycle('annual')" :class="billingCycle === 'annual' ? 'px-4 py-2 rounded-full bg-slate-800 text-white text-sm' : 'px-4 py-2 rounded-full text-sm text-slate-600'" class="ml-1 transition-colors duration-150 hover:bg-slate-100">Annual (save 15%)</button>
+          <button @click.prevent="setBillingCycle('monthly')" :class="billingCycle === 'monthly' ? 'px-4 py-2 rounded-full bg-brand text-white text-sm' : 'px-4 py-2 rounded-full text-sm text-slate-600'" class="transition-colors duration-150 hover:bg-slate-100">Monthly</button>
+          <button @click.prevent="setBillingCycle('annual')" :class="billingCycle === 'annual' ? 'px-4 py-2 rounded-full bg-brand text-white text-sm' : 'px-4 py-2 rounded-full text-sm text-slate-600'" class="ml-1 transition-colors duration-150 hover:bg-slate-100">Annual (save 15%)</button>
         </div>
       </template>
     </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 pb-12">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div v-for="(plan, idx) in displayedPlans" :key="idx" class="rounded-xl border border-slate-100 bg-white p-6 text-center">
+          <div v-for="(plan, idx) in displayedPlans" :key="idx" class="relative rounded-xl border border-slate-100 bg-white p-6 text-center hover:shadow-md transition-shadow">
             <div class="text-sm font-semibold text-slate-600">{{ plan.name }}</div>
+            <div v-if="plan.popular" class="absolute -top-3 right-4 text-xs px-2 py-1 rounded-full bg-accent text-white shadow">Popular</div>
             <div class="mt-4 flex items-baseline justify-center gap-2">
               <div class="text-3xl font-extrabold">${{ plan.displayPrice }}</div>
               <div class="text-sm text-slate-500">/{{ plan.period }}</div>
@@ -77,7 +78,10 @@ async function selectPlan(plan: any) {
             </ul>
 
             <div class="mt-6">
-              <button @click="selectPlan(plan)" class="mt-2 inline-block w-full px-4 py-2 rounded-md font-semibold text-sm" :class="plan.popular ? 'bg-slate-800 text-white' : 'border border-slate-200 bg-white text-slate-800'">{{ plan.buttonText }}</button>
+              <button @click="selectPlan(plan)" class="mt-2 inline-block w-full px-4 py-2 rounded-md font-semibold text-sm transition-colors"
+                :class="plan.popular ? 'bg-brand text-white' : 'border border-slate-200 bg-white text-slate-800 hover:border-brand hover:text-brand'">
+                {{ plan.buttonText }}
+              </button>
             </div>
           </div>
       </div>
@@ -103,8 +107,8 @@ async function selectPlan(plan: any) {
                     <td class="py-3">Simulations / month</td>
                     <td class="py-3 text-center">5</td>
                     <td class="py-3 text-center">50</td>
+                    <td class="py-3 text-center">250</td>
                     <td class="py-3 text-center">500</td>
-                    <td class="py-3 text-center">Unlimited</td>
                   </tr>
                   <tr>
                     <td class="py-3">Custom assumptions</td>
@@ -154,7 +158,7 @@ async function selectPlan(plan: any) {
       <template #title>Ready to upgrade?</template>
       <template #subtitle>Pick a plan that suits your organization.</template>
       <template #actions>
-        <router-link to="/signup" class="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold">Start Free</router-link>
+        <router-link to="/signup" class="bg-white text-brand px-8 py-4 rounded-lg font-semibold border border-brand hover:bg-brand-soft">Start Free</router-link>
       </template>
     </CTABand>
   </main>

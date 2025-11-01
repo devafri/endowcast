@@ -1,23 +1,32 @@
 <script setup lang="ts">
 // @ts-nocheck
 import { computed } from 'vue';
-import { medianFinalValue, probabilityOfLoss, medianAnnualizedReturnFromReturns, medianAnnualizedVolatility, sharpePercentile, sortinoRatio, medianMaxDrawdown, calculateRiskMetrics, inflationAdjustedPreservation, percentile } from '@/features/simulation/lib/analytics';
+import { 
+  medianFinalValue, 
+  probabilityOfLoss, 
+  medianAnnualizedReturnFromReturns, 
+  medianAnnualizedVolatility, 
+  sharpePercentile, 
+  sortinoRatio, 
+  medianMaxDrawdown, 
+  calculateRiskMetrics, 
+  percentile 
+} from '@/features/simulation/lib/analytics';
 
 const props = defineProps<{ results: any }>();
 
-// Define a placeholder for the current year. In a production app, this would be dynamic.
-// Using a fixed year for calculation stability in this component.
+// Define a placeholder for the current year.
 const CURRENT_YEAR = 2025; 
 
 // Helpers / derived metrics (prefer precomputed summary values, fallback to local calc)
-const sims = computed(() => props.results?.simulations ?? []);
+const sims = computed(() => props.results?.paths ?? props.results?.simulations ?? []);
 const portfolioReturns = computed(() => props.results?.portfolioReturns ?? []);
 
 // --- New Computed Properties ---
 
 const horizonYear = computed(() => {
     // Get the simulation horizon from inputs
-    return props.results?.inputs?.horizon ?? props.results?.yearLabels?.length ?? null;
+    return props.results?.inputs?.horizon ?? props.results?.metadata?.yearsProjected ?? props.results?.yearLabels?.length ?? null;
 });
 
 const finalYear = computed(() => {
@@ -100,15 +109,25 @@ const finalValues = computed(() => {
 
 const finalP10 = computed(() => {
   const vals = finalValues.value;
-  return vals.length ? percentile(vals, 10) : null;
+  if (vals.length) return percentile(vals, 10);
+  // Fallback to backend-provided summary if paths are omitted
+  const fv = props.results?.summary?.finalValues;
+  return fv?.percentile10 ?? null;
 });
 
 const finalP90 = computed(() => {
   const vals = finalValues.value;
-  return vals.length ? percentile(vals, 90) : null;
+  if (vals.length) return percentile(vals, 90);
+  // Fallback to backend-provided summary if paths are omitted
+  const fv = props.results?.summary?.finalValues;
+  return fv?.percentile90 ?? null;
 });
 
 const inflationPreservationPct = computed(() => {
+  // 🏆 FIX: Prefer backend-provided summary when available 
+  const fromSummary = props.results?.summary?.inflationPreservationPct;
+  if (fromSummary != null && isFinite(fromSummary)) return fromSummary;
+
   const initial = props.results?.inputs?.initialEndowment ?? NaN;
   if (!sims.value.length || !isFinite(initial)) return null;
   const years = sims.value[0]?.length ?? (props.results?.yearLabels?.length ?? 10);
@@ -174,7 +193,12 @@ const sortinoValue = computed(() => {
 });
 
 // Expose used values to template
-defineExpose({ medianAnnualizedReturnPct, annualizedVolatilityPct, sharpeMedian, sortinoValue, medianMDDPct, cvar95Value, cvar95LossPct, inflationPreservationPct, medianFinal, probabilityOfLossComputed, formatMoney, pctStr, finalP10, finalP90, realFinalMedian, horizonYear, finalYear });
+defineExpose({ 
+  medianAnnualizedReturnPct, annualizedVolatilityPct, sharpeMedian, sortinoValue, 
+  medianMDDPct, cvar95Value, cvar95LossPct, inflationPreservationPct, medianFinal, 
+  probabilityOfLossComputed, formatMoney, pctStr, finalP10, finalP90, realFinalMedian, 
+  horizonYear, finalYear 
+});
 </script>
 <template>
             <div class="xl:col-span-3 bg-white shadow-md rounded-lg p-4">

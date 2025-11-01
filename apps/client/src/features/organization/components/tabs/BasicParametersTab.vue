@@ -4,7 +4,7 @@
 <!-- Simulation Timeline Card -->
 <section class="bg-slate-50 border border-slate-100 rounded-lg p-5">
   <div class="flex items-start gap-3 mb-4">
-    <div class="h-10 w-1 rounded-md bg-indigo-600"></div>
+  <div class="h-10 w-1 rounded-md bg-accent"></div>
     <div class="flex-1">
       <h2 class="text-lg font-semibold text-slate-900">Simulation Timeline</h2>
       <p class="text-xs text-slate-500 mt-1">Define the projection period and starting year</p>
@@ -45,7 +45,7 @@
 <!-- Financial Foundation Card -->
 <section class="bg-slate-50 border border-slate-100 rounded-lg p-5">
   <div class="flex items-start gap-3 mb-4">
-    <div class="h-10 w-1 rounded-md bg-indigo-600"></div>
+    <div class="h-10 w-1 rounded-md bg-accent"></div>
     <div class="flex-1">
       <h2 class="text-lg font-semibold text-slate-900">Financial Foundation</h2>
       <p class="text-xs text-slate-500 mt-1">Core endowment financial parameters</p>
@@ -158,7 +158,7 @@
  <!-- Operating Commitments & Grants Card -->
 <section class="bg-slate-50 border border-slate-100 rounded-lg p-5">
   <div class="flex items-start gap-3 mb-4">
-    <div class="h-10 w-1 rounded-md bg-indigo-600"></div>
+    <div class="h-10 w-1 rounded-md bg-accent"></div>
     <div>
       <h2 class="text-lg font-semibold text-slate-900">Operating Commitments & Grants</h2>
       <p class="text-xs text-slate-500 mt-1">Annual expenses and mission-driven distributions</p>
@@ -225,7 +225,7 @@
 <!-- Manual Grant Override Card -->
 <section class="bg-slate-50 border border-slate-100 rounded-lg p-5">
   <div class="flex items-start gap-3 mb-4">
-    <div class="h-10 w-1 rounded-md bg-indigo-600"></div>
+    <div class="h-10 w-1 rounded-md bg-accent"></div>
     <div class="flex-1">
       <h2 class="text-lg font-semibold text-slate-900">Manual Grant Override</h2>
       <p class="text-xs text-slate-500 mt-1">Enable and edit per-year grant targets</p>
@@ -237,8 +237,8 @@
         :aria-checked="enableGrantOverride ? 'true' : 'false'"
         @click="enableGrantOverride = !enableGrantOverride"
         :class="[
-          'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400',
-          enableGrantOverride ? 'bg-indigo-600' : 'bg-slate-300'
+          'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#4C7F70]',
+          enableGrantOverride ? 'bg-accent' : 'bg-slate-300'
         ]"
       >
         <span class="sr-only">Enable manual override</span>

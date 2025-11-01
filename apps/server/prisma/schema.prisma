@@ -13,7 +13,7 @@ datasource db {
 // Organization model - the central tenant in our multi-tenant architecture
 model Organization {
   id           String   @id @default(cuid())
-  name         String
+  name         String   @unique
   domain       String?
   contactEmail String
   industry     String?
@@ -130,11 +130,10 @@ model Simulation {
   spendingGrowth Float @default(0)
   
   // Asset class assumptions
-  equityReturn       Float
-  equityVolatility   Float
-  bondReturn         Float
-  bondVolatility     Float
-  correlation        Float
+  assetAssumptions Json?
+
+  // Correlation matrix (JSON array of arrays for the 7x7 matrix)
+  correlationMatrix Json?
   
   // Shock testing parameters
   equityShock        Float?
@@ -171,11 +170,14 @@ model Portfolio {
   userId       String
   simulationId String? @unique
   
-  // Asset allocations (must sum to 100)
-  equityAllocation      Float
-  bondAllocation        Float
-  alternativeAllocation Float? @default(0)
-  cashAllocation        Float? @default(0)
+// 7 distinct asset classes (must sum to 100)
+  publicEquity         Float
+  privateEquity        Float
+  publicFixedIncome    Float
+  privateCredit        Float
+  realAssets           Float
+  diversifying         Float
+  cashShortTerm        Float
   
   // Portfolio metadata
   description String?

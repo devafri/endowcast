@@ -152,102 +152,124 @@ function formatDate(date: string | Date) {
 </script>
 
 <template>
-  <main class="min-h-screen bg-gray-50 py-8">
+  <main class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Organization Management</h1>
-        <p class="text-gray-600 mt-2">Manage your organization settings, users, and subscription</p>
-      </div>
+      <header class="mb-10 text-center">
+        <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Organization Management</h1>
+        <p class="text-slate-600 mt-2 text-sm">Manage your organization settings, users, and subscription details</p>
+      </header>
 
-      <!-- Error/Success Messages -->
-      <div v-if="error" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-        <p class="text-red-600 text-sm">{{ error }}</p>
-      </div>
-      <div v-if="success" class="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
-        <p class="text-green-600 text-sm">{{ success }}</p>
-      </div>
+      <!-- Error / Success Messages -->
+      <transition name="fade">
+        <div
+          v-if="error"
+          class="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-3 text-sm text-red-700 shadow-sm"
+        >
+          {{ error }}
+        </div>
+      </transition>
+      <transition name="fade">
+        <div
+          v-if="success"
+          class="mb-6 rounded-lg border border-green-200 bg-green-50 px-5 py-3 text-sm text-green-700 shadow-sm"
+        >
+          {{ success }}
+        </div>
+      </transition>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Organization Details -->
-        <div class="lg:col-span-2 space-y-6">
-          <!-- Organization Info Card -->
-          <div class="card p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-xl font-semibold text-gray-900">Organization Details</h2>
-              <button 
+        <!-- Left Column -->
+        <div class="lg:col-span-2 space-y-8">
+          <!-- Organization Info -->
+          <section class="rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition p-6">
+            <div class="flex items-center justify-between mb-5">
+              <h2 class="text-lg font-semibold text-slate-800">Organization Details</h2>
+
+              <!-- Edit button (tertiary) -->
+              <button
                 v-if="isAdmin"
                 @click="editOrganization"
-                class="btn-secondary text-sm"
+                class="text-slate-600 hover:text-accent font-medium transition px-3 py-1.5 rounded-md"
+                aria-label="Edit organization"
               >
                 Edit
               </button>
             </div>
-            
-            <div class="space-y-4">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-500 mb-1">Organization Name</label>
-                <p class="text-gray-900">{{ organization?.name || 'Loading...' }}</p>
+                <label class="block text-xs font-medium text-slate-500 uppercase mb-1">Organization Name</label>
+                <p class="text-slate-800 font-medium">{{ organization?.name || 'Loading…' }}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-500 mb-1">Industry</label>
-                <p class="text-gray-900">{{ organization?.industry || 'Not specified' }}</p>
+                <label class="block text-xs font-medium text-slate-500 uppercase mb-1">Industry</label>
+                <p class="text-slate-800 font-medium">{{ organization?.industry || 'Not specified' }}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-500 mb-1">Created</label>
-                <p class="text-gray-900">{{ organization ? formatDate(organization.createdAt) : 'Loading...' }}</p>
+                <label class="block text-xs font-medium text-slate-500 uppercase mb-1">Created</label>
+                <p class="text-slate-800 font-medium">{{ organization ? formatDate(organization.createdAt) : 'Loading…' }}</p>
               </div>
             </div>
-          </div>
+          </section>
 
-          <!-- Users Management (Admin Only) -->
-          <div v-if="isAdmin" class="card p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-xl font-semibold text-gray-900">Organization Users</h2>
-              <button 
+          <!-- User Management -->
+          <section v-if="isAdmin" class="rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition p-6">
+            <div class="flex items-center justify-between mb-5">
+              <h2 class="text-lg font-semibold text-slate-800">Organization Users</h2>
+
+              <!-- Invite User (outlined sage) -->
+              <button
                 @click="showInviteUser = true"
-                class="btn-primary text-sm"
+                class="inline-flex items-center gap-2 border border-accent text-accent font-medium px-3 py-1.5 rounded-lg hover:bg-accent-soft transition"
+                aria-label="Invite user"
               >
                 Invite User
               </button>
             </div>
-            
-            <div v-if="loading" class="text-center py-4">
+
+            <div v-if="loading" class="text-center py-6">
               <div class="loading-spinner mx-auto"></div>
             </div>
-            
-            <div v-else class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+
+            <div v-else class="overflow-x-auto rounded-lg border border-slate-100">
+              <table class="min-w-full text-sm text-left">
+                <thead class="bg-slate-50 text-slate-600 uppercase text-xs font-medium">
                   <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th class="px-6 py-3">User</th>
+                    <th class="px-6 py-3">Role</th>
+                    <th class="px-6 py-3">Joined</th>
+                    <th class="px-6 py-3">Actions</th>
                   </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-for="user in organizationUsers" :key="user.id">
-                    <td class="px-6 py-4 whitespace-nowrap">
+                <tbody class="divide-y divide-slate-100 bg-white">
+                  <tr
+                    v-for="user in organizationUsers"
+                    :key="user.id"
+                    class="hover:bg-slate-50 transition"
+                  >
+                    <td class="px-6 py-3">
                       <div>
-                        <div class="text-sm font-medium text-gray-900">{{ user.firstName }} {{ user.lastName }}</div>
-                        <div class="text-sm text-gray-500">{{ user.email }}</div>
+                        <p class="font-medium text-slate-800">{{ user.firstName }} {{ user.lastName }}</p>
+                        <p class="text-xs text-slate-500">{{ user.email }}</p>
                       </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <span :class="user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'" 
-                            class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                    <td class="px-6 py-3">
+                      <span
+                        class="inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full"
+                        :class="user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'"
+                      >
                         {{ user.role }}
                       </span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td class="px-6 py-3 text-slate-600">
                       {{ formatDate(user.createdAt) }}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                      <select 
+                    <td class="px-6 py-3">
+                      <select
                         :value="user.role"
                         @change="updateUserRole(user.id, ($event.target as HTMLSelectElement).value as 'USER' | 'ADMIN')"
-                        class="text-sm border border-gray-300 rounded px-2 py-1"
+                        class="border border-slate-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-accent))]"
                       >
                         <option value="USER">User</option>
                         <option value="ADMIN">Admin</option>
@@ -256,172 +278,155 @@ function formatDate(date: string | Date) {
                   </tr>
                 </tbody>
               </table>
-              
-              <div v-if="organizationUsers.length === 0" class="text-center py-4 text-gray-500">
-                No users found
+              <div v-if="organizationUsers.length === 0" class="text-center py-6 text-slate-500 text-sm">
+                No users found.
               </div>
             </div>
-          </div>
+          </section>
         </div>
 
         <!-- Sidebar -->
-        <div class="space-y-6">
-          <!-- Subscription Card -->
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Subscription</h3>
-            <div class="space-y-3">
+        <aside class="space-y-6">
+          <!-- Subscription -->
+          <div class="rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Subscription</h3>
+            <div class="space-y-3 text-sm">
               <div>
-                <label class="block text-sm font-medium text-gray-500 mb-1">Plan</label>
-                <p class="text-gray-900 font-medium">{{ subscription?.planType || 'FREE' }}</p>
+                <span class="text-slate-500 block text-xs uppercase mb-1">Plan</span>
+                <p class="text-slate-800 font-medium">{{ subscription?.planType || 'FREE' }}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-500 mb-1">Status</label>
-                <span :class="subscription?.status === 'active' ? 'text-green-600' : 'text-orange-600'" 
-                      class="font-medium">
+                <span class="text-slate-500 block text-xs uppercase mb-1">Status</span>
+                <span
+                  :class="subscription?.status === 'active' ? 'text-green-700' : 'text-orange-600'"
+                  class="font-medium"
+                >
                   {{ subscription?.status || 'Active' }}
                 </span>
               </div>
               <div v-if="subscription?.currentPeriodEnd">
-                <label class="block text-sm font-medium text-gray-500 mb-1">Next Billing</label>
-                <p class="text-sm text-gray-900">{{ formatDate(subscription.currentPeriodEnd) }}</p>
+                <span class="text-slate-500 block text-xs uppercase mb-1">Next Billing</span>
+                <p class="text-slate-800 font-medium">{{ formatDate(subscription.currentPeriodEnd) }}</p>
               </div>
             </div>
-            <button class="btn-secondary w-full mt-4">
+
+            <!-- Upgrade Plan (solid sage primary) -->
+            <button
+              class="w-full mt-5 inline-flex items-center justify-center gap-2 bg-accent text-white font-medium px-4 py-2 rounded-lg shadow hover:opacity-90 transition"
+            >
               Upgrade Plan
             </button>
           </div>
 
-          <!-- Usage Stats -->
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Usage This Month</h3>
+          <!-- Usage -->
+          <div class="rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Usage This Month</h3>
             <div class="space-y-3">
               <div>
-                <div class="flex justify-between items-center mb-1">
-                  <span class="text-sm text-gray-600">Simulations</span>
-                  <span class="text-sm font-medium text-gray-900">
+                <div class="flex justify-between text-sm text-slate-600 mb-1">
+                  <span>Simulations</span>
+                  <span class="font-medium text-slate-900">
                     {{ currentUsage?.monthlySimulations || 0 }} / {{ currentUsage?.monthlyLimit === -1 ? '∞' : currentUsage?.monthlyLimit || 10 }}
                   </span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    class="bg-blue-600 h-2 rounded-full transition-all"
+                <div class="w-full bg-slate-200 rounded-full h-2">
+                  <div
+                    class="h-2 rounded-full transition-all duration-500 bg-accent"
                     :style="{ width: currentUsage?.monthlyLimit === -1 ? '100%' : `${Math.min(100, (currentUsage?.monthlySimulations || 0) / (currentUsage?.monthlyLimit || 10) * 100)}%` }"
                   ></div>
                 </div>
               </div>
-              <div class="text-sm text-gray-600">
+              <p class="text-xs text-slate-500">
                 {{ authStore.remainingSimulations === 'unlimited' ? 'Unlimited' : authStore.remainingSimulations }} remaining
-              </div>
+              </p>
             </div>
           </div>
 
           <!-- Quick Stats -->
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
-            <div class="space-y-3">
-              <div class="flex justify-between">
-                <span class="text-sm text-gray-600">Total Users</span>
-                <span class="text-sm font-medium text-gray-900">{{ organization?.userCount || organizationUsers.length }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-sm text-gray-600">Total Simulations</span>
-                <span class="text-sm font-medium text-gray-900">{{ currentUsage?.totalSimulations || 0 }}</span>
-              </div>
-            </div>
+          <div class="rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Quick Stats</h3>
+            <ul class="space-y-2 text-sm">
+              <li class="flex justify-between">
+                <span class="text-slate-600">Total Users</span>
+                <span class="font-medium text-slate-900">{{ organization?.userCount || organizationUsers.length }}</span>
+              </li>
+              <li class="flex justify-between">
+                <span class="text-slate-600">Total Simulations</span>
+                <span class="font-medium text-slate-900">{{ currentUsage?.totalSimulations || 0 }}</span>
+              </li>
+            </ul>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
 
     <!-- Edit Organization Modal -->
-    <div v-if="showEditOrganization" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Edit Organization</h3>
-          <form @submit.prevent="saveOrganization" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Organization Name</label>
-              <input 
-                v-model="editForm.name"
-                type="text"
-                required
-                class="input-field w-full p-3 rounded-md"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Industry</label>
-              <input 
-                v-model="editForm.industry"
-                type="text"
-                class="input-field w-full p-3 rounded-md"
-                placeholder="e.g., Education, Healthcare, Finance"
-              />
-            </div>
-            <div class="flex justify-end space-x-3 pt-4">
-              <button 
-                type="button"
-                @click="showEditOrganization = false"
-                class="btn-secondary"
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit"
-                :disabled="loading"
-                class="btn-primary disabled:opacity-50"
-              >
-                Save Changes
-              </button>
-            </div>
-          </form>
-        </div>
+    <div
+      v-if="showEditOrganization"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4">Edit Organization</h3>
+        <form @submit.prevent="saveOrganization" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Organization Name</label>
+            <input v-model="editForm.name" type="text" required class="input-field w-full p-3 rounded-md border border-slate-200" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Industry</label>
+            <input
+              v-model="editForm.industry"
+              type="text"
+              class="input-field w-full p-3 rounded-md border border-slate-200"
+              placeholder="e.g., Education, Healthcare, Finance"
+            />
+          </div>
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" @click="showEditOrganization = false" class="inline-flex items-center px-4 py-2 rounded-md border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+              Cancel
+            </button>
+            <button type="submit" :disabled="loading" class="inline-flex items-center px-4 py-2 rounded-md bg-accent text-white font-medium disabled:opacity-50 hover:opacity-90 transition">
+              Save Changes
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
     <!-- Invite User Modal -->
-    <div v-if="showInviteUser" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Invite User</h3>
-          <form @submit.prevent="inviteUser" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-              <input 
-                v-model="inviteForm.email"
-                type="email"
-                required
-                class="input-field w-full p-3 rounded-md"
-                placeholder="user@example.com"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
-              <select 
-                v-model="inviteForm.role"
-                class="input-field w-full p-3 rounded-md"
-              >
-                <option value="USER">User</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-            </div>
-            <div class="flex justify-end space-x-3 pt-4">
-              <button 
-                type="button"
-                @click="showInviteUser = false"
-                class="btn-secondary"
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit"
-                :disabled="loading"
-                class="btn-primary disabled:opacity-50"
-              >
-                Send Invitation
-              </button>
-            </div>
-          </form>
-        </div>
+    <div
+      v-if="showInviteUser"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4">Invite User</h3>
+        <form @submit.prevent="inviteUser" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
+            <input
+              v-model="inviteForm.email"
+              type="email"
+              required
+              class="input-field w-full p-3 rounded-md border border-slate-200"
+              placeholder="user@example.com"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Role</label>
+            <select v-model="inviteForm.role" class="input-field w-full p-3 rounded-md border border-slate-200">
+              <option value="USER">User</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </div>
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" @click="showInviteUser = false" class="inline-flex items-center px-4 py-2 rounded-md border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+              Cancel
+            </button>
+            <button type="submit" :disabled="loading" class="inline-flex items-center px-4 py-2 rounded-md bg-accent text-white font-medium disabled:opacity-50 hover:opacity-90 transition">
+              Send Invitation
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </main>

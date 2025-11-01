@@ -8,6 +8,15 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Semantic colors backed by CSS variables
+        accent: {
+          DEFAULT: 'rgb(var(--color-accent) / <alpha-value>)',
+          fg: 'rgb(var(--color-accent-foreground) / <alpha-value>)',
+        },
+        brand: {
+          DEFAULT: 'rgb(var(--color-primary) / <alpha-value>)',
+          fg: 'rgb(var(--color-primary-foreground) / <alpha-value>)',
+        },
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',

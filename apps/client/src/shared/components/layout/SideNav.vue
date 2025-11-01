@@ -29,6 +29,7 @@ const navItems = [
   { to: '/settings', label: 'Portfolio', icon: 'briefcase' },
   { to: '/results', label: 'Results', icon: 'play' },
   { to: '/simulation/history', label: 'Scenarios', icon: 'layers' },
+  { to: '/organization', label: 'Organization', icon: 'building' },
 ];
 
 function isActive(path: string) {
@@ -87,6 +88,8 @@ async function handleLogout() {
               <svg v-else-if="item.icon === 'play'" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3.868v16.264A1 1 0 006.555 21.1L19.3 12.99a1 1 0 000-1.78L6.555 2.9A1 1 0 005 3.868z"/></svg>
               <!-- Layers / Scenarios -->
               <svg v-else-if="item.icon === 'layers'" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l9 6-9 6-9-6 9-6z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-6v6l-9 6-9-6v-6l9 6z"/></svg>
+              <!-- Building / Organization -->
+              <svg v-else-if="item.icon === 'building'" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
             </span>
             <span v-if="!collapsed">{{ item.label }}</span>
           </RouterLink>

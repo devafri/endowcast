@@ -216,6 +216,13 @@ class ApiService {
     });
   }
 
+  async executeSimulation(simulationParams: any) {
+    return this.request('/simulations/execute', {
+      method: 'POST',
+      body: JSON.stringify(simulationParams),
+    });
+  }
+
   // Payments
   async createCheckoutSession(planType: string, billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY', paymentMethod: 'card' | 'invoice' = 'card') {
     return this.request('/payments/create-checkout-session', {

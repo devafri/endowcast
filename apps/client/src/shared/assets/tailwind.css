@@ -1,15 +1,50 @@
 /* Import Tailwind utilities first */
 @import "tailwindcss";
 
-/* Load Inter from Google Fonts (variable font for best rendering) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+/* Load Source Sans 3 from Google Fonts (variable font for best rendering) */
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,100..900;1,100..900&display=swap');
 
-/* Ensure base elements use the Tailwind `font-sans` (which includes Inter in tailwind.config.js) */
+/* Ensure base elements use the Tailwind `font-sans` (which includes Source Sans 3 in tailwind.config.js) */
 @layer base {
 	html, body {
 		/* Explicit font-family to satisfy linters that don't understand @apply */
-		font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+		font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
 	}
+}
+
+/* Design tokens: semantic color variables */
+@layer base {
+	:root {
+		/* Primary brand (refined sapphire blue) */
+		--color-primary: 47 102 180; /* #2F66B4 */
+		--color-primary-foreground: 255 255 255;
+
+		/* Accent for Organization (sage) */
+		--color-accent: 122 143 106; /* approx #7a8f6a */
+		--color-accent-foreground: 255 255 255;
+
+		/* Surfaces & text */
+		--color-surface: 255 255 255;
+		--color-muted: 243 244 246;  /* gray-100 */
+		--color-text: 17 24 39;      /* gray-900 */
+	}
+}
+
+/* Utility shims for semantic colors (ensure availability regardless of Tailwind config behavior) */
+@layer utilities {
+	/* Sage accent for Organization */
+	.bg-accent { background-color: rgb(var(--color-accent) / 1); }
+	.text-accent { color: rgb(var(--color-accent) / 1); }
+	.border-accent { border-color: rgb(var(--color-accent) / 1); }
+		.bg-accent-soft { background-color: color-mix(in oklab, rgb(var(--color-accent)) 12%, white); }
+
+	/* Brand primary (blue) helpers for completeness */
+	.bg-brand { background-color: rgb(var(--color-primary) / 1); }
+	.text-brand { color: rgb(var(--color-primary) / 1); }
+	.border-brand { border-color: rgb(var(--color-primary) / 1); }
+
+	/* Soft brand tint for subtle hovers/backgrounds */
+	.bg-brand-soft { background-color: color-mix(in oklab, rgb(var(--color-primary)) 10%, white); }
 }

@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { sharpePercentile, perSimulationSharpe } from '@/features/simulation/lib/analytics';
+import { sortinoRatio } from '@/features/simulation/lib/analytics';
 const props = defineProps<{ results: any }>();
 
-function formatMoney(num: number): string {
+function formatMoney(num: number | null | undefined): string {
+  if(num === null || num === undefined) {return '-';}
   if (!isFinite(num)) return '-';
+  const absNum  = Math.abs(num);
   if (Math.abs(num) >= 1_000_000) return `$${(num / 1_000_000).toFixed(1)}M`;
   if (Math.abs(num) >= 1_000) return `$${(num / 1_000).toFixed(1)}K`;
   return `$${num.toFixed(0)}`;
@@ -53,17 +55,64 @@ function formatSharpe(s: number) {
 }
 
 const rows = percentiles.map(p => {
-  const annR = percentile(perSimGeo, p);
-  const annV = percentile(perSimVol, p);
-  // Sharpe percentile computed using shared helper (reads per-simulation sharpe internally)
-  const rf = readRfDecimal(props.results?.inputs ?? {});
-  const sharpe = sharpePercentile(props.results?.portfolioReturns ?? [], p, rf);
+  // Use backend-computed values for all percentiles
+  const summary = props.results?.summary;
+  
+  const annR = (() => {
+    if (!summary) return NaN;
+    switch(p) {
+      case 90: return (summary.annualizedReturn90 ?? NaN) / 100;
+      case 75: return (summary.annualizedReturn75 ?? NaN) / 100;
+      case 50: return (summary.medianAnnualizedReturn ?? NaN) / 100;
+      case 25: return (summary.annualizedReturn25 ?? NaN) / 100;
+      case 10: return (summary.annualizedReturn10 ?? NaN) / 100;
+      default: return NaN;
+    }
+  })();
+  
+  const annV = (() => {
+    if (!summary) return NaN;
+    switch(p) {
+      case 90: return (summary.annualizedVolatility90 ?? NaN) / 100;
+      case 75: return (summary.annualizedVolatility75 ?? NaN) / 100;
+      case 50: return (summary.annualizedVolatility ?? NaN) / 100;
+      case 25: return (summary.annualizedVolatility25 ?? NaN) / 100;
+      case 10: return (summary.annualizedVolatility10 ?? NaN) / 100;
+      default: return NaN;
+    }
+  })();
+  
+  const sharpe = (() => {
+    if (!summary) return NaN;
+    switch(p) {
+      case 90: return summary.sharpe90 ?? NaN;
+      case 75: return summary.sharpe75 ?? NaN;
+      case 50: return summary.sharpeMedian ?? NaN;
+      case 25: return summary.sharpe25 ?? NaN;
+      case 10: return summary.sharpe10 ?? NaN;
+      default: return NaN;
+    }
+  })();
+  
+  const sortino = (() => {
+    if (!summary) return NaN;
+    switch(p) {
+      case 90: return summary.sortino90 ?? NaN;
+      case 75: return summary.sortino75 ?? NaN;
+      case 50: return summary.sortino ?? NaN;
+      case 25: return summary.sortino25 ?? NaN;
+      case 10: return summary.sortino10 ?? NaN;
+      default: return NaN;
+    }
+  })();
+  
   return {
     label: p === 50 ? 'Median (50th)' : `${p}th`,
     finalValue: percentile(finalValues, p),
     annReturn: annR,
     annVol: annV,
     sharpe,
+    sortino,
   };
 });
 
@@ -94,13 +143,23 @@ const corpusRow = showCorpus ? (() => {
     }).filter(x => isFinite(x));
     return perPathSharpe.length ? percentile(perPathSharpe, 50) : NaN;
   })();
+  
+  // Compute Sortino for corpus
+  const sortino = (() => {
+    const cr = corpusPaths.map(p => pathToReturns(p));
+    const rf = readRfDecimal(props.results?.inputs ?? {});
+    const perPathSortino = cr.map(rets => sortinoRatio(rets, rf)).filter(x => isFinite(x));
+    return perPathSortino.length ? percentile(perPathSortino, 50) : NaN;
+  })();
+  
   return {
     finalValue: percentile(corpusFinals, 50),
     annReturn: annR,
     annVol: annV,
     sharpe,
+    sortino,
   };
-})() : { finalValue: NaN, annReturn: NaN, annVol: NaN, sharpe: NaN };
+})() : { finalValue: NaN, annReturn: NaN, annVol: NaN, sharpe: NaN, sortino: NaN };
 
 const lossProb = props.results?.summary?.probabilityOfLoss ?? 0;
 </script>
@@ -191,6 +250,22 @@ const lossProb = props.results?.summary?.probabilityOfLoss ?? 0;
               class="py-3 px-3 text-center text-sm text-orange-700 bg-orange-50 whitespace-nowrap"
             >
               {{ formatSharpe(corpusRow.sharpe) }}
+            </td>
+          </tr>
+          <tr class="bg-white hover:bg-gray-50 transition duration-150 ease-in-out">
+            <td class="py-3 px-4 font-semibold text-sm text-gray-900 whitespace-nowrap">Sortino Ratio</td>
+            <td 
+              v-for="row in rows" 
+              :key="'sortino-' + row.label" 
+              class="py-3 px-3 text-center text-sm text-gray-700 whitespace-nowrap"
+            >
+              {{ formatSharpe(row.sortino) }}
+            </td>
+            <td 
+              v-if="showCorpus" 
+              class="py-3 px-3 text-center text-sm text-orange-700 bg-orange-50 whitespace-nowrap"
+            >
+              {{ formatSharpe(corpusRow.sortino) }}
             </td>
           </tr>
         </tbody>

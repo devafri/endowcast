@@ -29,13 +29,24 @@ watch(() => ({ modelValue: props.modelValue, years: props.years }),
     while (newTargets.length < years) {
       newTargets.push(0);
     }
-    targets.value = newTargets;
+    
+    // Only update if the array actually changed to prevent infinite loops
+    const targetsChanged = targets.value.length !== newTargets.length || 
+      targets.value.some((v, i) => v !== newTargets[i]);
+    
+    if (targetsChanged) {
+      targets.value = newTargets;
+    }
   }, 
   { deep: true }
 );
 
 // Emit updates when targets change
-watch(targets, (nv) => {
+watch(targets, (nv, oldValue) => {
+  // Don't emit if values haven't actually changed
+  if (oldValue && nv.length === oldValue.length && nv.every((v, i) => v === oldValue[i])) {
+    return;
+  }
   emit('update:modelValue', nv.map(v => Number(v) || 0));
 }, { deep: true });
 </script>

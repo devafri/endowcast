@@ -5,17 +5,6 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-// Normalize DATABASE_URL and DIRECT_URL if they were stored with surrounding quotes
-// Some CI / hosting providers (or manual edits) may include surrounding quotes which
-// become part of the environment value and break parsers that expect the URL to
-// start with postgres:// or postgresql://. Strip surrounding double quotes here.
-if (process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = process.env.DATABASE_URL.replace(/^\"|\"$/g, '');
-}
-if (process.env.DIRECT_URL) {
-  process.env.DIRECT_URL = process.env.DIRECT_URL.replace(/^\"|\"$/g, '');
-}
-
 const authRoutes = require('../features/auth/routes/auth');
 const userRoutes = require('../features/users/routes/users');
 const simulationRoutes = require('../features/simulations/routes/simulations');
@@ -42,6 +31,7 @@ const limiter = rateLimit({
   max: parseInt(process.env.RATE_LIMIT_MAX) || 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
 });
+app.use('/api/', limiter);
 
 // CORS configuration
 app.use(cors({
@@ -49,29 +39,12 @@ app.use(cors({
   credentials: true,
 }));
 
-// *** NEW MIDDLEWARE TO EXPLICITLY HANDLE OPTIONS PREFLIGHT ***
-app.use('/api/', (req, res, next) => {
-    // This explicitly ensures the OPTIONS method is handled for all /api/ routes
-    if (req.method === 'OPTIONS') {
-        // Since cors() has already set the headers, we just send a 204 No Content
-        // and end the request, which satisfies the preflight check.
-        res.status(204).end(); 
-        return; // Important: terminate the request
-    }
-    next();
-});
-
-// Apply rate limiter after CORS so CORS headers are present on rate-limited responses
-app.use('/api/', limiter);
-
 // Body parsing middleware
 // For Stripe webhooks we need the raw body to verify signatures
 app.use('/api/webhooks/stripe', express.raw({ type: 'application/json' }));
 app.use('/api/billing/webhooks/stripe', express.raw({ type: 'application/json' }));
-// Increase JSON and URL-encoded body size limits to support large simulation
-// result payloads (many scenarios). Default was 10mb which can be too small.
-app.use(express.json({ limit: process.env.EXPRESS_JSON_LIMIT || '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: process.env.EXPRESS_JSON_LIMIT || '50mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -80,31 +53,6 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
-});
-
-// DB connectivity test endpoint
-app.get('/api/health/db', async (req, res) => {
-  try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
-    
-    // Try a simple query
-    const result = await prisma.organization.findFirst();
-    
-    res.json({
-      status: 'OK',
-      message: 'Database connection successful',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('DB health check error:', error.message);
-    res.status(500).json({
-      status: 'ERROR',
-      message: 'Database connection failed',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
 });
 
 // API Routes

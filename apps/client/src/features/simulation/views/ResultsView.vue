@@ -19,6 +19,10 @@ function run() {
       if (scenarioId) {
         // Use push instead of replace to ensure proper history navigation
         // Then the watcher below will automatically load the scenario
+        if (route.params.scenarioId === scenarioId) {
+             console.log('Route already contains correct scenarioId. Skipping route push.');
+             return;
+        }
         router.push({ name: 'ResultsById', params: { scenarioId } });
       }
     }
@@ -92,6 +96,11 @@ let cleanupTimeoutId: ReturnType<typeof setTimeout> | null = null;
 // Watch for route changes and load scenario when scenarioId param changes
 watch(() => route.params.scenarioId as string | undefined, async (newScenarioId) => {
   if (newScenarioId && isMounted) {
+    // for this ID, do not load it again. This handles the initial route push.
+    if (sim.results && sim.results.id === newScenarioId) {
+        console.log('Store already has results for this ID. Skipping loadScenario.');
+        return;
+    }
     try {
       await sim.loadScenario(newScenarioId);
     } catch (error) {
@@ -110,6 +119,8 @@ onMounted(async () => {
     const scenarioId = pathId || queryId;
 
     if (scenarioId && isMounted) {
+      //Check before calling loadScenario on mount as well.
+      if (sim.results && sim.results.id === scenarioId) return;
       await sim.loadScenario(scenarioId);
       // If the id came from query, replace URL with canonical path route
       if (!pathId && queryId) {
