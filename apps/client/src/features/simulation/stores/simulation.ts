@@ -288,10 +288,31 @@ export const useSimulationStore = defineStore('simulation', () => {
             : (successMetrics.count && successMetrics.total
                 ? ((successMetrics.total - successMetrics.count) / successMetrics.total)
                 : 0)),
+          // Annualized Return - all percentiles
           medianAnnualizedReturn: backendSummary.medianAnnualizedReturn,
+          annualizedReturn10: backendSummary.annualizedReturn10,
+          annualizedReturn25: backendSummary.annualizedReturn25,
+          annualizedReturn75: backendSummary.annualizedReturn75,
+          annualizedReturn90: backendSummary.annualizedReturn90,
+          // Annualized Volatility - all percentiles
           annualizedVolatility: backendSummary.annualizedVolatility,
+          annualizedVolatility10: backendSummary.annualizedVolatility10,
+          annualizedVolatility25: backendSummary.annualizedVolatility25,
+          annualizedVolatility75: backendSummary.annualizedVolatility75,
+          annualizedVolatility90: backendSummary.annualizedVolatility90,
+          // Sharpe Ratio - all percentiles
           sharpeMedian: backendSummary.sharpeMedian,
+          sharpe10: backendSummary.sharpe10,
+          sharpe25: backendSummary.sharpe25,
+          sharpe75: backendSummary.sharpe75,
+          sharpe90: backendSummary.sharpe90,
+          // Sortino Ratio - all percentiles
           sortino: backendSummary.sortino,
+          sortino10: backendSummary.sortino10,
+          sortino25: backendSummary.sortino25,
+          sortino75: backendSummary.sortino75,
+          sortino90: backendSummary.sortino90,
+          // Other metrics
           medianMaxDrawdown: backendSummary.medianMaxDrawdown,
           cvar95: backendSummary.cvar95,
           inflationPreservationPct: backendSummary.inflationPreservationPct,
@@ -300,6 +321,8 @@ export const useSimulationStore = defineStore('simulation', () => {
             percentile10: (finalValues.percentile10 != null
               ? finalValues.percentile10
               : (backendResponse.percentile10 != null ? backendResponse.percentile10 : undefined)),
+            percentile25: backendSummary.finalValues?.percentile25,
+            percentile75: backendSummary.finalValues?.percentile75,
             percentile90: (finalValues.percentile90 != null
               ? finalValues.percentile90
               : (backendResponse.percentile90 != null ? backendResponse.percentile90 : undefined)),

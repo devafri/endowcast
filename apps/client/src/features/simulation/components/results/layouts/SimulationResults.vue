@@ -20,7 +20,32 @@ const mockResults = {
     medianFinalValue: 125000000,
     probabilityOfLoss: 0.28,
     medianAnnualizedReturn: 6.2, // percent
+    annualizedReturn10: 2.5,
+    annualizedReturn25: 4.1,
+    annualizedReturn75: 8.3,
+    annualizedReturn90: 10.5,
+    annualizedVolatility: 8.5, // percent
+    annualizedVolatility10: 6.2,
+    annualizedVolatility25: 7.4,
+    annualizedVolatility75: 9.6,
+    annualizedVolatility90: 11.2,
+    sharpeMedian: 0.52,
+    sharpe10: 0.20,
+    sharpe25: 0.35,
+    sharpe75: 0.68,
+    sharpe90: 0.85,
+    sortino: 0.43,
+    sortino10: 0.15,
+    sortino25: 0.28,
+    sortino75: 0.58,
+    sortino90: 0.72,
     realValuePreservation: 0.63,
+    finalValues: {
+      percentile10: 95000000,
+      percentile25: 110000000,
+      percentile75: 140000000,
+      percentile90: 160000000
+    }
   },
   analytics: {
     safeSpending80: { amount: 4000000, ratePct: 4.0 }

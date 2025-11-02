@@ -139,6 +139,9 @@ router.post('/execute', trackSimulationUsage, [
     const paths = Array.isArray(results.paths) ? results.paths : [];
     const perSimReturns = Array.isArray(results.portfolioReturns) ? results.portfolioReturns : [];
 
+    console.log('[DEBUG] perSimReturns length:', perSimReturns.length);
+    console.log('[DEBUG] perSimReturns[0]:', perSimReturns[0]?.slice(0, 3));
+
     // Per-simulation CAGR (annualized returns)
     const perSimCAGR = perSimReturns.map(annualizedReturn).filter((x) => isFinite(x));
     perSimCAGR.sort((a, b) => a - b);
@@ -147,6 +150,9 @@ router.post('/execute', trackSimulationUsage, [
     const cagr25 = percentile(perSimCAGR, 25);
     const cagr75 = percentile(perSimCAGR, 75);
     const cagr90 = percentile(perSimCAGR, 90);
+    
+    console.log('[DEBUG] perSimCAGR length:', perSimCAGR.length);
+    console.log('[DEBUG] cagr10, cagr25, cagr75, cagr90:', { cagr10, cagr25, cagr75, cagr90 });
 
     // Per-simulation annualized volatility
     const perSimVol = perSimReturns.map(stdev).filter((x) => isFinite(x));
@@ -156,6 +162,9 @@ router.post('/execute', trackSimulationUsage, [
     const vol25 = percentile(perSimVol, 25);
     const vol75 = percentile(perSimVol, 75);
     const vol90 = percentile(perSimVol, 90);
+    
+    console.log('[DEBUG] perSimVol length:', perSimVol.length);
+    console.log('[DEBUG] vol10, vol25, vol75, vol90:', { vol10, vol25, vol75, vol90 });
 
     // Sharpe and Sortino (risk-free as decimal)
     const perSimSharpe = perSimReturns.map((r) => {
@@ -169,6 +178,9 @@ router.post('/execute', trackSimulationUsage, [
     const sharpe25 = percentile(perSimSharpe, 25);
     const sharpe75 = percentile(perSimSharpe, 75);
     const sharpe90 = percentile(perSimSharpe, 90);
+    
+    console.log('[DEBUG] perSimSharpe length:', perSimSharpe.length);
+    console.log('[DEBUG] sharpe10, sharpe25, sharpe75, sharpe90:', { sharpe10, sharpe25, sharpe75, sharpe90 });
 
     const perSimSortino = perSimReturns.map((r) => sortinoRatio(r, rf)).filter((x) => isFinite(x));
     perSimSortino.sort((a, b) => a - b);
@@ -177,6 +189,9 @@ router.post('/execute', trackSimulationUsage, [
     const sortino25 = percentile(perSimSortino, 25);
     const sortino75 = percentile(perSimSortino, 75);
     const sortino90 = percentile(perSimSortino, 90);
+    
+    console.log('[DEBUG] perSimSortino length:', perSimSortino.length);
+    console.log('[DEBUG] sortino10, sortino25, sortino75, sortino90:', { sortino10, sortino25, sortino75, sortino90 });
 
     // Median max drawdown
     const perSimMDD = paths.map(maxDrawdown).filter((x) => isFinite(x));
@@ -263,6 +278,8 @@ router.post('/execute', trackSimulationUsage, [
       pathsAvailable: true,
       note: null
     };
+
+    console.log('[DEBUG] Summary object:', responseData.summary);
 
     // Save simulation to database
     let savedSimulationId = customId;
