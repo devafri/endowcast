@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useScenarioHistory } from '@/features/simulation/composables/useScenarioHistory';
 import SimulationResults from '../components/results/layouts/SimulationResults.vue';
+import ScenarioComparisonTable from '../components/results/tables/ScenarioComparisonTable.vue';
 
 // Use shared composable to ensure data comes from the database via apiService
 const {
@@ -308,17 +309,13 @@ function handleToggleExpand(simulation: any) {
               
             </div>
 
-            <!-- Expanded Details Section (SimulationResults only) -->
+            <!-- Expanded Details Section (Tabular Results) -->
             <div v-if="expandedScenario === simulation.id" class="bg-gray-50 p-6">
-              <div v-if="simulation.results" class="bg-white rounded-lg p-6 border border-gray-100">
-                <div class="flex items-center mb-4">
-                  <svg class="w-5 h-5 text-green-700 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                  <h4 class="text-lg font-semibold text-gray-900">Simulation Results</h4>
-                </div>
-                <SimulationResults :results="typeof simulation.results === 'string' ? JSON.parse(simulation.results) : simulation.results" />
-              </div>
+              <ScenarioComparisonTable 
+                :scenarios="[simulation]" 
+                :show-export-button="true"
+                @export-csv="$emit('exportCsv', $event)"
+              />
             </div>
           </div>
 
@@ -368,129 +365,11 @@ function handleToggleExpand(simulation: any) {
         </div>
         
         <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-          <div class="grid gap-6" :class="{
-            'grid-cols-1': selectedScenarios.length <= 1,
-            'grid-cols-2': selectedScenarios.length === 2,
-            'grid-cols-3': selectedScenarios.length === 3,
-            'grid-cols-4': selectedScenarios.length >= 4
-          }">
-            <div v-for="simulation in selectedScenarios" :key="simulation.id" class="border border-gray-200 rounded-lg p-4">
-              <!-- Simulation Header -->
-              <div class="mb-4 pb-4 border-b border-gray-100">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ simulation.name }}</h3>
-                <div class="flex items-center space-x-4 text-sm text-gray-600">
-                  <span class="flex items-center">
-                    <div :class="['w-2 h-2 rounded-full mr-2', simulation.isCompleted ? 'bg-green-500' : 'bg-yellow-500']"></div>
-                    {{ simulation.isCompleted ? 'Completed' : 'Draft' }}
-                  </span>
-                  <span>{{ new Date(simulation.updatedAt).toLocaleDateString() }}</span>
-                </div>
-              </div>
-
-              <!-- Key Metrics -->
-              <div class="space-y-3">
-                <div class="grid grid-cols-2 gap-3">
-                  <div class="bg-slate-50 rounded p-3">
-                    <div class="text-xs font-medium text-slate-600 mb-1">Initial Value</div>
-                    <div class="text-lg font-semibold text-slate-900">
-                      {{ formatMoney(Number(simulation.initialValue) || 0) }}
-                    </div>
-                  </div>
-                  <div class="bg-slate-50 rounded p-3">
-                    <div class="text-xs font-medium text-slate-600 mb-1">Time Horizon</div>
-                    <div class="text-lg font-semibold text-slate-900">
-                      {{ simulation.years }} years
-                    </div>
-                  </div>
-                  <div class="bg-slate-50 rounded p-3">
-                    <div class="text-xs font-medium text-slate-600 mb-1">Spending Rate</div>
-                    <div class="text-lg font-semibold text-slate-900">
-                      {{ formatPercent(Number(simulation.spendingRate) || 0) }}
-                    </div>
-                  </div>
-                  <div class="bg-slate-50 rounded p-3">
-                    <div class="text-xs font-medium text-slate-600 mb-1">Runs</div>
-                    <div class="text-lg font-semibold text-slate-900">
-                      {{ simulation.runCount?.toLocaleString() || 'N/A' }}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Portfolio Allocation -->
-                <div v-if="simulation.portfolio">
-                  <h4 class="text-sm font-semibold text-gray-900 mb-2">Portfolio Allocation</h4>
-                  <div class="space-y-1 text-xs">
-                    <div v-if="simulation.portfolio.publicEquity" class="flex justify-between">
-                      <span>Public Equity</span>
-                      <span class="font-semibold">{{ Number(simulation.portfolio.publicEquity) }}%</span>
-                    </div>
-                    <div v-if="simulation.portfolio.privateEquity" class="flex justify-between">
-                      <span>Private Equity</span>
-                      <span class="font-semibold">{{ Number(simulation.portfolio.privateEquity) }}%</span>
-                    </div>
-                    <div v-if="simulation.portfolio.publicFixedIncome" class="flex justify-between">
-                      <span>Fixed Income</span>
-                      <span class="font-semibold">{{ Number(simulation.portfolio.publicFixedIncome) }}%</span>
-                    </div>
-                    <div v-if="simulation.portfolio.privateCredit" class="flex justify-between">
-                      <span>Private Credit</span>
-                      <span class="font-semibold">{{ Number(simulation.portfolio.privateCredit) }}%</span>
-                    </div>
-                    <div v-if="simulation.portfolio.realAssets" class="flex justify-between">
-                      <span>Real Assets</span>
-                      <span class="font-semibold">{{ Number(simulation.portfolio.realAssets) }}%</span>
-                    </div>
-                    <div v-if="simulation.portfolio.diversifying" class="flex justify-between">
-                      <span>Diversifying</span>
-                      <span class="font-semibold">{{ Number(simulation.portfolio.diversifying) }}%</span>
-                    </div>
-                    <div v-if="simulation.portfolio.cashShortTerm" class="flex justify-between">
-                      <span>Cash/Short-Term</span>
-                      <span class="font-semibold">{{ Number(simulation.portfolio.cashShortTerm) }}%</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Results Summary -->
-                <div v-if="getResultsSummary(simulation)" class="pt-3 border-t border-gray-100">
-                  <h4 class="text-sm font-semibold text-gray-900 mb-2">Performance Summary</h4>
-                  <div class="space-y-1 text-xs">
-                    <div v-if="getResultsSummary(simulation)?.medianFinalValue" class="flex justify-between">
-                      <span>Final Value</span>
-                      <span class="font-semibold text-green-600">{{ formatMoney(getResultsSummary(simulation)!.medianFinalValue!) }}</span>
-                    </div>
-                    <div v-if="getResultsSummary(simulation)?.annualizedReturn" class="flex justify-between">
-                      <span>Annualized Return</span>
-                      <span class="font-semibold text-blue-800">{{ formatPercent(getResultsSummary(simulation)!.annualizedReturn!) }}</span>
-                    </div>
-                    <div v-if="getResultsSummary(simulation)?.maxDrawdown" class="flex justify-between">
-                      <span>Max Drawdown</span>
-                      <span class="font-semibold text-red-600">{{ formatPercent(getResultsSummary(simulation)!.maxDrawdown!) }}</span>
-                    </div>
-                    <div v-if="getResultsSummary(simulation)?.sharpeRatio" class="flex justify-between">
-                      <span>Sharpe Ratio</span>
-                      <span class="font-semibold">{{ getResultsSummary(simulation)!.sharpeRatio!.toFixed(2) }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Comparison Actions -->
-            <div class="mt-6 pt-4 border-t border-gray-200 flex justify-between items-center">
-            <div class="text-sm text-gray-600">
-              Comparing {{ selectedScenarios.length }} simulation{{ selectedScenarios.length !== 1 ? 's' : '' }}
-            </div>
-            <div class="flex space-x-3">
-              <button @click="showComparisonModal = false" class="btn-secondary py-2 px-4">
-                Close
-              </button>
-              <button class="btn-primary py-2 px-4" disabled title="Export feature coming soon">
-                Export Comparison
-              </button>
-            </div>
-          </div>
+          <ScenarioComparisonTable 
+            :scenarios="selectedScenarios" 
+            :show-export-button="true"
+            @export-csv="$emit('exportCsv', $event)"
+          />
         </div>
       </div>
     </div>

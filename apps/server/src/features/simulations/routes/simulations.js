@@ -206,7 +206,7 @@ router.post('/execute', trackSimulationUsage, [
       id: customId,
       timestamp: new Date().toISOString(),
       computeTimeMs: elapsedMs,
-      yearLabels: Array.from({ length: years + 1 }, (_, i) => (startYear + i).toString()),
+      yearLabels: Array.from({ length: years }, (_, i) => (startYear + i).toString()),
       metadata: {
         simulationCount: numSimulations,
         yearsProjected: years,
@@ -247,6 +247,8 @@ router.post('/execute', trackSimulationUsage, [
         inflationPreservationPct: Number(inflationPreservationPct.toFixed(1)),
         finalValues: {
           percentile10: Math.round(results.percentile10 * 100) / 100,
+          percentile25: Math.round(results.percentile25 * 100) / 100,
+          percentile75: Math.round(results.percentile75 * 100) / 100,
           percentile90: Math.round(results.percentile90 * 100) / 100
         },
         success: {
@@ -256,10 +258,10 @@ router.post('/execute', trackSimulationUsage, [
           byYear: successByYear.map(p => (p * 100).toFixed(2) + '%')
         }
       },
-      paths: numSimulations <= 500 ? results.paths : null,
+      paths: results.paths,
       spendingPolicy: results.spendingPaths,
-      pathsAvailable: numSimulations <= 500,
-      note: numSimulations > 500 ? 'Paths excluded for large simulations; request individual paths if needed' : null
+      pathsAvailable: true,
+      note: null
     };
 
     // Save simulation to database

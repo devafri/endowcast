@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EndowCast Simulation Report</title>
+<style>
+  body {
+    font-family: "Inter", sans-serif;
+    background: #f9fafb;
+    color: #111827;
+    padding: 2rem;
+    line-height: 1.5;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+    color: #1f2937;
+  }
+
+  h2 {
+    font-size: 1.1rem;
+    color: #374151;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0.3rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px #e5e7eb;
+  }
+
+  th, td {
+    border: 1px solid #e5e7eb;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  th {
+    background: #f3f4f6;
+    font-weight: 600;
+    color: #1f2937;
+    text-align: left;
+  }
+
+  td.numeric {
+    text-align: right;
+  }
+
+  tr:nth-child(even) td {
+    background: #f9fafb;
+  }
+
+  .percentile-header {
+    background: #e0e7ff;
+    text-align: center;
+    font-weight: 700;
+  }
+
+  .section-subheader {
+    background: #fef3c7;
+    font-weight: 600;
+    color: #92400e;
+  }
+
+  button {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+
+  button:hover {
+    background-color: #1e40af;
+  }
+
+</style>
+</head>
+<body>
+
+<h1>EndowCast Simulation Report</h1>
+
+<!-- Portfolio Assumptions -->
+<h2>Portfolio Assumptions</h2>
+<table>
+  <tr><th>Simulation ID</th><td>SIM-001</td></tr>
+  <tr><th>Initial Endowment</th><td>$100,000,000</td></tr>
+  <tr><th>Spending Policy Rate</th><td>4.5%</td></tr>
+  <tr><th>Investment Expense %</th><td>0.75%</td></tr>
+</table>
+
+<!-- Portfolio Allocation -->
+<h2>Portfolio Allocation</h2>
+<table>
+  <tr><th>Asset</th><th>Allocation %</th></tr>
+  <tr><td>Asset 1</td><td>20%</td></tr>
+  <tr><td>Asset 2</td><td>15%</td></tr>
+  <tr><td>Asset 3</td><td>25%</td></tr>
+  <tr><td>Asset 4</td><td>10%</td></tr>
+  <tr><td>Asset 5</td><td>10%</td></tr>
+  <tr><td>Asset 6</td><td>10%</td></tr>
+  <tr><td>Asset 7</td><td>10%</td></tr>
+</table>
+
+<!-- Percentile Results -->
+<h2>Simulation Results by Percentile</h2>
+<table>
+  <tr>
+    <th>Metric</th>
+    <th class="percentile-header">10</th>
+    <th class="percentile-header">25</th>
+    <th class="percentile-header">50</th>
+    <th class="percentile-header">75</th>
+    <th class="percentile-header">90</th>
+  </tr>
+  <tr><td>Endowment Value</td><td>$60M</td><td>$75M</td><td>$90M</td><td>$105M</td><td>$120M</td></tr>
+  <tr><td>Grant Distributions</td><td>$3.2M</td><td>$3.5M</td><td>$3.8M</td><td>$4.0M</td><td>$4.3M</td></tr>
+  <tr><td>Operating Expenses</td><td>$1.0M</td><td>$1.2M</td><td>$1.3M</td><td>$1.4M</td><td>$1.5M</td></tr>
+  <tr><td>Investment Expenses</td><td>$0.7M</td><td>$0.8M</td><td>$0.9M</td><td>$1.0M</td><td>$1.1M</td></tr>
+  <tr><td>Annualized Return</td><td>4.2%</td><td>5.0%</td><td>5.8%</td><td>6.5%</td><td>7.1%</td></tr>
+
+  <tr class="section-subheader"><td colspan="6">Risk Metrics</td></tr>
+  <tr><td>Annualized Volatility</td><td>9%</td><td>8%</td><td>7%</td><td>6%</td><td>5%</td></tr>
+  <tr><td>Sharpe Ratio</td><td>0.4</td><td>0.45</td><td>0.5</td><td>0.55</td><td>0.6</td></tr>
+  <tr><td>Sortino Ratio</td><td>0.6</td><td>0.65</td><td>0.7</td><td>0.75</td><td>0.8</td></tr>
+  <tr><td>Max Drawdown</td><td>18%</td><td>16%</td><td>14%</td><td>12%</td><td>10%</td></tr>
+  <tr><td>Probability of Falling Below Initial Value</td><td>35%</td><td>30%</td><td>25%</td><td>20%</td><td>15%</td></tr>
+
+  <tr class="section-subheader"><td colspan="6">Sustainability Metrics</td></tr>
+  <tr><td>Intergenerational Sustainability</td><td>85%</td><td>88%</td><td>90%</td><td>92%</td><td>95%</td></tr>
+  <tr><td>Spending Sustainability</td><td>22 years</td><td>24 years</td><td>26 years</td><td>28 years</td><td>30 years</td></tr>
+  <tr><td>Preservation Strength</td><td>Moderate</td><td>Moderate</td><td>Strong</td><td>Strong</td><td>Very Strong</td></tr>
+  <tr><td>Risk Assessment Level</td><td>High</td><td>Moderate</td><td>Medium</td><td>Low</td><td>Very Low</td></tr>
+</table>
+
+<!-- Export Button -->
+<button onclick="exportToCSV()">Export Table to CSV</button>
+
+<script>
+function exportToCSV() {
+  const tables = document.querySelectorAll("table");
+  let csvContent = "";
+  tables.forEach(table => {
+    table.querySelectorAll("tr").forEach(row => {
+      const cols = row.querySelectorAll("th, td");
+      const rowText = Array.from(cols).map(c => `"${c.innerText}"`).join(",");
+      csvContent += rowText + "\n";
+    });
+    csvContent += "\n";
+  });
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "endowcast_simulation_report.csv";
+  link.click();
+}
+</script>
+
+</body>
+</html>

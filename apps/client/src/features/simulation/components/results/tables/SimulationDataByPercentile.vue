@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 const props = defineProps<{ results: any }>();
 
-// --- Formatting Helpers ---
+// --- Formatting Helpers --- 
 function formatMoney(num: number): string {
   if (typeof num !== 'number' || !isFinite(num)) return '—';
   // Use compact formatting like the screenshot ($557.3M)
@@ -99,18 +99,24 @@ const invExpSer = computed(() => {
 // Generate dynamic year labels
 const yearLabels = computed(() => {
     const labels = props.results?.yearLabels ?? [];
-    const seriesLength = simSer.value.length;
     
     // If no labels, generate years starting from 2025 (or current year)
     if (labels.length === 0) {
-        // Find a plausible starting year. Use 2025 as the default based on visual context.
         const startYear = 2025; 
-        return Array.from({ length: seriesLength }, (_, i) => startYear + i);
+        const numYears = props.results?.metadata?.yearsProjected || 5;
+        return Array.from({ length: numYears }, (_, i) => startYear + i);
     }
     
-    // Only return labels up to the length of the data series
-    return labels.slice(0, seriesLength);
+    // Return labels as-is (already sized correctly)
+    return labels;
 });
+
+// Helper to slice data series to match yearLabels length (exclude the final year's endpoint)
+function sliceSeries(series: number[]): number[] {
+  if (!series || series.length === 0) return [];
+  const targetLength = yearLabels.value.length;
+  return series.slice(0, targetLength);
+}
 </script>
 
 <template>
@@ -153,7 +159,7 @@ const yearLabels = computed(() => {
   <td class="py-4 px-4 font-bold text-blue-700 text-base sticky left-0 z-10 whitespace-nowrap bg-white">
     <span class="mr-2">🏛️</span> Endowment Value
   </td>
-  <td v-for="(val, i) in simSer" :key="i" class="py-4 px-3 text-right font-semibold text-blue-700 text-base whitespace-nowrap tabnums">
+  <td v-for="(val, i) in sliceSeries(simSer)" :key="i" class="py-4 px-3 text-right font-semibold text-blue-700 text-base whitespace-nowrap tabnums">
     {{ formatMoney(val) }}
   </td>
 </tr>
@@ -162,14 +168,14 @@ const yearLabels = computed(() => {
   <td class="pt-6 pb-2 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wide sticky left-0 z-10 whitespace-nowrap bg-white">
     Spending Policy Components
   </td>
-  <td v-for="(val, i) in simSer" :key="i"></td>
+  <td v-for="(val, i) in sliceSeries(simSer)" :key="i"></td>
 </tr>
 
 <tr class="bg-white hover:bg-slate-50 transition">
   <td class="py-3 px-4 pl-8 text-sm text-gray-700 sticky left-0 z-10 whitespace-nowrap bg-white">
     Operating Expenses
   </td>
-  <td v-for="(val, i) in opExSer" :key="i" class="py-3 px-3 text-right text-sm text-gray-700 whitespace-nowrap tabnums">
+  <td v-for="(val, i) in sliceSeries(opExSer)" :key="i" class="py-3 px-3 text-right text-sm text-gray-700 whitespace-nowrap tabnums">
     {{ formatMoney(val) }}
   </td>
 </tr>
@@ -178,7 +184,7 @@ const yearLabels = computed(() => {
   <td class="py-3 px-4 pl-8 text-sm text-gray-700 sticky left-0 z-10 whitespace-nowrap bg-white">
     Grant Distributions
   </td>
-  <td v-for="(val, i) in grantsSer" :key="i" class="py-3 px-3 text-right text-sm text-gray-700 whitespace-nowrap tabnums">
+  <td v-for="(val, i) in sliceSeries(grantsSer)" :key="i" class="py-3 px-3 text-right text-sm text-gray-700 whitespace-nowrap tabnums">
     {{ formatMoney(val) }}
   </td>
 </tr>
@@ -187,7 +193,7 @@ const yearLabels = computed(() => {
   <td class="py-3 px-4 font-bold text-amber-700 sticky left-0 z-10 whitespace-nowrap bg-yellow-50/50 border-l-4 border-amber-400">
     = Spending Policy Expense
   </td>
-  <td v-for="(val, i) in spendingSer" :key="i" class="py-3 px-3 text-right font-bold text-amber-700 whitespace-nowrap tabnums">
+  <td v-for="(val, i) in sliceSeries(spendingSer)" :key="i" class="py-3 px-3 text-right font-bold text-amber-700 whitespace-nowrap tabnums">
     {{ formatMoney(val) }}
   </td>
 </tr>
@@ -196,7 +202,7 @@ const yearLabels = computed(() => {
   <td class="py-3 px-4 font-medium text-gray-900 sticky left-0 z-10 whitespace-nowrap bg-white">
     + Investment Expenses
   </td>
-  <td v-for="(val, i) in invExpSer" :key="i" class="py-3 px-3 text-right text-gray-700 whitespace-nowrap tabnums">
+  <td v-for="(val, i) in sliceSeries(invExpSer)" :key="i" class="py-3 px-3 text-right text-gray-700 whitespace-nowrap tabnums">
     {{ formatMoney(val) }}
   </td>
 </tr>
@@ -205,7 +211,7 @@ const yearLabels = computed(() => {
   <td class="py-3 px-4 font-extrabold text-rose-700 sticky left-0 z-10 whitespace-nowrap bg-rose-50/50 border-l-4 border-rose-500">
     = Total Organization Expenses
   </td>
-  <td v-for="(val, i) in totalSpendSer" :key="i" class="py-3 px-3 text-right font-extrabold text-rose-700 whitespace-nowrap tabnums">
+  <td v-for="(val, i) in sliceSeries(totalSpendSer)" :key="i" class="py-3 px-3 text-right font-extrabold text-rose-700 whitespace-nowrap tabnums">
     {{ formatMoney(val) }}
   </td>
 </tr>

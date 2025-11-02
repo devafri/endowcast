@@ -58,28 +58,59 @@ const rows = percentiles.map(p => {
   // Use backend-computed values for all percentiles
   const summary = props.results?.summary;
   
-  const annR = (() => {
+  // Debug: log what we're getting for each percentile
+  if (p === 90 && summary) {
+    console.log('[StatisticalSummary Debug - 90th percentile]', {
+      annReturn90: summary.annualizedReturn90,
+      annVol90: summary.annualizedVolatility90,
+      sharpe90: summary.sharpe90,
+      sortino90: summary.sortino90,
+    });
+  }
+  
+  // Final Value: Use backend computed percentiles if available, fallback to local calculation
+  const finalValue = (() => {
     if (!summary) return NaN;
     switch(p) {
-      case 90: return (summary.annualizedReturn90 ?? NaN) / 100;
-      case 75: return (summary.annualizedReturn75 ?? NaN) / 100;
-      case 50: return (summary.medianAnnualizedReturn ?? NaN) / 100;
-      case 25: return (summary.annualizedReturn25 ?? NaN) / 100;
-      case 10: return (summary.annualizedReturn10 ?? NaN) / 100;
+      case 90: return summary.finalValues?.percentile90 ?? percentile(finalValues, 90);
+      case 75: return summary.finalValues?.percentile75 ?? percentile(finalValues, 75);
+      case 50: return summary.medianFinalValue ?? percentile(finalValues, 50);
+      case 25: return summary.finalValues?.percentile25 ?? percentile(finalValues, 25);
+      case 10: return summary.finalValues?.percentile10 ?? percentile(finalValues, 10);
       default: return NaN;
     }
   })();
   
-  const annV = (() => {
+  const annR = (() => {
     if (!summary) return NaN;
+    let val: number;
     switch(p) {
-      case 90: return (summary.annualizedVolatility90 ?? NaN) / 100;
-      case 75: return (summary.annualizedVolatility75 ?? NaN) / 100;
-      case 50: return (summary.annualizedVolatility ?? NaN) / 100;
-      case 25: return (summary.annualizedVolatility25 ?? NaN) / 100;
-      case 10: return (summary.annualizedVolatility10 ?? NaN) / 100;
+      case 90: val = summary.annualizedReturn90; break;
+      case 75: val = summary.annualizedReturn75; break;
+      case 50: val = summary.medianAnnualizedReturn; break;
+      case 25: val = summary.annualizedReturn25; break;
+      case 10: val = summary.annualizedReturn10; break;
       default: return NaN;
     }
+    // Backend sends values already as percentages (e.g., 6.74 for 6.74%)
+    // Convert to decimal for formatting
+    return (val != null && isFinite(val)) ? val / 100 : NaN;
+  })();
+  
+  const annV = (() => {
+    if (!summary) return NaN;
+    let val: number;
+    switch(p) {
+      case 90: val = summary.annualizedVolatility90; break;
+      case 75: val = summary.annualizedVolatility75; break;
+      case 50: val = summary.annualizedVolatility; break;
+      case 25: val = summary.annualizedVolatility25; break;
+      case 10: val = summary.annualizedVolatility10; break;
+      default: return NaN;
+    }
+    // Backend sends values already as percentages (e.g., 8.98 for 8.98%)
+    // Convert to decimal for formatting
+    return (val != null && isFinite(val)) ? val / 100 : NaN;
   })();
   
   const sharpe = (() => {
@@ -108,7 +139,7 @@ const rows = percentiles.map(p => {
   
   return {
     label: p === 50 ? 'Median (50th)' : `${p}th`,
-    finalValue: percentile(finalValues, p),
+    finalValue,
     annReturn: annR,
     annVol: annV,
     sharpe,
