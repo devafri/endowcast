@@ -82,6 +82,14 @@ coverage/
 # dotenv environment variables file
 .env.test
 
+# Vercel environment files (local only - do not commit)
+vercel*.env
+apps/**/vercel*.env
+
+# Database URL files (local only - do not commit)
+dburl*
+apps/**/dburl*
+
 # Local env backups (do not commit)
 apps/server/.env.old
 
