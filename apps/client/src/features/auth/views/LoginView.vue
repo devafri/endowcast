@@ -96,7 +96,7 @@ async function handleLogin() {
             <div>
               <div class="flex justify-between items-center mb-1">
                 <label for="password" class="text-sm font-medium text-gray-700">Password</label>
-                <RouterLink to="/forgot-password" class="text-sm text-blue-700 hover:text-blue-900 font-medium">Forgot?</RouterLink>
+                <RouterLink to="/auth/forgot-password" class="text-sm text-blue-700 hover:text-blue-900 font-medium">Forgot?</RouterLink>
               </div>
               <div class="relative">
                 <input
@@ -126,7 +126,6 @@ async function handleLogin() {
                 <input v-model="formData.rememberMe" type="checkbox" class="mr-2 rounded border-gray-300 text-blue-700 focus:ring-blue-500" />
                 Remember me
               </label>
-              <RouterLink to="/help" class="text-blue-700 hover:text-blue-900">Need help?</RouterLink>
             </div>
 
             <div v-if="errorMessage" class="text-red-600 text-sm bg-red-50 border border-red-100 p-3 rounded-lg">

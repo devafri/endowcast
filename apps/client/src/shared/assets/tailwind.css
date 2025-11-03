@@ -1,8 +1,7 @@
 /* Import Tailwind utilities first */
 @import "tailwindcss";
 
-/* Load Source Sans 3 from Google Fonts (variable font for best rendering) */
-@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,100..900;1,100..900&display=swap');
+/* Font loading moved to index.html via <link rel="stylesheet"> to avoid CSP/mime-type issues */
 
 /* Ensure base elements use the Tailwind `font-sans` (which includes Source Sans 3 in tailwind.config.js) */
 @layer base {

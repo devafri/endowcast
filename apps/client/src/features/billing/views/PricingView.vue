@@ -36,7 +36,7 @@ async function selectPlan(plan: any) {
     if (!authStore.isAdmin) { alert('Only organization admins can upgrade.'); return router.push('/organization'); }
   try { const resp = await apiService.createCheckoutSession(plan.planType, billingCycle.value.toUpperCase() as any, 'card'); if (resp?.url) window.location.href = resp.url; } catch (e) { console.error(e); alert('Unable to start checkout.'); }
   } else {
-    router.push(`/signup?plan=${plan.planType}`);
+    router.push(`/register?plan=${plan.planType}`);
   }
 }
 </script>
@@ -160,7 +160,7 @@ async function selectPlan(plan: any) {
       <template #title>Ready to upgrade?</template>
       <template #subtitle>Pick a plan that suits your organization.</template>
       <template #actions>
-        <router-link to="/signup" class="bg-white text-brand px-8 py-4 rounded-lg font-semibold border border-brand hover:bg-brand-soft">Start Free</router-link>
+        <router-link to="/register" class="bg-white text-brand px-8 py-4 rounded-lg font-semibold border border-brand hover:bg-brand-soft">Start Free</router-link>
       </template>
     </CTABand>
   </main>

@@ -91,7 +91,7 @@ onMounted(async () => {
   if (!sessionId) return;
   try {
     // best-effort: server will still accept webhooks as source-of-truth
-    const { apiService } = await import('@/shared/services/api');
+    const apiService = (await import('@/shared/services/api')).default;
     await apiService.post('/billing/confirm-session', { sessionId });
     console.log('SettingsView: requested confirm-session for', sessionId);
   } catch (e) {
