@@ -8,7 +8,7 @@ import { useAuthStore } from '@/features/auth/stores/auth';
 const route = useRoute();
 const authStore = useAuthStore();
 // Define the paths where TheHeader should be visible
-const headerPaths = ['/', '/register', '/privacy','/login','/pricing'];
+const headerPaths = ['/', '/register', '/privacy','/pricing'];
 
 const shouldShowHeader = computed(() => {
   return headerPaths.includes(route.path);

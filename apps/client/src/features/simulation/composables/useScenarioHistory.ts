@@ -1,7 +1,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/features/auth/stores/auth';
-import { apiService } from '@/shared/services/api';
+import apiService from '@/shared/services/api';
 
 export interface Scenario {
   id: string;

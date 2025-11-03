@@ -121,5 +121,5 @@ async function handleLogout() {
 <style scoped>
 .btn { padding: 8px 12px; border-radius: 6px; font-weight: 500; }
 .btn-outline { color: rgb(55, 65, 81); border: 1px solid rgb(209, 213, 219); background-color: white; }
-.btn-primary { color: white; background-color: rgb(59, 130, 246); padding: 8px 12px; border-radius: 6px; }
+/* .btn-primary is defined globally in src/shared/assets/tailwind.css */
 </style>

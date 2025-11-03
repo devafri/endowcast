@@ -1,6 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(public status: number, message: string, public data?: any) {
     super(message);
     this.name = 'ApiError';
@@ -63,12 +63,26 @@ class ApiService {
     }
   }
 
+  // HTTP method wrappers
+  public get(endpoint: string, options: RequestInit = {}) {
+    return this.request(endpoint, { ...options, method: 'GET' });
+  }
+
+  public post(endpoint: string, body: any, options: RequestInit = {}) {
+    return this.request(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) });
+  }
+
+  public put(endpoint: string, body: any, options: RequestInit = {}) {
+    return this.request(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) });
+  }
+
+  public delete(endpoint: string, options: RequestInit = {}) {
+    return this.request(endpoint, { ...options, method: 'DELETE' });
+  }
+
   // Auth endpoints
   async login(email: string, password: string, rememberMe = false) {
-    const response = await this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, rememberMe }),
-    });
+    const response = await this.post('/auth/login', { email, password, rememberMe });
     
     if (response.token) {
       this.setToken(response.token);
@@ -85,10 +99,7 @@ class ApiService {
     organizationName?: string;
     jobTitle?: string;
   }) {
-    const response = await this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
+    const response = await this.post('/auth/register', userData);
     
     if (response.token) {
       this.setToken(response.token);
@@ -106,6 +117,12 @@ class ApiService {
 
   async logout() {
     this.setToken(null);
+    // Optionally, call a backend endpoint to invalidate the session/token
+    try {
+      await this.post('/auth/logout', {});
+    } catch (error) {
+      console.warn('Logout API call failed, clearing token locally.', error);
+    }
   }
 
   // User endpoints
@@ -237,28 +254,18 @@ class ApiService {
       body: JSON.stringify({ planType, billingCycle, dueDate }),
     });
   }
-
-  // Generic HTTP methods
-  async post(endpoint: string, data?: any) {
-    return this.request(endpoint, {
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    });
-  }
-
-  async put(endpoint: string, data?: any) {
-    return this.request(endpoint, {
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
-    });
-  }
-
-  async delete(endpoint: string) {
-    return this.request(endpoint, {
-      method: 'DELETE',
-    });
-  }
 }
 
-export const apiService = new ApiService();
-export { ApiError };
+// Create a singleton instance of the ApiService
+const apiServiceInstance = new ApiService();
+
+/**
+ * Composable function to get the singleton instance of the ApiService.
+ * This is the preferred way to use the API service in Vue components.
+ */
+export function useApi() {
+  return apiServiceInstance;
+}
+
+// Export the instance as default for use in non-component files (e.g., stores)
+export default apiServiceInstance;

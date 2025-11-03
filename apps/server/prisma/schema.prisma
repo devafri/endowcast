@@ -13,7 +13,7 @@ datasource db {
 // Organization model - the central tenant in our multi-tenant architecture
 model Organization {
   id           String   @id @default(cuid())
-  name         String   @unique
+  name         String
   domain       String?
   contactEmail String
   industry     String?
@@ -21,7 +21,7 @@ model Organization {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  
+
   // Relations
   users        User[]
   subscription Subscription?
@@ -29,36 +29,36 @@ model Organization {
   invitations  Invitation[]
   payments     Payment[]
   invoices     Invoice[]
-  
+
   @@map("organizations")
 }
 
 // Subscription model - handles billing and plan limits per organization
 model Subscription {
-  id             String   @id @default(cuid())
-  organizationId String   @unique
-  planType       String   @default("FREE") // FREE, PROFESSIONAL, INSTITUTION
-  status         String   @default("active") // active, past_due, canceled, etc.
-  
+  id             String @id @default(cuid())
+  organizationId String @unique
+  planType       String @default("FREE") // FREE, PROFESSIONAL, INSTITUTION
+  status         String @default("active") // active, past_due, canceled, etc.
+
   // Stripe integration
-  stripeCustomerId       String? @unique
-  stripeSubscriptionId   String? @unique
-  stripePriceId          String?
-  
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+  stripePriceId        String?
+
   // Billing cycle
-  currentPeriodStart DateTime @default(now())
+  currentPeriodStart DateTime  @default(now())
   currentPeriodEnd   DateTime?
-  
+
   // Usage tracking
-  simulationsUsed        Int      @default(0)
-  simulationsReset       DateTime @default(now())
-  
+  simulationsUsed  Int      @default(0)
+  simulationsReset DateTime @default(now())
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+
   @@map("subscriptions")
 }
 
@@ -78,39 +78,61 @@ model User {
   password       String
   organizationId String
   role           UserRole @default(USER)
-  
+
   // Profile information
-  jobTitle       String?
-  department     String?
-  
+  jobTitle   String?
+  department String?
+
   // Account status
-  isActive       Boolean  @default(true)
-  emailVerified  Boolean  @default(false)
-  
-  // Security fields
-  verificationToken   String?
-  verificationExpiry  DateTime?
-  resetToken         String?
-  resetExpiry        DateTime?
-  loginAttempts      Int      @default(0)
-  lockedUntil        DateTime?
-  
+  isActive      Boolean @default(true)
+  emailVerified Boolean @default(false)
+
+  // Security fields - DEPRECATED in favor of UserToken model
+  // verificationToken   String?
+  // verificationExpiry  DateTime?
+  // resetToken         String?
+  // resetExpiry        DateTime?
+  loginAttempts Int       @default(0)
+  lockedUntil   DateTime?
+
   // Preferences
   notifications Boolean @default(true)
-  
+
   // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   lastLogin DateTime?
-  
+
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   simulations  Simulation[]
+  tokens       UserToken[]
   portfolios   Portfolio[]
-  invitationsSent Invitation[] @relation("InvitationsSent")
-  invoicesCreated Invoice[] @relation("InvoicesCreated")
-  
+  invoices     Invoice[]    @relation("InvoicesCreated")
+  invitations  Invitation[] @relation("InvitationsSent")
+
   @@map("users")
+}
+
+// Generic token model for various purposes like email verification, password reset, etc.
+model UserToken {
+  id        String    @id @default(cuid())
+  userId    String
+  type      TokenType
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("user_tokens")
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
 }
 
 // Simulation model - now belongs to organization for proper isolation
@@ -119,98 +141,98 @@ model Simulation {
   name           String
   userId         String
   organizationId String
-  
+
   // Simulation parameters
-  years         Int
-  startYear     Int
-  initialValue  Float
-  
+  years        Int
+  startYear    Int
+  initialValue Float
+
   // Spending policy
   spendingRate   Float
   spendingGrowth Float @default(0)
-  
+
   // Asset class assumptions
   assetAssumptions Json?
 
   // Correlation matrix (JSON array of arrays for the 7x7 matrix)
   correlationMatrix Json?
-  
+
   // Shock testing parameters
-  equityShock        Float?
-  cpiShift          Float?
-  
+  equityShock Float?
+  cpiShift    Float?
+
   // Grant targets (JSON array of yearly targets)
   grantTargets Json?
-  
+
   // Results data (stored as JSON for flexibility)
   results Json?
   // Computed summary (stored separately for quick access)
   summary Json?
-  
+
   // Metadata
   isCompleted Boolean @default(false)
   runCount    Int     @default(0)
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   portfolio    Portfolio?
-  
+
   @@map("simulations")
 }
 
 // Portfolio allocation model
 model Portfolio {
-  id           String @id @default(cuid())
+  id           String  @id @default(cuid())
   name         String
   userId       String
   simulationId String? @unique
-  
-// 7 distinct asset classes (must sum to 100)
-  publicEquity         Float
-  privateEquity        Float
-  publicFixedIncome    Float
-  privateCredit        Float
-  realAssets           Float
-  diversifying         Float
-  cashShortTerm        Float
-  
+
+  // 7 distinct asset classes (must sum to 100)
+  publicEquity      Float
+  privateEquity     Float
+  publicFixedIncome Float
+  privateCredit     Float
+  realAssets        Float
+  diversifying      Float
+  cashShortTerm     Float
+
   // Portfolio metadata
   description String?
   isDefault   Boolean @default(false)
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   simulation Simulation? @relation(fields: [simulationId], references: [id])
-  
+
   @@map("portfolios")
 }
 
 // Payment model - tracks organization payments
 model Payment {
-  id                    String        @id @default(cuid())
+  id                    String  @id @default(cuid())
   organizationId        String
-  amount                Float         // Amount in dollars
-  currency              String        @default("usd")
-  status                String        @default("pending") // succeeded, failed, pending, refunded
-  stripePaymentIntentId String?       @unique
-  stripeInvoiceId       String?       @unique
+  amount                Float // Amount in dollars
+  currency              String  @default("usd")
+  status                String  @default("pending") // succeeded, failed, pending, refunded
+  stripePaymentIntentId String? @unique
+  stripeInvoiceId       String? @unique
   description           String?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations  
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+
   @@map("payments")
 }
 
@@ -221,7 +243,7 @@ model Session {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-  
+
   @@map("sessions")
 }
 
@@ -239,43 +261,43 @@ model ContactSubmission {
 
 // Invoice model for Stripe invoicing
 model Invoice {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   organizationId  String
-  stripeInvoiceId String   @unique
+  stripeInvoiceId String    @unique
   amount          Float
-  currency        String   @default("usd")
+  currency        String    @default("usd")
   description     String?
-  status          String   @default("draft") // draft, open, paid, void, uncollectible
+  status          String    @default("draft") // draft, open, paid, void, uncollectible
   dueDate         DateTime?
   createdBy       String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   creator      User         @relation("InvoicesCreated", fields: [createdBy], references: [id])
-  
+
   @@map("invoices")
 }
 
 // Invitation model for inviting users to organizations
 model Invitation {
-  id             String      @id @default(cuid())
+  id             String           @id @default(cuid())
   email          String
   organizationId String
   inviterId      String
-  role           UserRole    @default(USER)
-  token          String      @unique
+  role           UserRole         @default(USER)
+  token          String           @unique
   status         InvitationStatus @default(PENDING)
   expiresAt      DateTime
   acceptedAt     DateTime?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  inviter      User        @relation("InvitationsSent", fields: [inviterId], references: [id], onDelete: Cascade)
-  
+  inviter      User         @relation("InvitationsSent", fields: [inviterId], references: [id], onDelete: Cascade)
+
   @@unique([email, organizationId])
   @@map("invitations")
 }

@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/features/auth/stores/auth';
 
 // Heroicons Outline
-import { CheckCircleIcon, ShieldCheckIcon, EnvelopeIcon, LockClosedIcon } from '@heroicons/vue/24/outline';
+import { CheckCircleIcon, ShieldCheckIcon, EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -19,6 +19,10 @@ const formData = ref({
   organizationName: '',
   jobTitle: ''
 });
+
+// UI state: reveal password fields
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
 
 // Default free plan
 const selectedPlan = {
@@ -109,14 +113,22 @@ async function handleSignup() {
                 <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
                 <div class="relative">
                   <LockClosedIcon class="absolute w-5 h-5 text-indigo-700 top-3 left-3" />
-                  <input v-model="formData.password" type="password" required minlength="8" placeholder="••••••••" class="w-full rounded-lg border border-gray-300 pl-10 p-3 focus:ring-2 focus:ring-indigo-700 focus:outline-none" />
+                  <input v-model="formData.password" :type="showPassword ? 'text' : 'password'" required minlength="8" placeholder="••••••••" class="w-full rounded-lg border border-gray-300 pl-10 pr-16 p-3 focus:ring-2 focus:ring-indigo-700 focus:outline-none" />
+                  <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-2 text-gray-600 hover:text-gray-900 rounded-md hover:bg-gray-100" :aria-pressed="showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'" @click="showPassword = !showPassword">
+                    <component :is="showPassword ? EyeSlashIcon : EyeIcon" class="w-5 h-5" />
+                    <span class="sr-only">{{ showPassword ? 'Hide password' : 'Show password' }}</span>
+                  </button>
                 </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
                 <div class="relative">
                   <LockClosedIcon class="absolute w-5 h-5 text-indigo-700 top-3 left-3" />
-                  <input v-model="formData.confirmPassword" type="password" required minlength="8" placeholder="••••••••" class="w-full rounded-lg border border-gray-300 pl-10 p-3 focus:ring-2 focus:ring-indigo-700 focus:outline-none" />
+                  <input v-model="formData.confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" required minlength="8" placeholder="••••••••" class="w-full rounded-lg border border-gray-300 pl-10 pr-16 p-3 focus:ring-2 focus:ring-indigo-700 focus:outline-none" />
+                  <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-2 text-gray-600 hover:text-gray-900 rounded-md hover:bg-gray-100" :aria-pressed="showConfirmPassword" :aria-label="showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'" @click="showConfirmPassword = !showConfirmPassword">
+                    <component :is="showConfirmPassword ? EyeSlashIcon : EyeIcon" class="w-5 h-5" />
+                    <span class="sr-only">{{ showConfirmPassword ? 'Hide confirm password' : 'Show confirm password' }}</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -152,7 +164,7 @@ async function handleSignup() {
             </div>
 
             <!-- Submit -->
-            <button type="submit" :disabled="authStore.isLoading" class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-semibold py-4 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center">
+            <button type="submit" :disabled="authStore.isLoading" class="w-full btn-primary text-white font-semibold py-4 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center">
               <span v-if="authStore.isLoading" class="flex items-center gap-2">
                 <svg class="w-5 h-5 animate-spin text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582M20 20v-5h-.582M4 20v-5h.582M20 4v5h-.582"></path></svg>
                 Creating Account...

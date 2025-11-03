@@ -1,32 +1,35 @@
 <script setup lang="ts">
-import { RouterLink, useRoute } from 'vue-router';
-import { ref } from 'vue';
-import { useAuthStore } from '@/features/auth/stores/auth';
+import { RouterLink, useRoute } from 'vue-router'
+import { ref } from 'vue'
+import { useAuthStore } from '@/features/auth/stores/auth'
 
-const route = useRoute();
-const authStore = useAuthStore();
+const route = useRoute()
+const authStore = useAuthStore()
 
 // Dropdown state management
-const analysisDropdown = ref(false);
-const scenariosDropdown = ref(false);
-const accountDropdown = ref(false);
+const analysisDropdown = ref(false)
+const scenariosDropdown = ref(false)
+const accountDropdown = ref(false)
 
 // Helper functions
 const closeAllDropdowns = () => {
-  analysisDropdown.value = false;
-  scenariosDropdown.value = false;
-  accountDropdown.value = false;
-};
+  analysisDropdown.value = false
+  scenariosDropdown.value = false
+  accountDropdown.value = false
+}
 
 const isAnalysisActive = () => {
-  return route.path.startsWith('/allocation') || 
-         route.path.startsWith('/results') || 
-         route.path.startsWith('/settings')
+  return (
+    route.path.startsWith('/allocation') ||
+    route.path.startsWith('/results') ||
+    route.path.startsWith('/settings')
+  )
 }
 
 const isScenariosActive = () => {
-  return route.path.startsWith('/simulation/history') || 
-         route.path.startsWith('/simulation/compare')
+  return (
+    route.path.startsWith('/simulation/history') || route.path.startsWith('/simulation/compare')
+  )
 }
 
 const isAccountActive = () => {
@@ -34,7 +37,7 @@ const isAccountActive = () => {
 }
 
 async function handleLogout() {
-  await authStore.logout();
+  await authStore.logout()
 }
 </script>
 
@@ -43,29 +46,63 @@ async function handleLogout() {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
       <div class="flex justify-between items-center">
         <RouterLink to="/" class="flex items-center gap-3 group">
-<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-700 to-slate-200 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow">
-  <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path fill="currentColor" d="M6 5H18V8H6V5ZM6 10H15V13H6V10ZM6 15H18V18H6V15Z"/>
-  </svg>
-</div>
-        <div>
-          <div class="text-xl font-bold text-gray-900 leading-tight">EndowCast</div>
-          <div class="text-sm text-gray-600 font-medium">Endowment Analytics</div>
-        </div>
+          <div
+            class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-700 to-slate-200 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+          >
+            <svg
+              class="h-6 w-6 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path fill="currentColor" d="M6 5H18V8H6V5ZM6 10H15V13H6V10ZM6 15H18V18H6V15Z" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-xl font-bold text-gray-900 leading-tight">EndowCast</div>
+            <div class="text-sm text-gray-600 font-medium">Endowment Analytics</div>
+          </div>
         </RouterLink>
 
         <nav class="hidden lg:flex items-center gap-2 text-sm">
           <template v-if="authStore.isAuthenticated">
             <!-- Basic Navigation -->
-            <RouterLink to="/" class="nav-link" :class="route.path==='/' ? 'nav-link-active' : 'nav-link-default'">Home</RouterLink>
-            <RouterLink to="/pricing" class="nav-link" :class="route.path==='/pricing' ? 'nav-link-active' : 'nav-link-default'">Pricing</RouterLink>
-            <RouterLink to="/instructions" class="nav-link" :class="route.path==='/instructions' ? 'nav-link-active' : 'nav-link-default'">Guide</RouterLink>
+            <RouterLink
+              to="/"
+              class="nav-link"
+              :class="route.path === '/' ? 'nav-link-active' : 'nav-link-default'"
+              >Home</RouterLink
+            >
+            <RouterLink
+              to="/pricing"
+              class="nav-link"
+              :class="route.path === '/pricing' ? 'nav-link-active' : 'nav-link-default'"
+              >Pricing</RouterLink
+            >
+            <RouterLink
+              to="/instructions"
+              class="nav-link"
+              :class="route.path === '/instructions' ? 'nav-link-active' : 'nav-link-default'"
+              >Guide</RouterLink
+            >
             <!-- Analysis Dropdown -->
-            <div class="relative" @mouseenter="analysisDropdown = true" @mouseleave="analysisDropdown = false">
-              <button class="nav-link flex items-center gap-1" :class="isAnalysisActive() ? 'nav-link-active' : 'nav-link-default'">
+            <div
+              class="relative"
+              @mouseenter="analysisDropdown = true"
+              @mouseleave="analysisDropdown = false"
+            >
+              <button
+                class="nav-link flex items-center gap-1"
+                :class="isAnalysisActive() ? 'nav-link-active' : 'nav-link-default'"
+              >
                 Analysis
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
                 </svg>
               </button>
               <div v-if="analysisDropdown" class="dropdown-menu">
@@ -81,7 +118,11 @@ async function handleLogout() {
                     <span class="text-xs text-gray-500">Set asset weights and constraints</span>
                   </div>
                 </RouterLink>
-                <RouterLink :to="{ path: '/results', query: { run: '1' } }" class="dropdown-item dropdown-item-primary" @click="closeAllDropdowns">
+                <RouterLink
+                  :to="{ path: '/results', query: { run: '1' } }"
+                  class="dropdown-item dropdown-item-primary"
+                  @click="closeAllDropdowns"
+                >
                   <div class="dropdown-item-content">
                     <span class="font-semibold">🚀 Run Monte Carlo Analysis</span>
                     <span class="text-xs text-blue-600">Execute simulation & view results</span>
@@ -90,21 +131,41 @@ async function handleLogout() {
               </div>
             </div>
             <!-- Scenarios Dropdown -->
-            <div class="relative" @mouseenter="scenariosDropdown = true" @mouseleave="scenariosDropdown = false">
-              <button class="nav-link flex items-center gap-1" :class="isScenariosActive() ? 'nav-link-active' : 'nav-link-default'">
+            <div
+              class="relative"
+              @mouseenter="scenariosDropdown = true"
+              @mouseleave="scenariosDropdown = false"
+            >
+              <button
+                class="nav-link flex items-center gap-1"
+                :class="isScenariosActive() ? 'nav-link-active' : 'nav-link-default'"
+              >
                 Scenarios
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
                 </svg>
               </button>
               <div v-if="scenariosDropdown" class="dropdown-menu">
-                <RouterLink to="/simulation/history" class="dropdown-item" @click="closeAllDropdowns">
+                <RouterLink
+                  to="/simulation/history"
+                  class="dropdown-item"
+                  @click="closeAllDropdowns"
+                >
                   <div class="dropdown-item-content">
                     <span class="font-medium">Scenario History</span>
                     <span class="text-xs text-gray-500">Browse saved scenarios</span>
                   </div>
                 </RouterLink>
-                <RouterLink to="/simulation/compare" class="dropdown-item" @click="closeAllDropdowns">
+                <RouterLink
+                  to="/simulation/compare"
+                  class="dropdown-item"
+                  @click="closeAllDropdowns"
+                >
                   <div class="dropdown-item-content">
                     <span class="font-medium">Compare Scenarios</span>
                     <span class="text-xs text-gray-500">Side-by-side analysis</span>
@@ -117,11 +178,24 @@ async function handleLogout() {
 
         <div class="flex items-center gap-4">
           <!-- Account Dropdown (authenticated users) -->
-          <div v-if="authStore.isAuthenticated" class="relative" @mouseenter="accountDropdown = true" @mouseleave="accountDropdown = false">
-            <button class="nav-link flex items-center gap-1" :class="isAccountActive() ? 'nav-link-active' : 'nav-link-default'">
+          <div
+            v-if="authStore.isAuthenticated"
+            class="relative"
+            @mouseenter="accountDropdown = true"
+            @mouseleave="accountDropdown = false"
+          >
+            <button
+              class="nav-link flex items-center gap-1"
+              :class="isAccountActive() ? 'nav-link-active' : 'nav-link-default'"
+            >
               Account
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                ></path>
               </svg>
             </button>
             <div v-if="accountDropdown" class="dropdown-menu">
@@ -146,29 +220,39 @@ async function handleLogout() {
                   <span class="capitalize">{{ authStore.user.role.toLowerCase() }}</span>
                 </div>
               </div>
-              
+
               <!-- Simulation Usage -->
-              <div v-if="authStore.subscription" class="text-center px-3 py-1 bg-gray-50 rounded-md">
+              <div
+                v-if="authStore.subscription"
+                class="text-center px-3 py-1 bg-gray-50 rounded-md"
+              >
                 <div class="text-xs font-medium text-gray-900">
-                  {{ (authStore.usageStats?.monthlySimulations || 0) }}/{{ authStore.currentPlanLimits.simulations }}
+                  {{ authStore.usageStats?.monthlySimulations || 0 }}/{{
+                    authStore.currentPlanLimits.simulations
+                  }}
                 </div>
                 <div class="text-xs text-gray-500">simulations</div>
               </div>
-              
+
               <!-- Sign Out -->
-              <button 
-                @click="handleLogout" 
+              <button
+                @click="handleLogout"
                 class="text-gray-500 hover:text-red-600 transition-colors"
                 title="Sign Out"
                 aria-label="Sign Out"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"></path>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"
+                  ></path>
                 </svg>
               </button>
             </div>
           </template>
-          
+
           <!-- Unauthenticated Users -->
           <template v-else>
             <RouterLink to="/login" class="btn btn-outline">Login</RouterLink>
@@ -216,7 +300,9 @@ async function handleLogout() {
   background-color: white;
   border: 1px solid rgb(229, 231, 235);
   border-radius: 8px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
   animation: fadeIn 0.15s ease-out;
 }
 
@@ -286,14 +372,5 @@ async function handleLogout() {
   border-color: rgb(156, 163, 175);
 }
 
-.btn-primary {
-  color: white;
-  background-color: rgb(59, 130, 246);
-  border: 1px solid rgb(59, 130, 246);
-}
-
-.btn-primary:hover {
-  background-color: rgb(37, 99, 235);
-  border-color: rgb(37, 99, 235);
-}
+/* .btn-primary is now defined globally in src/shared/assets/tailwind.css */
 </style>

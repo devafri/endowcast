@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/features/auth/stores/auth';
-import { apiService } from '@/shared/services/api';
+import { CheckIcon } from '@heroicons/vue/24/outline';
+import apiService from '@/shared/services/api';
+
 import PageHero from '@/shared/components/ui/PageHero.vue';
 import CTABand from '@/shared/components/ui/CTABand.vue';
 
@@ -15,7 +17,7 @@ const plans = [
   { name: 'Free', planType: 'FREE', price: 0, description: 'Try EndowCast with limited features.', features: ['10 simulations per month'], buttonText: 'Start Free', popular: false },
   { name: 'Analyst Pro', planType: 'ANALYST_PRO', price: 49, description: 'For individual analysts', features: ['50 simulations / month'], buttonText: 'Start Analyst Pro', popular: false },
   { name: 'Foundation', planType: 'FOUNDATION', price: 249, description: 'For mid-size endowments', features: ['250 simulations / month'], buttonText: 'Start Foundation', popular: true },
-  { name: 'Foundation Pro', planType: 'FOUNDATION_PRO', price: 449, description: 'Enterprise features', features: ['5000 simulations / month'], buttonText: 'Contact Sales', popular: false },
+  { name: 'Foundation Pro', planType: 'FOUNDATION_PRO', price: 449, description: 'Enterprise features', features: ['500 simulations / month'], buttonText: 'Contact Sales', popular: false },
 ];
 
 function annualPrice(monthly: number) {
@@ -46,8 +48,8 @@ async function selectPlan(plan: any) {
       <template #subtitle>Start with a free trial — then upgrade to unlock advanced features.</template>
       <template #controls>
         <div class="inline-flex items-center bg-white rounded-full p-1 shadow-sm border border-slate-100">
-          <button @click.prevent="setBillingCycle('monthly')" :class="billingCycle === 'monthly' ? 'px-4 py-2 rounded-full bg-brand text-white text-sm' : 'px-4 py-2 rounded-full text-sm text-slate-600'" class="transition-colors duration-150 hover:bg-slate-100">Monthly</button>
-          <button @click.prevent="setBillingCycle('annual')" :class="billingCycle === 'annual' ? 'px-4 py-2 rounded-full bg-brand text-white text-sm' : 'px-4 py-2 rounded-full text-sm text-slate-600'" class="ml-1 transition-colors duration-150 hover:bg-slate-100">Annual (save 15%)</button>
+          <button @click.prevent="setBillingCycle('monthly')" :class="billingCycle === 'monthly' ? 'px-4 py-2 rounded-full bg-brand text-white text-sm' : 'px-4 py-2 rounded-full text-sm text-slate-600'" class="transition-colors duration-150 hover:bg-slate-300">Monthly</button>
+          <button @click.prevent="setBillingCycle('annual')" :class="billingCycle === 'annual' ? 'px-4 py-2 rounded-full bg-brand text-white text-sm' : 'px-4 py-2 rounded-full text-sm text-slate-600'" class="ml-1 transition-colors duration-150 hover:bg-slate-300">Annual (save 15%)</button>
         </div>
       </template>
     </PageHero>
@@ -108,7 +110,7 @@ async function selectPlan(plan: any) {
                     <td class="py-3 text-center">5</td>
                     <td class="py-3 text-center">50</td>
                     <td class="py-3 text-center">250</td>
-                    <td class="py-3 text-center">5000</td>
+                    <td class="py-3 text-center">500</td>
                   </tr>
                   <tr>
                     <td class="py-3">Custom assumptions</td>

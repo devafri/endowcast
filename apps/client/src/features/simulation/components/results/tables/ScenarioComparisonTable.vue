@@ -11,6 +11,11 @@ interface SimulationInput {
 
 interface SimulationSummary {
   medianFinalValue?: number;
+  median?: number;
+  percentile10?: number;
+  percentile25?: number;
+  percentile75?: number;
+  percentile90?: number;
   annualizedReturn10?: number;
   annualizedReturn25?: number;
   medianAnnualizedReturn?: number;
@@ -362,11 +367,11 @@ const exportToCSV = () => {
 
               <tr class="border-b border-gray-200 hover:bg-gray-50">
                 <td class="px-5 py-3 font-semibold text-gray-700 sticky left-0 bg-gray-50 z-10">Final Endowment Value</td>
-                <td class="px-5 py-3 text-right text-gray-900 text-xs">-</td>
-                <td class="px-5 py-3 text-right text-gray-900 text-xs">-</td>
-                <td class="px-5 py-3 text-right text-gray-900 bg-green-50 font-semibold">{{ formatCurrency(sim.summary?.medianFinalValue) }}</td>
-                <td class="px-5 py-3 text-right text-gray-900 text-xs">-</td>
-                <td class="px-5 py-3 text-right text-gray-900 text-xs">-</td>
+                <td class="px-5 py-3 text-right text-gray-900 text-xs">{{ formatCurrency(sim.summary?.percentile10) }}</td>
+                <td class="px-5 py-3 text-right text-gray-900 text-xs">{{ formatCurrency(sim.summary?.percentile25) }}</td>
+                <td class="px-5 py-3 text-right text-gray-900 bg-green-50 font-semibold">{{ formatCurrency(sim.summary?.medianFinalValue || sim.summary?.median) }}</td>
+                <td class="px-5 py-3 text-right text-gray-900 text-xs">{{ formatCurrency(sim.summary?.percentile75) }}</td>
+                <td class="px-5 py-3 text-right text-gray-900 text-xs">{{ formatCurrency(sim.summary?.percentile90) }}</td>
               </tr>
 
               <tr class="border-b border-gray-200 hover:bg-gray-50">

@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '@/features/auth/stores/auth';
-import { apiService, ApiError } from '@/shared/services/api';
+import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../../auth/stores/auth';
+import apiService, { ApiError } from '@/shared/services/api';
 
+
+const router = useRouter();
 const authStore = useAuthStore();
 const loading = ref(false);
 const error = ref('');
@@ -149,6 +152,10 @@ async function updateUserRole(userId: string, newRole: 'USER' | 'ADMIN') {
 function formatDate(date: string | Date) {
   return new Date(date).toLocaleDateString();
 }
+
+function goToPricing() {
+  router.push({ name: 'Pricing' });
+}
 </script>
 
 <template>
@@ -190,7 +197,7 @@ function formatDate(date: string | Date) {
               <button
                 v-if="isAdmin"
                 @click="editOrganization"
-                class="text-slate-600 hover:text-accent font-medium transition px-3 py-1.5 rounded-md"
+                class="text-slate-600 bg-slate-100 hover:bg-slate-200 font-medium transition px-3 py-1.5 rounded-md"
                 aria-label="Edit organization"
               >
                 Edit
@@ -221,7 +228,7 @@ function formatDate(date: string | Date) {
               <!-- Invite User (outlined sage) -->
               <button
                 @click="showInviteUser = true"
-                class="inline-flex items-center gap-2 border border-accent text-accent font-medium px-3 py-1.5 rounded-lg hover:bg-accent-soft transition"
+                class="inline-flex items-center gap-2 border border-accent text-accent font-medium px-3 py-1.5 rounded-lg hover:bg-sky-50 transition"
                 aria-label="Invite user"
               >
                 Invite User
@@ -310,8 +317,9 @@ function formatDate(date: string | Date) {
               </div>
             </div>
 
-            <!-- Upgrade Plan (solid sage primary) -->
+            <!-- Upgrade  -->
             <button
+              @click="goToPricing"
               class="w-full mt-5 inline-flex items-center justify-center gap-2 bg-accent text-white font-medium px-4 py-2 rounded-lg shadow hover:opacity-90 transition"
             >
               Upgrade Plan

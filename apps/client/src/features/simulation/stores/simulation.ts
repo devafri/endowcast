@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { reactive, ref, watch } from 'vue';
 import type { EngineOptions, SimulationOutputs } from '../lib/monteCarlo'; // Types only - simulation now runs on backend
 import { useAuthStore } from '../../auth/stores/auth';
-import { apiService } from '@/shared/services/api';
+import apiService from '@/shared/services/api';
 
 // --- 7-FACTOR CONSTANTS ---
 

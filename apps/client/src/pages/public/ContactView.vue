@@ -48,7 +48,7 @@ async function submit() {
 </script>
 
 <template>
-  <main class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
+  <main class="min-h-screen bg-sky-100 py-12">
     <div class="max-w-3xl mx-auto p-6">
       <h1 class="text-3xl font-bold mb-4">Contact Sales & Support</h1>
       <p class="text-gray-600 mb-6">Use this form to reach our team. For urgent issues, email <a href="mailto:support@endowcast.com" class="text-blue-600">support@endowcast.com</a>.</p>
@@ -59,19 +59,19 @@ async function submit() {
       <form @submit.prevent="submit" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700">Name</label>
-          <input v-model="name" class="input-field w-full p-3 rounded-md" placeholder="Your name" />
+          <input v-model="name" class="input-field w-full p-3 rounded-md bg-white border border-gray-200 focus:ring-2 focus:ring-brand focus:outline-none" placeholder="Your name" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Email</label>
-          <input v-model="email" type="email" class="input-field w-full p-3 rounded-md" placeholder="you@org.edu" />
+          <input v-model="email" type="email" class="input-field w-full p-3 rounded-md bg-white border border-gray-200 focus:ring-2 focus:ring-brand focus:outline-none" placeholder="you@yfoundation.org" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Subject</label>
-          <input v-model="subject" class="input-field w-full p-3 rounded-md" placeholder="Subject" />
+          <input v-model="subject" class="input-field w-full p-3 rounded-md bg-white border border-gray-200 focus:ring-2 focus:ring-brand focus:outline-none" placeholder="Subject" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Message</label>
-          <textarea v-model="message" rows="6" class="input-field w-full p-3 rounded-md" placeholder="Tell us about your needs"></textarea>
+          <textarea v-model="message" rows="6" class="input-field w-full p-3 rounded-md bg-white border border-gray-200 focus:ring-2 focus:ring-brand focus:outline-none" placeholder="Tell us about your needs"></textarea>
         </div>
         <div class="flex items-center gap-4">
           <button type="submit" :disabled="isLoading" class="btn-primary px-6 py-3">Send message</button>

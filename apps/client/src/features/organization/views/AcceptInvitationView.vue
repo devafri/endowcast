@@ -132,7 +132,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { apiService } from '../../../shared/services/api'
+import apiService from '../../../shared/services/api'
 
 const route = useRoute()
 const router = useRouter()

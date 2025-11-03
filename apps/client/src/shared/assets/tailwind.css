@@ -47,4 +47,19 @@
 
 	/* Soft brand tint for subtle hovers/backgrounds */
 	.bg-brand-soft { background-color: color-mix(in oklab, rgb(var(--color-primary)) 10%, white); }
+
+	/* Global primary CTA utility so components can use .btn-primary consistently */
+	.btn-primary {
+		background-color: rgb(3, 105, 161); /* primary CTA */
+		color: white;
+		padding: 0.5rem 1rem;
+		border-radius: 0.375rem;
+		border: 1px solid rgb(3, 105, 161);
+		transition: background-color 0.15s ease, border-color 0.15s ease;
+	}
+
+	.btn-primary:hover {
+		background-color: rgb(2, 90, 138);
+		border-color: rgb(2, 90, 138);
+	}
 }

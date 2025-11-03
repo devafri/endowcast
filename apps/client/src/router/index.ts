@@ -1,5 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../features/auth/stores/auth'
+import LoginView from '@/features/auth/views/LoginView.vue';
+import SignupView from '@/features/auth/views/SignupView.vue';
+import ForgotPasswordView from '@/features/auth/views/ForgotPasswordView.vue';
+import ResetPasswordView from '@/features/auth/views/ResetPasswordView.vue';
+import EmailVerificationStatusView from '@/features/auth/views/EmailVerificationStatusView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -13,9 +18,12 @@ const router = createRouter({
   { path: '/definitions', name: 'Definitions', component: () => import('../pages/public/DefinitionsView.vue') },
   
   // Authentication
-  { path: '/login', name: 'Login', component: () => import('../features/auth/views/LoginView.vue') },
-  { path: '/register', name: 'Signup', component: () => import('../features/auth/views/SignupView.vue') },
-  { path: '/verify-email', name: 'VerifyEmail', component: () => import('../features/auth/views/VerifyEmailView.vue') },
+  { path: '/login', name: 'Login', component: LoginView, meta: { requiresGuest: true } },
+  { path: '/register', name: 'Signup', component: SignupView, meta: { requiresGuest: true } },
+  { path: '/auth/forgot-password', name: 'ForgotPassword', component: ForgotPasswordView, meta: { requiresGuest: true } },
+  { path: '/auth/reset-password', name: 'ResetPassword', component: ResetPasswordView, meta: { requiresGuest: true } },
+  { path: '/auth/verify-email/:status', name: 'VerifyEmailStatus', component: EmailVerificationStatusView, props: true },
+  { path: '/verify-email', name: 'VerifyEmail', component: EmailVerificationStatusView },
   { path: '/accept-invitation', name: 'AcceptInvitation', component: () => import('../features/organization/views/AcceptInvitationView.vue') },
   
   // Billing
@@ -120,4 +128,4 @@ router.beforeEach(async (to, from, next) => {
 })
 
 export default router
- 
+

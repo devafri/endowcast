@@ -262,16 +262,6 @@ function getPortfolioValue(scenario: any, key: WeightKey): number {
 </template>
 
 <style scoped>
-.btn-primary {
-  background-color: rgb(37 99 235);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  transition: background-color 0.2s;
-}
-.btn-primary:hover {
-  background-color: rgb(29 78 216);
-}
 .btn-secondary {
   background-color: white;
   color: rgb(55 65 81);

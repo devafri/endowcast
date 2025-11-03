@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useAuthStore } from '@/features/auth/stores/auth';
-import { apiService } from '@/shared/services/api';
+import { onMounted, ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '../../auth/stores/auth'
+import { CheckCircleIcon } from '@heroicons/vue/24/outline'
+import apiService from '@/shared/services/api';
 
 const route = useRoute();
 const router = useRouter();

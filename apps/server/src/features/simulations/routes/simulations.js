@@ -359,8 +359,17 @@ router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 20, sortBy = 'updatedAt', sortOrder = 'desc' } = req.query;
     
+    // Map frontend field names to Prisma schema field names
+    const sortFieldMap = {
+      'updated': 'updatedAt',
+      'created': 'createdAt',
+      'name': 'name',
+      'initialValue': 'initialValue'
+    };
+    
+    const mappedSortBy = sortFieldMap[sortBy] || sortBy;
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const orderBy = { [sortBy]: sortOrder };
+    const orderBy = { [mappedSortBy]: sortOrder };
 
     const [simulations, total] = await Promise.all([
       prisma.simulation.findMany({
@@ -381,8 +390,72 @@ router.get('/', async (req, res) => {
       })
     ]);
 
+    // Transform simulations to match frontend expectations
+    const parsedSimulations = simulations.map(sim => {
+      // Parse JSON fields
+      const results = typeof sim.results === 'string' ? JSON.parse(sim.results) : sim.results;
+      const summary = typeof sim.summary === 'string' ? JSON.parse(sim.summary) : sim.summary;
+      const assetAssumptions = typeof sim.assetAssumptions === 'string' ? JSON.parse(sim.assetAssumptions) : sim.assetAssumptions;
+      const correlationMatrix = typeof sim.correlationMatrix === 'string' ? JSON.parse(sim.correlationMatrix) : sim.correlationMatrix;
+      const grantTargets = typeof sim.grantTargets === 'string' ? JSON.parse(sim.grantTargets) : sim.grantTargets;
+      
+      // Build portfolio weights from the portfolio relation
+      const portfolioWeights = sim.portfolio ? {
+        'Public Equity': sim.portfolio.publicEquity / 100,
+        'Private Equity': sim.portfolio.privateEquity / 100,
+        'Public Fixed Income': sim.portfolio.publicFixedIncome / 100,
+        'Private Credit': sim.portfolio.privateCredit / 100,
+        'Real Assets': sim.portfolio.realAssets / 100,
+        'Diversifying': sim.portfolio.diversifying / 100,
+        'Cash / Short-Term': sim.portfolio.cashShortTerm / 100
+      } : {};
+
+      // Build the inputs object that the frontend expects
+      const inputs = {
+        initialEndowment: sim.initialValue,
+        spendingRate: sim.spendingRate, // Already a percentage, don't divide
+        investmentExpenseRate: 0.5 / 100, // Default 0.5% as decimal
+        years: sim.years,
+        portfolioWeights,
+        horizon: sim.years,
+        simulations: 10000 // Default
+      };
+
+      // Fix summary percentage fields (convert to decimals)
+      const fixPct = v => typeof v === 'number' ? v / 100 : v;
+      const fixedSummary = summary ? {
+        ...summary,
+        // flatten finalValues percentiles if nested
+        percentile10: summary.percentile10 ?? summary.finalValues?.percentile10,
+        percentile25: summary.percentile25 ?? summary.finalValues?.percentile25,
+        percentile75: summary.percentile75 ?? summary.finalValues?.percentile75,
+        percentile90: summary.percentile90 ?? summary.finalValues?.percentile90,
+        // scale percentage fields to decimals for UI formatting
+        annualizedReturn10: fixPct(summary.annualizedReturn10),
+        annualizedReturn25: fixPct(summary.annualizedReturn25),
+        medianAnnualizedReturn: fixPct(summary.medianAnnualizedReturn),
+        annualizedReturn75: fixPct(summary.annualizedReturn75),
+        annualizedReturn90: fixPct(summary.annualizedReturn90),
+        annualizedVolatility10: fixPct(summary.annualizedVolatility10),
+        annualizedVolatility25: fixPct(summary.annualizedVolatility25),
+        annualizedVolatility: fixPct(summary.annualizedVolatility),
+        annualizedVolatility75: fixPct(summary.annualizedVolatility75),
+        annualizedVolatility90: fixPct(summary.annualizedVolatility90)
+      } : summary;
+
+      return {
+        ...sim,
+        results,
+        summary: fixedSummary,
+        assetAssumptions,
+        correlationMatrix,
+        grantTargets,
+        inputs // Add the inputs object
+      };
+    });
+
     res.json({
-      simulations,
+      simulations: parsedSimulations,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -418,7 +491,68 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    res.json(simulation);
+    // Parse JSON fields and transform to match frontend expectations
+    const results = typeof simulation.results === 'string' ? JSON.parse(simulation.results) : simulation.results;
+    const summary = typeof simulation.summary === 'string' ? JSON.parse(simulation.summary) : simulation.summary;
+    const assetAssumptions = typeof simulation.assetAssumptions === 'string' ? JSON.parse(simulation.assetAssumptions) : simulation.assetAssumptions;
+    const correlationMatrix = typeof simulation.correlationMatrix === 'string' ? JSON.parse(simulation.correlationMatrix) : simulation.correlationMatrix;
+    const grantTargets = typeof simulation.grantTargets === 'string' ? JSON.parse(simulation.grantTargets) : simulation.grantTargets;
+    
+    // Build portfolio weights from the portfolio relation
+    const portfolioWeights = simulation.portfolio ? {
+      'Public Equity': simulation.portfolio.publicEquity / 100,
+      'Private Equity': simulation.portfolio.privateEquity / 100,
+      'Public Fixed Income': simulation.portfolio.publicFixedIncome / 100,
+      'Private Credit': simulation.portfolio.privateCredit / 100,
+      'Real Assets': simulation.portfolio.realAssets / 100,
+      'Diversifying': simulation.portfolio.diversifying / 100,
+      'Cash / Short-Term': simulation.portfolio.cashShortTerm / 100
+    } : {};
+
+    // Build the inputs object that the frontend expects
+    const inputs = {
+      initialEndowment: simulation.initialValue,
+      spendingRate: simulation.spendingRate, // Already a percentage, don't divide
+      investmentExpenseRate: 0.5 / 100, // Default 0.5% as decimal
+      years: simulation.years,
+      portfolioWeights,
+      horizon: simulation.years,
+      simulations: 10000 // Default
+    };
+
+    // Fix summary percentage fields (convert to decimals)
+    const fixPct = v => typeof v === 'number' ? v / 100 : v;
+    const fixedSummary = summary ? {
+      ...summary,
+      // flatten finalValues percentiles if nested
+      percentile10: summary.percentile10 ?? summary.finalValues?.percentile10,
+      percentile25: summary.percentile25 ?? summary.finalValues?.percentile25,
+      percentile75: summary.percentile75 ?? summary.finalValues?.percentile75,
+      percentile90: summary.percentile90 ?? summary.finalValues?.percentile90,
+      // scale percentage fields to decimals for UI formatting
+      annualizedReturn10: fixPct(summary.annualizedReturn10),
+      annualizedReturn25: fixPct(summary.annualizedReturn25),
+      medianAnnualizedReturn: fixPct(summary.medianAnnualizedReturn),
+      annualizedReturn75: fixPct(summary.annualizedReturn75),
+      annualizedReturn90: fixPct(summary.annualizedReturn90),
+      annualizedVolatility10: fixPct(summary.annualizedVolatility10),
+      annualizedVolatility25: fixPct(summary.annualizedVolatility25),
+      annualizedVolatility: fixPct(summary.annualizedVolatility),
+      annualizedVolatility75: fixPct(summary.annualizedVolatility75),
+      annualizedVolatility90: fixPct(summary.annualizedVolatility90)
+    } : summary;
+
+    const parsedSimulation = {
+      ...simulation,
+      results,
+      summary: fixedSummary,
+      assetAssumptions,
+      correlationMatrix,
+      grantTargets,
+      inputs // Add the inputs object
+    };
+
+    res.json(parsedSimulation);
   } catch (error) {
     console.error('Get simulation error:', error);
     res.status(500).json({ 
