@@ -75,7 +75,7 @@ async function handleCopyLink() {
     } catch (err) {
       // last resort: select and prompt copy
       console.warn('Clipboard API failed, falling back to prompt', err);
-      // eslint-disable-next-line no-alert
+       
       window.prompt('Copy this link', shareUrl.value);
       copySuccess.value = true;
     }

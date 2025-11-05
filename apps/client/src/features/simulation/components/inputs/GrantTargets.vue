@@ -1,5 +1,6 @@
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onActivated } from 'vue';
+import { useSimulationStore } from '../../stores/simulation';
 
 const props = defineProps({
   modelValue: {
@@ -17,44 +18,77 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:modelValue']);
 
+const simulationStore = useSimulationStore();
+
 // Local copy to avoid mutating prop directly
-const targets = ref([...props.modelValue.slice(0, props.years), ...Array(Math.max(0, props.years - props.modelValue.length)).fill(0)]);
+// Make this computed so it always reflects the current props
+const targets = computed({
+  get: () => {
+    const currentModelValue = props.modelValue || [];
+    const result = [...currentModelValue.slice(0, props.years)];
+    // Pad with zeros if needed
+    while (result.length < props.years) {
+      result.push(0);
+    }
+    return result;
+  },
+  set: (value) => {
+    // When the local targets change, emit the update
+    emit('update:modelValue', value.map(v => Number(v) || 0));
+  }
+});
 
 // Watch for changes to both modelValue and years
 watch(() => ({ modelValue: props.modelValue, years: props.years }), 
   ({ modelValue, years }) => {
-    // Resize targets array to match current years value
-    const newTargets = [...modelValue.slice(0, years)];
-    // Pad with zeros if needed
-    while (newTargets.length < years) {
-      newTargets.push(0);
-    }
-    
-    // Only update if the array actually changed to prevent infinite loops
-    const targetsChanged = targets.value.length !== newTargets.length || 
-      targets.value.some((v, i) => v !== newTargets[i]);
-    
-    if (targetsChanged) {
-      targets.value = newTargets;
-    }
+    // The computed targets will automatically update when props change
+    // No need to manually update here since targets is computed from props
   }, 
-  { deep: true }
+  { deep: true, immediate: true }
 );
 
-// Emit updates when targets change
-watch(targets, (nv, oldValue) => {
-  // Don't emit if values haven't actually changed
-  if (oldValue && nv.length === oldValue.length && nv.every((v, i) => v === oldValue[i])) {
-    return;
-  }
-  emit('update:modelValue', nv.map(v => Number(v) || 0));
-}, { deep: true });
+// Method to update individual targets
+const updateTarget = (index, event) => {
+  const newValue = Number(event.target.value) || 0;
+  const newTargets = [...targets.value];
+  newTargets[index] = newValue;
+  targets.value = newTargets; // This will trigger the computed setter
+};
+
+// Validation: Check if grant targets seem unreasonably high
+const totalGrants = computed(() => {
+  return targets.value.reduce((sum, target) => sum + (Number(target) || 0), 0);
+});
+
+const initialEndowment = computed(() => simulationStore.inputs.initialEndowment);
+
+const isHighGrantWarning = computed(() => {
+  if (!initialEndowment.value || totalGrants.value === 0) return false;
+  // Warn if total grants exceed 50% of initial endowment
+  return totalGrants.value > (initialEndowment.value * 0.5);
+});
+
+const warningMessage = computed(() => {
+  if (!isHighGrantWarning.value) return '';
+  const percentage = ((totalGrants.value / initialEndowment.value) * 100).toFixed(1);
+  return `Warning: Total grant targets (${percentage}% of initial endowment) may be unrealistically high and could deplete the endowment rapidly.`;
+});
 </script>
 
 <template>
   <!-- Intentionally no outer card wrapper. The parent provides the card and title. -->
   <div>
     <p class="text-sm text-text-secondary mb-6">Set a target total grant amount for each year. The model will add grants as needed to meet this target, but will not reduce grants if the spending policy already provides more.</p>
+    
+    <!-- Warning for high grant targets -->
+    <div v-if="isHighGrantWarning" class="warning-banner mb-6">
+      <div class="warning-icon">⚠️</div>
+      <div class="warning-content">
+        <p class="warning-title">High Grant Targets</p>
+        <p class="warning-message">{{ warningMessage }}</p>
+      </div>
+    </div>
+    
     <div class="grant-grid">
       <div v-for="(val, idx) in targets" :key="idx" class="grant-item">
         <label class="year-chip" :aria-label="props.startYear ? String((props.startYear||0) + idx) : `Year ${idx+1}`">
@@ -66,7 +100,7 @@ watch(targets, (nv, oldValue) => {
             type="number"
             class="input-field with-prefix text-base rounded-md font-mono"
             :value="val"
-            @input="targets[idx] = Number(($event.target).value)"
+            @input="updateTarget(idx, $event)"
             min="0"
             step="10000"
             placeholder="0"
@@ -167,5 +201,39 @@ watch(targets, (nv, oldValue) => {
 .input-field[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* Warning banner styles */
+.warning-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 0.5rem;
+  color: #92400e;
+}
+
+.warning-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.warning-message {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin: 0;
 }
 </style>

@@ -1,8 +1,7 @@
 <template>
-  
-
-<!-- Simulation Timeline Card -->
-<section class="bg-slate-50 border border-slate-100 rounded-lg p-5">
+<div class="space-y-6">
+  <!-- Simulation Timeline Card -->
+  <section class="bg-slate-50 border border-slate-100 rounded-lg p-5">
   <div class="flex items-start gap-3 mb-4">
   <div class="h-10 w-1 rounded-md bg-accent"></div>
     <div class="flex-1">
@@ -260,6 +259,7 @@
   </div>
 </section>
 
+</div>
   
 </template>
 
@@ -274,6 +274,7 @@ import GrantTargets from '../../../simulation/components/inputs/GrantTargets.vue
 interface Props {
   inputs: SimulationInputs;
   options: SimulationOptions;
+  canAccessTab?: boolean; // Optional since basic tab is always accessible
 }
 
 interface Emits {
@@ -324,26 +325,28 @@ const hasFinancialErrors = computed(() => {
          (props.inputs.initialGrant && props.inputs.initialGrant < 0);
 });
 
+// Computed property to check if grant override is enabled (has array, even if all zeros)
+const isGrantOverrideEnabled = computed(() => Array.isArray(props.inputs.grantTargets) && props.inputs.grantTargets.length > 0);
+
 // Toggle for enabling per-year grant targets (manual override)
-const enableGrantOverride = ref(false);
-const hasNonZeroGrantTargets = computed(() => Array.isArray(props.inputs.grantTargets) && props.inputs.grantTargets.some(v => (Number(v) || 0) > 0));
-onMounted(() => { enableGrantOverride.value = hasNonZeroGrantTargets.value; });
-
-
-//  Watch the toggle state
-watch(enableGrantOverride, (isNowEnabled) => {
-    if (!isNowEnabled) {
-        // When the toggle is switched OFF:
-        // 1. Reset the grantTargets in the data model to an empty array.
-        //    This tells the engine to use the residual calculation logic.
-        (props.inputs as any).grantTargets = [];
-        
-        // 2. Emit the updated inputs object to the parent store/state.
-        //    This forces the parent to update its state, which triggers the engine re-run.
-        emit('update:inputs', props.inputs);
-    } 
-    // Note: When switching ON, the GrantTargets component handles initialization 
-    // when it receives focus/input, so no explicit action is needed here.
+// Make this a computed property that derives from store state for persistence
+const enableGrantOverride = computed({
+  get: () => isGrantOverrideEnabled.value,
+  set: (value: boolean) => {
+    if (value) {
+      // When the toggle is switched ON:
+      // Initialize grantTargets array with zeros for the current number of years
+      const years = props.options.years || 10;
+      (props.inputs as any).grantTargets = Array(years).fill(0);
+      emit('update:inputs', props.inputs);
+    } else {
+      // When the toggle is switched OFF:
+      // Reset the grantTargets in the data model to an empty array.
+      // This tells the engine to use the residual calculation logic.
+      (props.inputs as any).grantTargets = [];
+      emit('update:inputs', props.inputs);
+    }
+  }
 });
 
 function onUpdateGrantTargets(nv: number[]) {

@@ -89,7 +89,10 @@ class SimulationService {
             correlationMatrix, // The 7x7 matrix
             equityShock, // Simplified: Need to expand to support array of shocks
             cpiShift, // Simplified: Need to expand to support array of shifts
-            grantTargets = []
+            grantTargets = [],
+            initialOperatingExpense = 0,
+            initialGrant = 0,
+            riskFreeRate = 2
         } = params;
 
         // --- PRE-PROCESSING ---
@@ -121,8 +124,8 @@ class SimulationService {
         const cpiRates = [];
         const portRets = [];
         
-        // Use a simple spending model for now, as the full complexity (OpEx, Grants, etc.) is in the controller's post-processing
-        let annualSpending = initialValue * spendingRate;
+        // Calculate inflation rate from risk-free rate (simplified assumption)
+        const inflation = (riskFreeRate / 100) || 0.02;
 
         // --- SIMULATION LOOP ---
         
@@ -159,11 +162,17 @@ class SimulationService {
             portRets.push(portfolioReturnEffective);
 
 
-            // 7. Calculate Spending and Subtract (Simplified withdrawal)
-            const spendingAmt = annualSpending * (1 + cpiShift); // Using cpiShift for spending growth approximation
+            // 7. Calculate Spending: Policy + OpEx + Grants (matching frontend calculation)
+            const policySpending = portfolioValue * spendingRate; // Use CURRENT portfolio value, not initial
+            const operatingExpense = initialOperatingExpense * Math.pow(1 + inflation, y); // Inflated OpEx
+            const grantAmount = Array.isArray(grantTargets) && grantTargets.length > y && grantTargets[y] > 0
+                ? grantTargets[y]  // Use manual grant target if provided
+                : initialGrant * Math.pow(1 + inflation, y); // Otherwise use inflated initial grant
+            
+            const totalSpending = policySpending + operatingExpense + grantAmount;
             
             // Withdraw from portfolio (proportional to current sleeve values)
-            const ratio = totalAfterReturns > 0 ? (spendingAmt / totalAfterReturns) : 0;
+            const ratio = totalAfterReturns > 0 ? (totalSpending / totalAfterReturns) : 0;
             if (ratio > 0) {
                 sleeves = sleeves.map(v => Math.max(0, v * (1 - ratio)));
             }
@@ -175,16 +184,24 @@ class SimulationService {
             // 9. Update Portfolio Value
             portfolioValue = totalEndValue;
 
-            // 10. Update annual spending (for next year)
-            annualSpending *= 1 + cpi; // Grow spending by CPI
-            spendingPath.push(spendingAmt);
+            // 10. Track spending for this year
+            spendingPath.push(totalSpending);
         }
 
         // Final value is the last calculated portfolioValue
         path.push(portfolioValue); 
         
-        // Success logic simplified
-        const success = portfolioValue >= (grantTargets[years - 1] || 0);
+        // Success logic: endowment is successful if it can sustain spending without depletion
+        // Check if portfolio value never goes to zero or negative (can afford all spending)
+        let pathSuccess = true;
+        for (let year = 0; year < years; year++) {
+            const yearEndValue = path[year + 1]; // Value at end of year 'year'
+            if (yearEndValue <= 0) {
+                pathSuccess = false;
+                break;
+            }
+        }
+        const success = pathSuccess;
 
         return {
             path,
@@ -303,9 +320,9 @@ class SimulationService {
         for (let year = 0; year < numYears; year++) {
             let successCount = 0;
             for (const path of paths) {
-                // Check value at END of year 'year' (index y+1)
-                // Note: The path array has length years+1 (for year 0 to year N)
-                if (path[year + 1] >= (grantTargets[year] || 0)) { 
+                // Check if portfolio value at end of year is positive (can sustain spending)
+                const yearEndValue = path[year + 1];
+                if (yearEndValue > 0) { 
                     successCount++;
                 }
             }
@@ -313,6 +330,45 @@ class SimulationService {
         }
 
         return successByYear;
+    }
+
+    /**
+     * Calculate final value summary statistics
+     */
+    static getFinalValueSummary(paths, initialValue, grantTargets) {
+        if (!paths || !paths.length) return {};
+
+        const finalValues = paths.map(path => path[path.length - 1]);
+        const sortedValues = [...finalValues].sort((a, b) => a - b);
+        const n = sortedValues.length;
+
+        // Calculate success rate: endowment is successful if it can sustain spending without depletion
+        let successCount = 0;
+        for (const path of paths) {
+            let pathSuccess = true;
+            const numYears = path.length - 1; // path has length years+1
+            for (let year = 0; year < numYears; year++) {
+                const yearEndValue = path[year + 1];
+                if (yearEndValue <= 0) {
+                    pathSuccess = false;
+                    break;
+                }
+            }
+            if (pathSuccess) successCount++;
+        }
+        const successRate = successCount / n;
+
+        return {
+            median: this.percentile(sortedValues, 50),
+            percentile10: this.percentile(sortedValues, 10),
+            percentile25: this.percentile(sortedValues, 25),
+            percentile75: this.percentile(sortedValues, 75),
+            percentile90: this.percentile(sortedValues, 90),
+            average: finalValues.reduce((a, b) => a + b, 0) / n,
+            successRate,
+            minValue: Math.min(...finalValues),
+            maxValue: Math.max(...finalValues)
+        };
     }
 }
 

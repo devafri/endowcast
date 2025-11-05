@@ -38,6 +38,9 @@ class SimulationController {
         equityShock,
         cpiShift,
         grantTargets,
+        initialOperatingExpense = 0,
+        initialGrant = 0,
+        riskFreeRate = 2,
         numSimulations = 1000
       } = req.body;
 
@@ -56,6 +59,9 @@ class SimulationController {
         equityShock,
         cpiShift,
         grantTargets,
+        initialOperatingExpense,
+        initialGrant,
+        riskFreeRate,
         numSimulations
       };
 

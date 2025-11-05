@@ -62,6 +62,7 @@ router.post('/execute', trackSimulationUsage, [
       equityShock = 0,
       cpiShift = 0,
       grantTargets = null,
+      investmentExpenseRate = 0.005, // Default 0.5%
       numSimulations = 5000
     } = req.body;
     
@@ -88,6 +89,7 @@ router.post('/execute', trackSimulationUsage, [
       equityShock: parseFloat(equityShock),
       cpiShift: parseFloat(cpiShift),
       grantTargets: grantTargets ? grantTargets.map(v => parseFloat(v)) : [],
+      opExRate: parseFloat(investmentExpenseRate), // Operating expense rate
       numSimulations: parseInt(numSimulations)
     };
 

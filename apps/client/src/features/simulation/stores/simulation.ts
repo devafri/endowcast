@@ -112,23 +112,18 @@ export const useSimulationStore = defineStore('simulation', () => {
   async function runSimulation() {
     const authStore = useAuthStore();
     
-    console.log('runSimulation called');
-    
     // Check if user can run simulation
     if (!authStore.canRunSimulation) {
       const limit = authStore.currentPlanLimits.simulations === -1 ? 'unlimited' : authStore.currentPlanLimits.simulations;
       errorMsg.value = `You have reached your simulation limit (${limit}). Please upgrade your plan to run more simulations.`;
-      console.log('Simulation blocked by limit:', errorMsg.value);
       return;
     }
 
-    console.log('Starting simulation...');
     errorMsg.value = null;
     isLoading.value = true;
     results.value = null; // Clear previous results
     
     const payload = JSON.parse(JSON.stringify(inputs));
-    console.log('Simulation payload (inputs):', payload);
     if (Array.isArray(options.stress?.equityShocks)) {
       for (const sh of options.stress!.equityShocks!) {
         if (typeof sh.year === 'number') {
@@ -165,6 +160,11 @@ export const useSimulationStore = defineStore('simulation', () => {
         
         grantTargets: payload.grantTargets?.length ? payload.grantTargets : null,
         
+        // Additional parameters needed for proper spending calculation
+        initialOperatingExpense: Number(payload.initialOperatingExpense) || 0,
+        initialGrant: Number(payload.initialGrant) || 0,
+        riskFreeRate: Number(payload.riskFreeRate) || 2,
+        
         // Default number of Monte Carlo paths to request from backend.
         // NOTE: the backend currently includes full simulation `paths` in the response
         // only when `numSimulations <= 500` to avoid extremely large payloads.
@@ -176,7 +176,6 @@ export const useSimulationStore = defineStore('simulation', () => {
 
       console.log('Executing simulation on backend with 7-factor params:', simulationExecuteParams);
       const backendResponse = await apiService.executeSimulation(simulationExecuteParams);
-      console.log('Backend simulation response:', backendResponse);
 
       // REFACTORED: Backend now calculates all metrics, just map response to frontend format
       
@@ -203,7 +202,15 @@ export const useSimulationStore = defineStore('simulation', () => {
       const inflation = (isFinite(rfPct) ? rfPct : 2) / 100;
 
       const perYearOpEx = Array.from({ length: derivedYears }, (_, y) => opEx0 * Math.pow(1 + inflation, y));
-      const perYearGrants = Array.from({ length: derivedYears }, (_, y) => grants0 * Math.pow(1 + inflation, y));
+      const perYearGrants = Array.from({ length: derivedYears }, (_, y) => {
+        // Check if manual grant targets are provided and use them instead of inflation-adjusted initial grant
+        const grantTargets = payload.grantTargets;
+        if (Array.isArray(grantTargets) && grantTargets.length > y && (grantTargets[y] || 0) > 0) {
+          return grantTargets[y];
+        }
+        // Fall back to inflation-adjusted initial grant if no manual target for this year
+        return grants0 * Math.pow(1 + inflation, y);
+      });
       const perYearSpending = Array.from({ length: derivedYears }, (_, y) => {
         // spending policy based on initial endowment rate plus org expenses; keep additive for clarity
         const policySpend = (initial * spendingRateDecimal) * Math.pow(1 + spendingGrowth, y);
@@ -263,13 +270,6 @@ export const useSimulationStore = defineStore('simulation', () => {
       }) : [];
 
       // 🔍 DEBUG LOGGING 
-      console.log('--- Debug Data Check ---');
-      console.log('Simulations (paths) received:', sims.length, sims[0]?.length);
-      console.log('First Path Sample:', sims[0]?.slice(0, 3));
-      console.log('Portfolio Returns generated:', portfolioReturns.length, portfolioReturns[0]?.length);
-      console.log('Sample Return 1:', portfolioReturns[0]?.[0]);
-      console.log('Sample Return Last:', portfolioReturns[0]?.[portfolioReturns[0].length - 1]);
-      console.log('------------------------');
       // END DEBUG LOGGING
 
       const mappedResults = {

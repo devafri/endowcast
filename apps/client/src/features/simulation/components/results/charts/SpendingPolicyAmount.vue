@@ -107,7 +107,7 @@ function buildChart() {
         }
       },
       scales: {
-  y: { title: { display: true, text: 'Spending Policy Amount (USD)', color: '#6B7280' }, ticks: { color: '#6B7280', callback: (v) => formatMoney(Number(v)) }, grid: { color: '#E5E7EB' } },
+  y: { title: { display: true, text: 'Total Organization Spending (USD)', color: '#6B7280' }, ticks: { color: '#6B7280', callback: (v) => formatMoney(Number(v)) }, grid: { color: '#E5E7EB' } },
   x: { title: { display: true, text: (props.results?.yearLabels?.[0] && !props.results.yearLabels[0].startsWith('Year')) ? 'Calendar Year' : 'Year', color: '#6B7280' }, ticks: { color: '#6B7280' }, grid: { display: false } },
       },
       interaction: { mode: 'index', intersect: false },
@@ -123,7 +123,7 @@ watch(() => props.results, buildChart, { deep: true });
 <template>
   <div class="p-6 bg-white border border-gray-200 rounded-xl shadow-lg h-128 mb-8" style="height: 360px;">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold">Spending Policy Projection</h3>
+      <h3 class="text-lg font-semibold">Total Organization Spending Projection</h3>
     </div>
     <canvas ref="canvasRef"></canvas>
   </div>

@@ -56,6 +56,23 @@ const switchToTab = (tabId: string) => {
   }
 };
 
+const getActiveTabComponent = () => {
+  switch (activeTab.value) {
+    case 'basic':
+      return BasicParametersTab;
+    case 'assets':
+      return AssetClassesTab;
+    case 'stress':
+      return StressTestingTab;
+    case 'advanced':
+      return AdvancedTab;
+    case 'benchmarks':
+      return BenchmarksTab;
+    default:
+      return BasicParametersTab;
+  }
+};
+
 // Expose validation methods for template
 const { 
   hasFinancialErrors, 
@@ -138,76 +155,47 @@ onMounted(async () => {
 
           <!-- Tab Content -->
           <div class="space-y-6 mt-4">
-        <!-- Basic Parameters Tab -->
-        <BasicParametersTab
-          v-if="activeTab === 'basic'"
-          :inputs="sim.inputs"
-          :options="sim.options as any"
-          @update:inputs="(inputs: any) => Object.assign(sim.inputs, inputs)"
-          @update:options="(options: any) => Object.assign(sim.options, options)"
-        />
-
-        <!-- Spending & Policy is consolidated into Basic Parameters tab -->
-        <!-- Asset Classes Tab -->
-        <AssetClassesTab
-          v-if="activeTab === 'assets'"
-          :can-access-tab="canAccessTab('assets')"
-          :asset-classes="assetClasses as any"
-          :asset-overrides="assetOverrideData"
-          @set-override-mean-pct="(assetKey: string, event: Event) => assetOverrides.setOverrideMean(assetKey, event)"
-          @set-override-sd-pct="(assetKey: string, event: Event) => assetOverrides.setOverrideStdDev(assetKey, event)"
-          @get-override-mean-pct="(assetKey: string) => assetOverrides.getOverrideMean(assetKey)"
-          @get-override-sd-pct="(assetKey: string) => assetOverrides.getOverrideStdDev(assetKey)"
-        />
-        <!-- Placeholder for other tabs - to be implemented -->
-        <!-- Stress Testing Tab -->
-        <StressTestingTab
-          v-if="activeTab === 'stress'"
-          :can-access-tab="canAccessTab('stress')"
-          :stress-config="stressConfig"
-          :asset-classes="assetClasses as any"
-          :max-years="sim.options.years || 10"
-          @update:stress-config="(config: any) => {
-            if (!(sim.options as any).stress) {
-              (sim.options as any).stress = { equityShocks: [], cpiShifts: [] };
-            }
-            Object.assign((sim.options as any).stress, config);
-          }"
-          @add-equity-shock="stressTesting.addEquityShockHandler"
-          @remove-equity-shock="stressTesting.removeEquityShockHandler"
-          @add-cpi-shock="stressTesting.addCpiShockHandler"
-          @remove-cpi-shock="stressTesting.removeCpiShockHandler"
-        />
-
-
-
-        <!-- Advanced Tab -->
-        <AdvancedTab
-          v-show="activeTab === 'advanced'"
-          :can-access-tab="canAccessTab('advanced')"
-          :options="sim.options as any"
-          :correlation-matrix="correlationMatrix"
-          @update:options="(options: any) => Object.assign(sim.options, options)"
-          @update:correlation-matrix="(matrix: number[][]) => { correlationMatrix.value = matrix }"
-          @copy-share-link="() => {
-            // Copy functionality would be implemented here
-          }"
-        />
-
-        <!-- Benchmarks Tab -->
-        <BenchmarksTab
-          v-show="activeTab === 'benchmarks'"
-          :can-access-tab="canAccessTab('benchmarks')"
-          :benchmark-config="(sim.options.benchmark as any) || { enabled: false }"
-          :asset-classes="assetClasses as any"
-          @update:benchmark-config="(config: any) => {
-            if (!sim.options.benchmark) {
-              (sim.options as any).benchmark = {};
-            }
-            Object.assign((sim.options as any).benchmark, config);
-          }"
-          @normalize-benchmark-weights="benchmarkConfig.normalizeBenchmarkWeightsHandler"
-        />
+            <KeepAlive>
+              <component
+                :is="getActiveTabComponent()"
+                :inputs="sim.inputs"
+                :options="sim.options as any"
+                :can-access-tab="canAccessTab(activeTab)"
+                :asset-classes="assetClasses as any"
+                :asset-overrides="assetOverrideData"
+                :stress-config="stressConfig"
+                :max-years="sim.options.years || 10"
+                :correlation-matrix="correlationMatrix"
+                :benchmark-config="(sim.options.benchmark as any) || { enabled: false }"
+                @update:inputs="(inputs: any) => Object.assign(sim.inputs, inputs)"
+                @update:options="(options: any) => Object.assign(sim.options, options)"
+                @set-override-mean-pct="(assetKey: string, event: Event) => assetOverrides.setOverrideMean(assetKey, event)"
+                @set-override-sd-pct="(assetKey: string, event: Event) => assetOverrides.setOverrideStdDev(assetKey, event)"
+                @get-override-mean-pct="(assetKey: string) => assetOverrides.getOverrideMean(assetKey)"
+                @get-override-sd-pct="(assetKey: string) => assetOverrides.getOverrideStdDev(assetKey)"
+                @update:stress-config="(config: any) => {
+                  if (!(sim.options as any).stress) {
+                    (sim.options as any).stress = { equityShocks: [], cpiShifts: [] };
+                  }
+                  Object.assign((sim.options as any).stress, config);
+                }"
+                @add-equity-shock="stressTesting.addEquityShockHandler"
+                @remove-equity-shock="stressTesting.removeEquityShockHandler"
+                @add-cpi-shock="stressTesting.addCpiShockHandler"
+                @remove-cpi-shock="stressTesting.removeCpiShockHandler"
+                @update:correlation-matrix="(matrix: number[][]) => { correlationMatrix.value = matrix }"
+                @copy-share-link="() => {
+                  // Copy functionality would be implemented here
+                }"
+                @update:benchmark-config="(config: any) => {
+                  if (!sim.options.benchmark) {
+                    (sim.options as any).benchmark = {};
+                  }
+                  Object.assign((sim.options as any).benchmark, config);
+                }"
+                @normalize-benchmark-weights="benchmarkConfig.normalizeBenchmarkWeightsHandler"
+              />
+            </KeepAlive>
           </div>
         </div>
       </div>

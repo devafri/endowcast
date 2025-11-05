@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EndowCast — Monte Carlo Results (Mockup)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card { @apply bg-white rounded-2xl shadow-sm border border-slate-100 p-6; }
+    .muted { color: #64748b; } /* slate-500 */
+    .kpi { @apply p-4 rounded-lg border border-slate-100 bg-white; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+  <div class="min-h-screen flex">
+    <!-- Sidebar -->
+    <aside class="hidden md:flex flex-col w-20 bg-white border-r border-slate-100 p-4 gap-6 items-center">
+      <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-600 to-indigo-600 flex items-center justify-center text-white font-bold">E</div>
+      <nav class="flex-1 flex flex-col items-center gap-4 text-slate-400">
+        <button aria-label="Dashboard" class="hover:text-slate-600">🏠</button>
+        <button aria-label="Simulations" class="text-sky-600">📈</button>
+        <button aria-label="Reports" class="hover:text-slate-600">📄</button>
+        <button aria-label="Settings" class="hover:text-slate-600">⚙️</button>
+      </nav>
+      <div class="text-xs muted">v1.0</div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 p-6 md:p-10">
+      <!-- Header / Hero -->
+      <header class="max-w-7xl mx-auto mb-8">
+        <div class="flex items-start justify-between gap-6">
+          <div>
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Monte Carlo Analysis</h1>
+            <p class="mt-1 muted max-w-xl">Run sophisticated simulations to analyze your endowment's long-term sustainability.</p>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700 shadow">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+              Run Monte Carlo
+            </button>
+            <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white muted hover:bg-slate-50">Export PDF</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="max-w-7xl mx-auto space-y-8">
+        <!-- Top row: Inputs, Key Metrics (expanded), Projection Chart -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Simulation Inputs -->
+          <div class="card">
+            <h3 class="text-lg font-medium">Simulation Inputs</h3>
+            <p class="muted mt-2">Overview of parameters used for this run.</p>
+            <ul class="mt-4 space-y-2 text-sm muted">
+              <li>Start Value: <span class="text-slate-800 font-semibold">$450M</span></li>
+              <li>Spending Rate: <span class="text-slate-800 font-semibold">4.5%</span></li>
+              <li>Time Horizon: <span class="text-slate-800 font-semibold">30 years</span></li>
+              <li>Simulations: <span class="text-slate-800 font-semibold">10,000</span></li>
+              <li>Policy Return Assumption: <span class="text-slate-800 font-semibold">7.5%</span></li>
+            </ul>
+          </div>
+
+          <!-- Key Metrics: match screenshot metrics as closely as possible -->
+          <div class="card">
+            <h3 class="text-lg font-medium mb-3">Key Metrics (Monte Carlo — Annualized)</h3>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="kpi">
+                <div class="text-sm muted">Expected Return</div>
+                <div class="mt-2 text-2xl font-bold text-sky-700">7.83%</div>
+              </div>
+
+              <div class="kpi">
+                <div class="text-sm muted">Volatility (Ann.)</div>
+                <div class="mt-2 text-2xl font-bold">12.08%</div>
+              </div>
+
+              <div class="kpi">
+                <div class="text-sm muted">Sharpe Ratio</div>
+                <div class="mt-2 text-2xl font-bold">0.48</div>
+              </div>
+
+              <div class="kpi">
+                <div class="text-sm muted">Sortino Ratio</div>
+                <div class="mt-2 text-2xl font-bold">0.39</div>
+              </div>
+
+              <div class="kpi col-span-2">
+                <div class="text-sm muted">Median Endowment Value (Terminal)</div>
+                <div class="mt-2 text-2xl font-bold">$508.9M</div>
+              </div>
+
+              <div class="kpi">
+                <div class="text-sm muted">Probability of Principal Loss</div>
+                <div class="mt-2 text-2xl font-bold">5%</div>
+              </div>
+
+              <div class="kpi">
+                <div class="text-sm muted">Projected Shortfall (PV)</div>
+                <div class="mt-2 text-2xl font-bold">$334.3M</div>
+              </div>
+            </div>
+
+            <!-- small summary row like screenshot -->
+            <div class="mt-4 text-sm muted flex flex-wrap gap-3">
+              <div class="px-3 py-2 rounded-md bg-slate-50 border border-slate-100">CPI Assumption: 2.5%</div>
+              <div class="px-3 py-2 rounded-md bg-slate-50 border border-slate-100">Real Return: 5.0%</div>
+              <div class="px-3 py-2 rounded-md bg-slate-50 border border-slate-100">Model Runs: 10,000</div>
+            </div>
+          </div>
+
+    
+        </div>
+
+        <!-- Charts row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="card">
+            <h3 class="text-lg font-medium mb-3">Endowment Value — Projection Bands</h3>
+            <div class="h-56 rounded-lg border border-slate-100 bg-white/60 flex items-center justify-center muted">
+              Chart placeholder — area + percentile bands (10th/25th/50th/75th/90th)
+            </div>
+            <p class="mt-3 text-sm muted">Hover points show percentile values. Toggle scenarios for Policy / Allocation / Shock.</p>
+          </div>
+
+          <div class="card">
+            <h3 class="text-lg font-medium mb-3">Spending Policy Projection</h3>
+            <div class="h-56 rounded-lg border border-slate-100 bg-white/60 flex items-center justify-center muted">
+              Chart placeholder — spending trajectories (median / 10th / 90th)
+            </div>
+            <div class="mt-4 flex gap-2 text-sm">
+              <span class="px-2 py-1 rounded-full bg-slate-100 text-slate-600">Median</span>
+              <span class="px-2 py-1 rounded-full bg-slate-100 text-slate-600">10th</span>
+              <span class="px-2 py-1 rounded-full bg-slate-100 text-slate-600">90th</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistical summary table -->
+        <div class="card">
+          <h3 class="text-lg font-medium mb-4">Statistical Summary</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-left">
+              <thead>
+                <tr class="text-sm muted">
+                  <th class="py-3 px-4">Metric</th>
+                  <th class="py-3 px-4">10th</th>
+                  <th class="py-3 px-4">25th</th>
+                  <th class="py-3 px-4">50th</th>
+                  <th class="py-3 px-4">75th</th>
+                </tr>
+              </thead>
+              <tbody class="text-sm">
+                <tr class="border-t">
+                  <td class="py-3 px-4 muted">Mean</td><td class="py-3 px-4">4.19</td><td class="py-3 px-4">6.53</td><td class="py-3 px-4">1.63</td><td class="py-3 px-4">2.90</td>
+                </tr>
+                <tr class="border-t">
+                  <td class="py-3 px-4 muted">Standard Deviation</td><td class="py-3 px-4">0.18</td><td class="py-3 px-4">0.76</td><td class="py-3 px-4">1.29</td><td class="py-3 px-4">1.31</td>
+                </tr>
+                <tr class="border-t">
+                  <td class="py-3 px-4 muted">Risk-Free Rate</td><td class="py-3 px-4">0.119</td><td class="py-3 px-4">0.190</td><td class="py-3 px-4">0.155</td><td class="py-3 px-4">0.317</td>
+                </tr>
+                <tr class="border-t">
+                  <td class="py-3 px-4 muted">Skewness</td><td class="py-3 px-4">0.191</td><td class="py-3 px-4">0.264</td><td class="py-3 px-4">0.163</td><td class="py-3 px-4">0.265</td>
+                </tr>
+                <tr class="border-t">
+                  <td class="py-3 px-4 muted">Kurtosis</td><td class="py-3 px-4">3.31</td><td class="py-3 px-4">3.25</td><td class="py-3 px-4">3.89</td><td class="py-3 px-4">2.56</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-3 text-sm muted">Probability of failure (policy unsustainable): <span class="text-red-600 font-semibold">34.20%</span></div>
+        </div>
+
+        <!-- Simulation Data by Percentile (the table you mentioned was missing previously) -->
+        <div class="card">
+          <h3 class="text-lg font-medium mb-4">Simulation Data — By Percentile</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-left divide-y">
+              <thead>
+                <tr class="text-sm muted">
+                  <th class="py-3 px-4">Item</th>
+                  <th class="py-3 px-4">10th</th>
+                  <th class="py-3 px-4">25th</th>
+                  <th class="py-3 px-4">50th</th>
+                  <th class="py-3 px-4">75th</th>
+                  <th class="py-3 px-4">90th</th>
+                </tr>
+              </thead>
+              <tbody class="text-sm">
+                <tr class="border-t">
+                  <td class="py-3 px-4 font-medium">Endowment Value (Terminal)</td>
+                  <td class="py-3 px-4">$142.3M</td><td class="py-3 px-4">$264.4M</td><td class="py-3 px-4">$508.9M</td><td class="py-3 px-4">$719.2M</td><td class="py-3 px-4">$1,024.6M</td>
+                </tr>
+
+                <tr class="border-t bg-slate-50">
+                  <td class="py-3 px-4 font-medium">Operating Expenses (Annual)</td>
+                  <td class="py-3 px-4">$6.2M</td><td class="py-3 px-4">$8.1M</td><td class="py-3 px-4">$9.8M</td><td class="py-3 px-4">$11.3M</td><td class="py-3 px-4">$13.0M</td>
+                </tr>
+
+                <tr class="border-t">
+                  <td class="py-3 px-4 font-medium">Spending Policy Expense</td>
+                  <td class="py-3 px-4">$9.1M</td><td class="py-3 px-4">$12.4M</td><td class="py-3 px-4">$20.5M</td><td class="py-3 px-4">$28.3M</td><td class="py-3 px-4">$35.0M</td>
+                </tr>
+
+                <tr class="border-t bg-slate-50">
+                  <td class="py-3 px-4 font-medium">Investment Expense</td>
+                  <td class="py-3 px-4">$1.1M</td><td class="py-3 px-4">$1.5M</td><td class="py-3 px-4">$1.9M</td><td class="py-3 px-4">$2.4M</td><td class="py-3 px-4">$3.0M</td>
+                </tr>
+
+                <tr class="border-t">
+                  <td class="py-3 px-4 font-medium text-red-700">Total Organizational Expense</td>
+                  <td class="py-3 px-4 font-semibold">$16.4M</td><td class="py-3 px-4 font-semibold">$22.0M</td><td class="py-3 px-4 font-semibold">$32.2M</td><td class="py-3 px-4 font-semibold">$41.9M</td><td class="py-3 px-4 font-semibold">$51.0M</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="mt-3 text-sm muted">Values shown by terminal-year percentile (real USD). Rows colored to match the original screenshot for emphasis.</p>
+        </div>
+
+        <!-- Risk & sustainability -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="card">
+            <h4 class="font-medium">Key Sustainability Metrics</h4>
+            <div class="mt-4">
+              <div class="text-2xl font-bold text-sky-700">100.42%</div>
+              <p class="muted text-sm mt-2">Sustainability ratio (Projected spending vs. sustainable yield)</p>
+            </div>
+            <div class="mt-6 flex flex-col gap-3 text-sm">
+              <div class="flex justify-between muted"><span>Projected Losses</span><span class="text-slate-800 font-semibold">$334.3M</span></div>
+              <div class="flex justify-between muted"><span>Overall Risk Level</span><span class="px-2 py-1 rounded-full bg-slate-100">Moderate</span></div>
+              <div class="flex justify-between muted"><span>Probability of Principal Loss</span><span class="text-slate-800 font-semibold">5%</span></div>
+            </div>
+          </div>
+
+          <div class="card col-span-2">
+            <h4 class="font-medium">Worst-Case Scenarios</h4>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="p-4 rounded-lg bg-red-50 border border-red-100">
+                <div class="text-sm muted">Worst 10% Scenario</div>
+                <div class="mt-2 text-lg font-bold text-red-700">$225.0M</div>
+              </div>
+              <div class="p-4 rounded-lg bg-amber-50 border border-amber-100">
+                <div class="text-sm muted">Worst 6% Scenario</div>
+                <div class="mt-2 text-lg font-bold text-amber-700">$233.3M</div>
+              </div>
+              <div class="p-4 rounded-lg bg-slate-50 border border-slate-100">
+                <div class="text-sm muted">Median Shortfall</div>
+                <div class="mt-2 text-lg font-bold text-slate-800">$334.9M</div>
+              </div>
+            </div>
+
+            <div class="mt-6">
+              <h5 class="text-sm font-medium">Strategic Considerations</h5>
+              <ul class="mt-3 list-disc pl-5 muted text-sm space-y-2">
+                <li>Consider lowering spending policy if downside risk increases.</li>
+                <li>Revisit asset allocation to reduce volatility exposure.</li>
+                <li>Model tail-risk hedges or reinsurance for extreme scenarios.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer notes -->
+        <div class="card">
+          <h4 class="font-medium">Methodology & Notes</h4>
+          <p class="muted text-sm mt-2">Monte Carlo simulation uses historical return distributions and user-defined assumptions. Results are illustrative and should be used alongside qualitative judgement and fiduciary review.</p>
+          <div class="mt-4 flex justify-between items-center">
+            <div class="muted text-xs">Last run: <span class="text-slate-600">2025-10-24 09:12 UTC</span></div>
+            <div class="flex gap-2">
+              <button class="px-3 py-2 rounded-lg border border-slate-200 bg-white muted">Back to Allocation</button>
+              <button class="px-3 py-2 rounded-lg bg-sky-600 text-white">Save Report</button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+</body>
+</html>

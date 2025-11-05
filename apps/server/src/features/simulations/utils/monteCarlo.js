@@ -69,7 +69,8 @@ function simulatePath(params, simIndex = 0) {
     // Optional Stress Test Inputs
     equityShock = 0, // Note: This needs to be applied thoughtfully to the correct asset class
     cpiShift = 0,
-    grantTargets = []
+    grantTargets = [],
+    opExRate = 0.005 // Default 0.5% operating expense rate
   } = params;
 
   // Define asset class order to match correlation matrix and weights
@@ -99,14 +100,17 @@ function simulatePath(params, simIndex = 0) {
   for (let year = 0; year < years; year++) {
     // Spending for the current year is based on the portfolio value at the START of the year (end of last year)
     const valueAtStartOfYear = path[year];
-    const spendingForThisYear = valueAtStartOfYear * spendingRate;
-    spendingPath.push(spendingForThisYear);
+    
+    // Calculate total spending: policy spending + operating expenses + grants
+    const policySpending = valueAtStartOfYear * spendingRate;
+    const opExSpending = valueAtStartOfYear * opExRate;
+    const grantSpending = grantTargets[year] || 0;
+    const totalSpending = policySpending + opExSpending + grantSpending;
+    
+    spendingPath.push(totalSpending);
 
-    // Check if portfolio can support spending target
-    let meetsTarget = true;
-    if (grantTargets[year] && valueAtStartOfYear < grantTargets[year]) {
-      meetsTarget = false;
-    }
+    // Check if portfolio can support spending target (success = portfolio value > 0)
+    let meetsTarget = valueAtStartOfYear > 0;
     successPath.push(meetsTarget);
 
     // 1. Generate independent standard normal random variables
@@ -147,7 +151,7 @@ function simulatePath(params, simIndex = 0) {
     returnsPath.push(portfolioReturn);
 
     // 5. Update portfolio value: Value after spending grows by the portfolio return
-    const valueAfterSpending = valueAtStartOfYear - spendingForThisYear;
+    const valueAfterSpending = valueAtStartOfYear - totalSpending;
     let valueAtEndOfYear = valueAfterSpending * (1 + portfolioReturn);
 
     // Prevent negative portfolio
@@ -160,14 +164,17 @@ function simulatePath(params, simIndex = 0) {
     if (simIndex === 0 && year < 5) { // Log first 5 years of the first simulation
       console.log(`  [Year ${year + 1}]`);
       console.log(`    Start Value: ${valueAtStartOfYear.toFixed(2)}`);
-      console.log(`    Spending: ${spendingForThisYear.toFixed(2)}`);
+      console.log(`    Policy Spending: ${(policySpending).toFixed(2)}`);
+      console.log(`    OpEx: ${(opExSpending).toFixed(2)}`);
+      console.log(`    Grants: ${(grantSpending).toFixed(2)}`);
+      console.log(`    Total Spending: ${totalSpending.toFixed(2)}`);
       console.log(`    Return: ${(portfolioReturn * 100).toFixed(2)}%`);
       console.log(`    End Value: ${valueAtEndOfYear.toFixed(2)}`);
     }
   }
 
   const finalValue = path[path.length - 1];
-  successPath.push(finalValue >= (grantTargets[years] || 0));
+  successPath.push(finalValue > 0);
 
   return {
     path,
@@ -209,7 +216,7 @@ function runSimulation(params) {
 
   // Log spending paths to verify they're varying
   if (allSpendingPaths.length > 0) {
-    console.log('\n--- Spending Paths Debug (Backend) ---');
+    console.log('\n--- Total Organization Spending Paths Debug (Backend) ---');
     console.log('Total spending paths:', allSpendingPaths.length);
     console.log('First spending path:', allSpendingPaths[0]);
     console.log('Second spending path:', allSpendingPaths[1]);
@@ -217,11 +224,11 @@ function runSimulation(params) {
     
     // Check year 1 spending across all paths
     const year1Spending = allSpendingPaths.map(path => path[0]);
-    console.log('Year 1 spending - Min:', Math.min(...year1Spending), 'Max:', Math.max(...year1Spending));
+    console.log('Year 1 total spending - Min:', Math.min(...year1Spending), 'Max:', Math.max(...year1Spending));
     
     if (allSpendingPaths[0].length > 1) {
       const year2Spending = allSpendingPaths.map(path => path[1]);
-      console.log('Year 2 spending - Min:', Math.min(...year2Spending), 'Max:', Math.max(...year2Spending));
+      console.log('Year 2 total spending - Min:', Math.min(...year2Spending), 'Max:', Math.max(...year2Spending));
     }
   }
 
