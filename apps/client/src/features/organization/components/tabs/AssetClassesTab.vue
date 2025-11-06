@@ -1,26 +1,5 @@
 <template>
   <div class="space-y-6">
-    <!-- Global portfolio-level risk-free control placed at top of Asset Class settings -->
-    <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 shadow-sm ring-1 ring-indigo-50">
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="text-sm font-medium text-gray-900">Risk-free rate</div>
-          <div class="text-xs text-gray-500">Portfolio-level risk-free rate used in Sharpe/Sortino calculations</div>
-        </div>
-        <div class="flex items-center space-x-2">
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            v-model.number="sim.inputs.riskFreeRate"
-            aria-label="Risk-free rate percent"
-            class="w-28 px-2 py-1 rounded text-sm bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-          />
-          <div class="text-xs">%</div>
-        </div>
-      </div>
-    </div>
-
     <div v-if="!canAccessTab" class="relative">
       <div class="absolute inset-0 bg-white bg-opacity-75 backdrop-blur-sm z-10 rounded-lg flex items-center justify-center">
         <div class="text-center p-8">
@@ -169,11 +148,4 @@ function getOverrideSdPct(assetKey: string, defaultSd: number): string {
   const override = props.assetOverrides[assetKey]?.sd;
   return override !== undefined ? (override * 100).toFixed(1) : '';
 }
-</script>
-
-<script lang="ts">
-// Provide the simulation store for binding the risk-free rate when this component
-// is used within the Settings/Organization flow.
-import { useSimulationStore } from '@/features/simulation/stores/simulation';
-const sim = useSimulationStore();
 </script>

@@ -119,11 +119,11 @@ function buildChart() {
   console.log('Final labels for spending chart:', labels);
 
   const datasets: any[] = [
-    { label: '90th percentile', data: p90, borderColor: '#15803D', borderWidth: 1.5, borderDash: [6,4], pointRadius: 0, fill: false, tension: 0.35 },
-    { label: '75th percentile', data: p75, borderColor: '#16A34A', backgroundColor: 'rgba(22,163,74,0.05)', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.35 },
-    { label: 'Median Spending', data: median, borderColor: '#0EA5E9', backgroundColor: 'rgba(14,165,233,0.1)', borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.35 },
-    { label: '25th percentile', data: p25, borderColor: '#DC2626', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.35 },
-    { label: '10th percentile', data: p10, borderColor: '#B91C1C', borderWidth: 1.5, borderDash: [6,4], pointRadius: 0, fill: false, tension: 0.35 },
+    { label: '90th percentile', data: p90, borderColor: '#15803D', borderWidth: 1.5, borderDash: [6,4], pointRadius: 0, fill: false, tension: 0 },
+    { label: '75th percentile', data: p75, borderColor: '#16A34A', backgroundColor: 'rgba(22,163,74,0.05)', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0 },
+    { label: 'Median Spending', data: median, borderColor: '#0EA5E9', backgroundColor: 'rgba(14,165,233,0.1)', borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0 },
+    { label: '25th percentile', data: p25, borderColor: '#DC2626', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0 },
+    { label: '10th percentile', data: p10, borderColor: '#B91C1C', borderWidth: 1.5, borderDash: [6,4], pointRadius: 0, fill: false, tension: 0 },
   ];
 
   chart = new Chart(ctx, {
@@ -159,7 +159,7 @@ watch(() => props.results, buildChart, { deep: true });
 <template>
   <div class="p-6 bg-white border border-gray-200 rounded-xl shadow-lg h-128 mb-8" style="height: 360px;">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold">Total Organization Spending Projection</h3>
+      <p class="text-lg font-semibold">Total Organization Spending Projection</p>
     </div>
     <div ref="legendRef" class="flex flex-wrap gap-3 mb-2 text-gray-700"></div>
     <canvas ref="canvasRef"></canvas>

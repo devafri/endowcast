@@ -21,6 +21,13 @@ const CURRENT_YEAR = 2025;
 // Helpers / derived metrics (prefer precomputed summary values, fallback to local calc)
 const sims = computed(() => props.results?.paths ?? props.results?.simulations ?? []);
 const portfolioReturns = computed(() => props.results?.portfolioReturns ?? []);
+const inflationPercent = computed(() => {
+  const summaryInfl = props.results?.summary?.inflationRate;
+  const inputInfl = props.results?.inputs?.inflationRate;
+  const fallback = props.results?.summary?.riskFreeRate ?? props.results?.inputs?.riskFreeRate ?? 2;
+  const candidate = summaryInfl != null ? summaryInfl : (inputInfl != null ? inputInfl : fallback);
+  return typeof candidate === 'number' && isFinite(candidate) ? candidate : 2;
+});
 
 // --- New Computed Properties ---
 
@@ -48,11 +55,10 @@ const realFinalMedian = computed(() => {
   
   if (nominalMedian == null || !isFinite(nominalMedian) || years == null || years === 0) return null;
 
-  // Use the Risk-Free Rate as the inflation proxy, as is standard practice in this model 
-  const rfVal = props.results?.summary?.riskFreeRate ?? props.results?.inputs?.riskFreeRate ?? null;
-  if (rfVal == null) return null;
-  
-  const inflationRate = (isFinite(rfVal) ? rfVal : 2) / 100; // Use 2% default if rate is null/NaN
+  const inflPct = inflationPercent.value;
+  if (inflPct == null) return null;
+
+  const inflationRate = (isFinite(inflPct) ? inflPct : 2) / 100;
   const inflationFactor = Math.pow(1 + inflationRate, years);
   
   const realValue = nominalMedian / inflationFactor;
@@ -133,9 +139,8 @@ const inflationPreservationPct = computed(() => {
   const years = sims.value[0]?.length ?? (props.results?.yearLabels?.length ?? 10);
   const finalValues = sims.value.map(sim => sim[sim.length - 1]);
   const medianFinal = percentile(finalValues, 50);
-  const rfVal = props.results?.summary?.riskFreeRate ?? props.results?.inputs?.riskFreeRate ?? 2;
-  const rfPct = isFinite(rfVal) ? rfVal : 2;
-  const inflationRate = rfPct / 100;
+  const inflPct = inflationPercent.value;
+  const inflationRate = (isFinite(inflPct) ? inflPct : 2) / 100;
   const inflationFactor = Math.pow(1 + inflationRate, years);
   const val = medianFinal / (initial * inflationFactor);
   return isFinite(val) ? val * 100 : null;

@@ -46,6 +46,14 @@ const riskFreePct = computed(() => {
   return typeof s === 'number' && s > 1 ? s / 100 : (typeof s === 'number' ? s : 0.02);
 });
 
+const inflationPercent = computed(() => {
+  const summaryInfl = props.results?.summary?.inflationRate;
+  const inputInfl = props.results?.inputs?.inflationRate;
+  const fallback = props.results?.summary?.riskFreeRate ?? props.results?.inputs?.riskFreeRate ?? 2;
+  const candidate = summaryInfl != null ? summaryInfl : (inputInfl != null ? inputInfl : fallback);
+  return typeof candidate === 'number' && isFinite(candidate) ? candidate : 2;
+});
+
 const riskMetrics = computed(() => {
   const pre = props.results?.summary ?? props.results?.analytics;
   if (pre && (pre.tailRiskMetrics || pre.safeSpending80 || pre.principalLossProb)) return pre;
@@ -133,9 +141,8 @@ const inflationAdjustedPreservationFrac = computed(() => {
   if (!sims.value.length || !isFinite(initialEndowment.value)) return NaN;
   const finalValues = sims.value.map(sim => sim[sim.length - 1]);
   const medianFinal = percentile(finalValues, 50);
-  const rfVal = props.results?.summary?.riskFreeRate ?? props.results?.inputs?.riskFreeRate ?? 2;
-  const rfPct = isFinite(rfVal) ? rfVal : 2;
-  const inflationRate = rfPct / 100;
+  const inflPct = inflationPercent.value;
+  const inflationRate = (isFinite(inflPct) ? inflPct : 2) / 100;
   const inflationFactor = Math.pow(1 + inflationRate, years.value);
   const val = medianFinal / (initialEndowment.value * inflationFactor);
   return isFinite(val) ? val : NaN;

@@ -106,6 +106,88 @@
       </div>
     </div>
 
+    <!-- Benchmark Configuration -->
+    <div>
+      <label class="block text-sm font-medium text-slate-800 mb-2">Benchmark</label>
+      <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="inline-flex items-center text-sm text-slate-700">
+            <input
+              type="checkbox"
+              :checked="benchmarkEnabled"
+              @change="onToggleBenchmark(($event.target as HTMLInputElement).checked)"
+              class="mr-2 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            Enable benchmark comparison
+          </label>
+          <span class="text-xs text-slate-500">{{ benchmarkSummary }}</span>
+        </div>
+
+        <div v-if="benchmarkEnabled" class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Benchmark type</label>
+            <select
+              :value="benchmarkConfig.type"
+              @change="onBenchmarkTypeChange(($event.target as HTMLSelectElement).value)"
+              class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+            >
+              <option value="cpi_plus">CPI + Fixed Return</option>
+              <option value="fixed">Fixed Annual Return</option>
+              <option value="asset_class">Single Asset Class</option>
+              <option value="blended">Blended Portfolio</option>
+            </select>
+          </div>
+
+          <div v-if="benchmarkConfig.type === 'cpi_plus' || benchmarkConfig.type === 'fixed'">
+            <label class="block text-xs font-medium text-slate-600 mb-1">
+              {{ benchmarkConfig.type === 'cpi_plus' ? 'Additional return above CPI (%)' : 'Fixed annual return (%)' }}
+            </label>
+            <input
+              type="number"
+              :value="benchmarkConfig.value ?? 0"
+              @input="onBenchmarkValueChange(($event.target as HTMLInputElement).value)"
+              class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              step="0.1"
+              min="-10"
+              max="20"
+            />
+            <p class="text-xs text-slate-500 mt-1">
+              {{ benchmarkConfig.type === 'cpi_plus' ? 'Example: 6 means CPI + 6% annual return' : 'Fixed return regardless of inflation' }}
+            </p>
+          </div>
+
+          <div v-else-if="benchmarkConfig.type === 'asset_class'">
+            <label class="block text-xs font-medium text-slate-600 mb-1">Asset class to track</label>
+            <select
+              :value="benchmarkConfig.assetKey || ''"
+              @change="onBenchmarkAssetChange(($event.target as HTMLSelectElement).value)"
+              class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+            >
+              <option value="" disabled>Select asset class</option>
+              <option v-for="asset in assetClassOptions" :key="asset.key" :value="asset.key">
+                {{ asset.label }}
+              </option>
+            </select>
+          </div>
+
+          <div v-else class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-md p-2">
+            Configure blended benchmark weights in the Benchmarks tab.
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Custom label (optional)</label>
+            <input
+              type="text"
+              :value="benchmarkConfig.label || ''"
+              @input="onBenchmarkLabelChange(($event.target as HTMLInputElement).value)"
+              class="input-field w-full p-2 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              placeholder="Leave blank for auto-generated label"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Spending Policy Rate -->
     <div>
       <label class="block text-sm font-medium text-slate-800 mb-2">Spending Policy Rate (%)</label>
@@ -129,6 +211,29 @@
       </div>
     </div>
 
+    <!-- Inflation (CPI) Assumption -->
+    <div>
+      <label class="block text-sm font-medium text-slate-800 mb-2">Inflation (CPI) Assumption (%)</label>
+      <input
+        type="number"
+        v-model.number="inputs.inflationRate"
+        :class="[
+          'input-field w-full p-3 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100',
+          inflationOutOfRange
+            ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+            : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+        ]"
+        placeholder="2"
+        step="0.1"
+        min="-5"
+        max="10"
+        @input="$emit('update:inputs', inputs)"
+      />
+      <div v-if="inflationOutOfRange" class="mt-1 text-sm text-red-600">
+        Inflation should be between -5% and 10%
+      </div>
+    </div>
+
     <!-- Investment Expense Rate -->
     <div>
       <label class="block text-sm font-medium text-slate-800 mb-2">Investment Expense Rate (%)</label>
@@ -149,6 +254,29 @@
       />
       <div v-if="inputs.investmentExpenseRate && (inputs.investmentExpenseRate < 0 || inputs.investmentExpenseRate > 5)" class="mt-1 text-sm text-red-600">
         Investment expenses should be between 0% and 5%
+      </div>
+    </div>
+
+    <!-- Risk-free Rate -->
+    <div>
+      <label class="block text-sm font-medium text-slate-800 mb-2">Risk-free Rate (%)</label>
+      <input
+        type="number"
+        v-model.number="inputs.riskFreeRate"
+        :class="[
+          'input-field w-full p-3 rounded-md bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-100',
+          riskFreeOutOfRange
+            ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+            : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+        ]"
+        placeholder="2"
+        step="0.1"
+        min="-5"
+        max="15"
+        @input="$emit('update:inputs', inputs)"
+      />
+      <div v-if="riskFreeOutOfRange" class="mt-1 text-sm text-red-600">
+        Risk-free rate should be between -5% and 15%
       </div>
     </div>
   </div>
@@ -267,14 +395,15 @@
 
 
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue';
-import type { SimulationInputs, SimulationOptions } from '../../types/SettingsTypes';
+import { computed } from 'vue';
+import type { SimulationInputs, SimulationOptions, BenchmarkConfig } from '../../types/SettingsTypes';
 import GrantTargets from '../../../simulation/components/inputs/GrantTargets.vue';
 
 interface Props {
   inputs: SimulationInputs;
   options: SimulationOptions;
   canAccessTab?: boolean; // Optional since basic tab is always accessible
+  assetClasses?: Array<{ key: string; label: string }>;
 }
 
 interface Emits {
@@ -284,6 +413,115 @@ interface Emits {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
+
+const DEFAULT_BENCHMARK: BenchmarkConfig = { enabled: false, type: 'cpi_plus', value: 6, label: 'CPI + 6%' };
+
+const assetClassOptions = computed(() => props.assetClasses ?? []);
+
+function cloneBenchmark(): BenchmarkConfig {
+  const current = props.options.benchmark ? { ...props.options.benchmark } : { ...DEFAULT_BENCHMARK };
+  if (props.options.benchmark?.blended) {
+    current.blended = { ...props.options.benchmark.blended };
+  }
+  return current;
+}
+
+function emitBenchmarkUpdate(next: BenchmarkConfig) {
+  emit('update:options', { ...props.options, benchmark: next });
+}
+
+function updateBenchmark(partial: Partial<BenchmarkConfig>) {
+  const next = cloneBenchmark();
+  Object.assign(next, partial);
+  emitBenchmarkUpdate(next);
+}
+
+const benchmarkConfig = computed(() => props.options.benchmark ?? DEFAULT_BENCHMARK);
+const benchmarkEnabled = computed(() => benchmarkConfig.value.enabled === true);
+
+const benchmarkSummary = computed(() => {
+  if (!benchmarkEnabled.value) return 'Disabled';
+  const cfg = benchmarkConfig.value;
+  switch (cfg.type) {
+    case 'cpi_plus':
+      return `CPI + ${(cfg.value ?? 0)}%`;
+    case 'fixed':
+      return `Fixed ${(cfg.value ?? 0)}%`;
+    case 'asset_class':
+      if (cfg.assetKey) {
+        const label = assetClassOptions.value.find(a => a.key === cfg.assetKey)?.label;
+        return label ? `Asset: ${label}` : `Asset: ${cfg.assetKey}`;
+      }
+      return 'Asset class';
+    case 'blended':
+      return 'Blended portfolio';
+    default:
+      return 'Configured';
+  }
+});
+
+function ensureLabelForDefaults(next: BenchmarkConfig) {
+  if (!next.label || next.label.startsWith('CPI +') || next.label.startsWith('Fixed')) {
+    if (next.type === 'cpi_plus' && typeof next.value === 'number') {
+      next.label = `CPI + ${next.value}%`;
+    } else if (next.type === 'fixed' && typeof next.value === 'number') {
+      next.label = `Fixed ${next.value}%`;
+    }
+  }
+}
+
+function onToggleBenchmark(enabled: boolean) {
+  const next = cloneBenchmark();
+  next.enabled = enabled;
+  if (enabled) {
+    if (!next.type) next.type = 'cpi_plus';
+    if (next.type === 'cpi_plus' && typeof next.value !== 'number') next.value = 6;
+    ensureLabelForDefaults(next);
+  }
+  emitBenchmarkUpdate(next);
+}
+
+function onBenchmarkTypeChange(type: string) {
+  const next = cloneBenchmark();
+  next.type = type as BenchmarkConfig['type'];
+  if (type === 'cpi_plus') {
+    if (typeof next.value !== 'number') next.value = 6;
+    delete next.assetKey;
+    ensureLabelForDefaults(next);
+  } else if (type === 'fixed') {
+    if (typeof next.value !== 'number') next.value = 6;
+    delete next.assetKey;
+    ensureLabelForDefaults(next);
+  } else if (type === 'asset_class') {
+    if (!next.assetKey && assetClassOptions.value.length) {
+      next.assetKey = assetClassOptions.value[0].key;
+    }
+    delete next.value;
+  } else if (type === 'blended') {
+    if (!next.blended) next.blended = {};
+  }
+  emitBenchmarkUpdate(next);
+}
+
+function onBenchmarkValueChange(rawValue: string) {
+  const parsed = parseFloat(rawValue);
+  if (Number.isNaN(parsed)) {
+    updateBenchmark({ value: undefined });
+  } else {
+    const next = cloneBenchmark();
+    next.value = parsed;
+    ensureLabelForDefaults(next);
+    emitBenchmarkUpdate(next);
+  }
+}
+
+function onBenchmarkAssetChange(assetKey: string) {
+  updateBenchmark({ assetKey });
+}
+
+function onBenchmarkLabelChange(label: string) {
+  updateBenchmark({ label });
+}
 
 // Create getter/setter computed properties for two-way binding on props
 const years = computed({
@@ -310,17 +548,34 @@ const startYear = computed({
   }
 });
 
+const inflationOutOfRange = computed(() => {
+  const val = props.inputs.inflationRate;
+  if (val === undefined || val === null) return false;
+  return val < -5 || val > 10;
+});
+
+const riskFreeOutOfRange = computed(() => {
+  const val = props.inputs.riskFreeRate;
+  if (val === undefined || val === null) return false;
+  return val < -5 || val > 15;
+});
+
 // Computed properties for validation states
 const isFinancialSectionComplete = computed(() => {
+  const hasValidRiskFree = props.inputs.riskFreeRate !== undefined && props.inputs.riskFreeRate !== null && !riskFreeOutOfRange.value;
+  const hasValidInflation = props.inputs.inflationRate !== undefined && props.inputs.inflationRate !== null && !inflationOutOfRange.value;
   return props.inputs.initialEndowment >= 1000000 &&
          props.inputs.spendingPolicyRate >= 0 && props.inputs.spendingPolicyRate <= 15 &&
-         props.inputs.investmentExpenseRate >= 0 && props.inputs.investmentExpenseRate <= 5;
+         props.inputs.investmentExpenseRate >= 0 && props.inputs.investmentExpenseRate <= 5 &&
+         hasValidRiskFree && hasValidInflation;
 });
 
 const hasFinancialErrors = computed(() => {
   return (props.inputs.initialEndowment && props.inputs.initialEndowment < 1000000) ||
          (props.inputs.spendingPolicyRate && (props.inputs.spendingPolicyRate < 0 || props.inputs.spendingPolicyRate > 15)) ||
          (props.inputs.investmentExpenseRate && (props.inputs.investmentExpenseRate < 0 || props.inputs.investmentExpenseRate > 5)) ||
+         riskFreeOutOfRange.value ||
+         inflationOutOfRange.value ||
          (props.inputs.initialOperatingExpense && props.inputs.initialOperatingExpense < 0) ||
          (props.inputs.initialGrant && props.inputs.initialGrant < 0);
 });

@@ -69,8 +69,12 @@ const riskFreeRatePct = computed(() => {
 
 // Inflation Rate:
 const inflationRatePct = computed(() => {
-    // If explicit inflation rate is set, use it. Otherwise, assume it's the risk-free rate (common practice when not specified).
-    return inputs.value.inflationRate ?? inputs.value.inflationRatePct ?? null;
+  if (inputs.value.inflationRate != null) return inputs.value.inflationRate;
+  if (inputs.value.inflationRatePct != null) return inputs.value.inflationRatePct;
+  if (props.results?.summary?.inflationRate != null) return props.results.summary.inflationRate;
+  // If explicit inflation rate is not set, fall back to the risk-free rate (common practice when not specified).
+  const rf = riskFreeRatePct.value;
+  return rf != null ? rf : null;
 });
 
 // --- Exposure for template ---

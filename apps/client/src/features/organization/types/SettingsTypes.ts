@@ -47,6 +47,8 @@ export interface SettingsFormData {
   initialEndowment: number;
   spendingPolicyRate: number;
   investmentExpenseRate: number;
+  riskFreeRate?: number;
+  inflationRate?: number;
   initialOperatingExpense: number;
   initialGrant: number;
   portfolioWeights: Record<string, number>;
@@ -58,6 +60,8 @@ export interface SimulationInputs {
   initialEndowment: number;
   spendingPolicyRate: number;
   investmentExpenseRate: number;
+  riskFreeRate?: number;
+  inflationRate?: number;
   initialOperatingExpense: number;
   initialGrant: number;
   portfolioWeights: Record<string, number>;

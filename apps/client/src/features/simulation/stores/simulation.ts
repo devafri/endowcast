@@ -42,6 +42,7 @@ export const useSimulationStore = defineStore('simulation', () => {
     initialEndowment: 50000000,
     // Risk-free rate (percent). Used for Sharpe/Sortino calculations and benchmarking.
     riskFreeRate: 2,
+    inflationRate: 2,
     spendingPolicyRate: 5,
     investmentExpenseRate: 1,
     initialOperatingExpense: 1000000,
@@ -163,14 +164,15 @@ export const useSimulationStore = defineStore('simulation', () => {
         // Additional parameters needed for proper spending calculation
         initialOperatingExpense: Number(payload.initialOperatingExpense) || 0,
         initialGrant: Number(payload.initialGrant) || 0,
-        riskFreeRate: Number(payload.riskFreeRate) || 2,
+  riskFreeRate: Number(payload.riskFreeRate) || 2,
+  inflationRate: Number(payload.inflationRate) || Number(payload.riskFreeRate) || 2,
         
         // Default number of Monte Carlo paths to request from backend.
         // NOTE: the backend currently includes full simulation `paths` in the response
         // only when `numSimulations <= 500` to avoid extremely large payloads.
-        // We request 5000 simulations by default for better percentile stability;
+        // We request 10000 simulations by default for better percentile stability;
         // if you need the individual paths for inspection, set this to 500 or lower.
-        numSimulations: 5000 // Can be made configurable
+        numSimulations: 10000 // Can be made configurable
       };
 
 
@@ -198,8 +200,10 @@ export const useSimulationStore = defineStore('simulation', () => {
       const spendingGrowth = 0; // keep simple unless provided by backend
       const opEx0 = Number(payload.initialOperatingExpense) || 0;
       const grants0 = Number(payload.initialGrant) || 0;
-      const rfPct = Number(payload.riskFreeRate) || 2;
-      const inflation = (isFinite(rfPct) ? rfPct : 2) / 100;
+  const rfPct = Number(payload.riskFreeRate);
+  const inflationPct = Number(payload.inflationRate);
+  const inflationBasis = isFinite(inflationPct) ? inflationPct : (isFinite(rfPct) ? rfPct : 2);
+  const inflation = (isFinite(inflationBasis) ? inflationBasis : 2) / 100;
 
       const perYearOpEx = Array.from({ length: derivedYears }, (_, y) => opEx0 * Math.pow(1 + inflation, y));
       const perYearGrants = Array.from({ length: derivedYears }, (_, y) => {
@@ -330,6 +334,7 @@ export const useSimulationStore = defineStore('simulation', () => {
           success: backendSummary.success,
           successMetrics: successMetrics,
           riskFreeRate: (backendSummary.riskFreeRate != null ? backendSummary.riskFreeRate : (payload.riskFreeRate || 2)),
+          inflationRate: (backendSummary.inflationRate != null ? backendSummary.inflationRate : (payload.inflationRate ?? payload.riskFreeRate ?? 2)),
         },
         
         // Include inputs for components that need them
@@ -338,6 +343,7 @@ export const useSimulationStore = defineStore('simulation', () => {
           // payload uses spendingPolicyRate as a percentage already; do not remap from spendingRate
           spendingPolicyRate: Number(payload.spendingPolicyRate) || 5,
           riskFreeRate: payload.riskFreeRate || 2,
+          inflationRate: payload.inflationRate ?? payload.riskFreeRate ?? 2,
           investmentExpenseRate: Number(payload.investmentExpenseRate) || 0,
           initialOperatingExpense: Number(payload.initialOperatingExpense) || 0,
           initialGrant: Number(payload.initialGrant) || 0,

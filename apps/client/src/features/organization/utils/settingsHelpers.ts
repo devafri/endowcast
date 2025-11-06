@@ -96,13 +96,17 @@ export function validateFinancialInputs(inputs: any): { hasErrors: boolean; isCo
   const hasErrors = (
     (inputs.initialEndowment && inputs.initialEndowment < 1000000) ||
     (inputs.spendingPolicyRate && (inputs.spendingPolicyRate < 0 || inputs.spendingPolicyRate > 15)) ||
-    (inputs.investmentExpenseRate && (inputs.investmentExpenseRate < 0 || inputs.investmentExpenseRate > 5))
+    (inputs.investmentExpenseRate && (inputs.investmentExpenseRate < 0 || inputs.investmentExpenseRate > 5)) ||
+    (inputs.riskFreeRate !== undefined && inputs.riskFreeRate !== null && (inputs.riskFreeRate < -5 || inputs.riskFreeRate > 15)) ||
+    (inputs.inflationRate !== undefined && inputs.inflationRate !== null && (inputs.inflationRate < -5 || inputs.inflationRate > 10))
   );
 
   const isComplete = (
     inputs.initialEndowment && inputs.initialEndowment >= 1000000 &&
     inputs.spendingPolicyRate && inputs.spendingPolicyRate >= 0 && inputs.spendingPolicyRate <= 15 &&
-    inputs.investmentExpenseRate !== undefined && inputs.investmentExpenseRate >= 0 && inputs.investmentExpenseRate <= 5
+    inputs.investmentExpenseRate !== undefined && inputs.investmentExpenseRate >= 0 && inputs.investmentExpenseRate <= 5 &&
+    inputs.riskFreeRate !== undefined && inputs.riskFreeRate !== null && inputs.riskFreeRate >= -5 && inputs.riskFreeRate <= 15 &&
+    inputs.inflationRate !== undefined && inputs.inflationRate !== null && inputs.inflationRate >= -5 && inputs.inflationRate <= 10
   );
 
   return { hasErrors, isComplete };
@@ -113,6 +117,8 @@ export function validateAllInputs(inputs: any): boolean {
     (inputs.initialEndowment && inputs.initialEndowment < 1000000) ||
     (inputs.spendingPolicyRate && (inputs.spendingPolicyRate < 0 || inputs.spendingPolicyRate > 15)) ||
     (inputs.investmentExpenseRate && (inputs.investmentExpenseRate < 0 || inputs.investmentExpenseRate > 5)) ||
+    (inputs.riskFreeRate !== undefined && inputs.riskFreeRate !== null && (inputs.riskFreeRate < -5 || inputs.riskFreeRate > 15)) ||
+    (inputs.inflationRate !== undefined && inputs.inflationRate !== null && (inputs.inflationRate < -5 || inputs.inflationRate > 10)) ||
     (inputs.initialOperatingExpense && inputs.initialOperatingExpense < 0) ||
     (inputs.initialGrant && inputs.initialGrant < 0)
   );

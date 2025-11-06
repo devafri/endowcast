@@ -78,7 +78,7 @@ export const assetClasses = [
   { key: 'cashShortTerm', label: 'Cash/Short-Term', mean: 0.015, sd: 0.005 },
  ] as const;
 
-const NUM_SIMULATIONS = 5000;
+const NUM_SIMULATIONS = 10000;
 const NUM_YEARS = 10;
 const CPI_MEAN = 0.025;
 const CPI_STD = 0.005;

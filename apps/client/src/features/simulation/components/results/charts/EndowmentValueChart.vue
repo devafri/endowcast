@@ -80,7 +80,8 @@ function buildChart() {
   if (!sims.length) return;
   
   const benchmarkLabel = props.results.benchmark?.label || 'Benchmark (CPI + 6%)';
-  const benchmarkEnabled = props.results.benchmark?.enabled !== false;
+  // Only enable benchmark rendering when the results include benchmark path data and it's enabled
+  const benchmarkEnabled = (props.results.benchmark?.enabled !== false) && Array.isArray(benchmarks) && benchmarks.length > 0;
   const corpusEnabled = props.results.corpus?.enabled !== false;
   const Y = years.value;
   
@@ -104,10 +105,13 @@ function buildChart() {
     percentiles[pct] = getPercentile(sims, pct);
   }
   const p50 = percentiles[50];
-  const benchmarkMean = Array.from({ length: Y }, (_, i) => {
-    const arr = benchmarks.map(b => b[i]);
-    return arr.reduce((a, b) => a + b, 0) / arr.length;
-  });
+  const benchmarkMean = (Array.isArray(benchmarks) && benchmarks.length > 0)
+    ? Array.from({ length: Y }, (_, i) => {
+      const arr = benchmarks.map(b => b[i]).filter((v: any) => Number.isFinite(v));
+      if (!arr.length) return NaN;
+      return arr.reduce((a: number, b: number) => a + b, 0) / arr.length;
+    })
+    : [];
   const hasCorpus = corpusEnabled && corpus.length > 0;
   const corpusMean = hasCorpus ? Array.from({ length: Y }, (_, i) => {
     const arr = corpus.map(c => c[i]);
@@ -137,13 +141,13 @@ function buildChart() {
 
   for (let low = 5; low < 50; low += 5) {
     const high = 100 - low;
-    datasets.push(
-      { label: `${high}th percentile`, data: percentiles[high], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: '-1', tension: 0.4, order: low, isSample: true },
-      { label: `${low}th percentile`, data: percentiles[low], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: false, tension: 0.4, order: low, isSample: true }
+      datasets.push(
+      { label: `${high}th percentile`, data: percentiles[high], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: '-1', tension: 0, order: low, isSample: true },
+      { label: `${low}th percentile`, data: percentiles[low], borderColor: 'rgba(14,165,233,0.0)', backgroundColor: bandGradients[`${low}_${high}`] || 'rgba(14,165,233,0.08)', borderWidth: 0, pointRadius: 0, fill: false, tension: 0, order: low, isSample: true }
     );
   }
   datasets.push(
-    { label: 'Median (50th percentile)', data: p50, borderColor: '#0EA5E9', backgroundColor: 'rgba(14, 165, 233, 0.0)', borderWidth: 4.5, pointRadius: 0, fill: false, tension: 0.4, order: 50 }
+    { label: 'Median (50th percentile)', data: p50, borderColor: '#0EA5E9', backgroundColor: 'rgba(14, 165, 233, 0.0)', borderWidth: 4.5, pointRadius: 0, fill: false, tension: 0, order: 50 }
   );
 
     // Visible percentile lines (overlay on top of bands) - keep styling subtle but readable
@@ -157,25 +161,25 @@ function buildChart() {
     for (const pct of overlayPercentiles) {
       const style = percentileLineStyles[pct] || { borderColor: '#0EA5E9', borderWidth: 1.2 };
       // add a visible line for this percentile
-      datasets.push({ label: `${pct}th percentile`, data: percentiles[pct], borderColor: style.borderColor, borderWidth: style.borderWidth, borderDash: style.borderDash || [], pointRadius: 0, fill: false, tension: 0.35, order: 60 + pct });
+      datasets.push({ label: `${pct}th percentile`, data: percentiles[pct], borderColor: style.borderColor, borderWidth: style.borderWidth, borderDash: style.borderDash || [], pointRadius: 0, fill: false, tension: 0, order: 60 + pct });
     }
 
   try {
     const rep = props.results?.summary?.representative;
     if (rep) {
       if (Array.isArray(rep.medoidPath) && rep.medoidPath.length) {
-        datasets.push({ label: 'Representative (Medoid)', data: rep.medoidPath, borderColor: '#EF4444', borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.3, order: 100 });
+  datasets.push({ label: 'Representative (Medoid)', data: rep.medoidPath, borderColor: '#EF4444', borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0, order: 100 });
       }
       if (Array.isArray(rep.nearestToMedianPath) && rep.nearestToMedianPath.length) {
-        datasets.push({ label: 'Nearest to Median (actual path)', data: rep.nearestToMedianPath, borderColor: '#D946EF', borderWidth: 2, borderDash: [6,4], pointRadius: 0, fill: false, tension: 0.3, order: 101 });
+  datasets.push({ label: 'Nearest to Median (actual path)', data: rep.nearestToMedianPath, borderColor: '#D946EF', borderWidth: 2, borderDash: [6,4], pointRadius: 0, fill: false, tension: 0, order: 101 });
       }
       if (Array.isArray(rep.pointwiseMedian) && rep.pointwiseMedian.length) {
-        datasets.push({ label: 'Pointwise Median (abstract)', data: rep.pointwiseMedian, borderColor: '#0EA5E9', borderWidth: 2, borderDash: [2,4], pointRadius: 0, fill: false, tension: 0.3, order: 99, borderOpacity: 0.7 });
+  datasets.push({ label: 'Pointwise Median (abstract)', data: rep.pointwiseMedian, borderColor: '#0EA5E9', borderWidth: 2, borderDash: [2,4], pointRadius: 0, fill: false, tension: 0, order: 99, borderOpacity: 0.7 });
       }
     }
   } catch (e) {}
 
-  if (benchmarkEnabled) {
+  if (benchmarkEnabled && benchmarkMean.length === Y && benchmarkMean.some((v: any) => Number.isFinite(v))) {
     datasets.push({ label: benchmarkLabel, data: benchmarkMean, borderColor: '#7C3AED', borderWidth: 2, borderDash: [5,5], pointRadius: 0, fill: false, tension: 0.4, order: 51 });
   }
   if (hasCorpus) {
