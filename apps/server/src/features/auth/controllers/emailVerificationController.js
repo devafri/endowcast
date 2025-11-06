@@ -9,16 +9,25 @@ const prisma = new PrismaClient();
  */
 async function verifyEmail(req, res, next) {
   try {
-    const { token, userId } = req.query;
+    const isPost = req.method === 'POST';
+    const source = isPost ? (req.body || {}) : (req.query || {});
+    const token = source.token;
+    const userId = source.userId || source.uid;
 
     if (!token || !userId) {
+      if (isPost) {
+        return res.status(400).json({ error: 'Missing token or user ID.' });
+      }
       // Redirect to a frontend page that shows an error
       return res.redirect(`${process.env.FRONTEND_URL}/auth/verify-email/error?message=Missing token or user ID.`);
     }
 
     const validToken = await verifyAndConsumeToken(token, TokenType.EMAIL_VERIFICATION);
 
-    if (!validToken || validToken.userId !== userId) {
+    if (!validToken || String(validToken.userId) !== String(userId)) {
+        if (isPost) {
+          return res.status(400).json({ error: 'Invalid or expired token.' });
+        }
         return res.redirect(`${process.env.FRONTEND_URL}/auth/verify-email/error?message=Invalid or expired token.`);
     }
 
@@ -27,9 +36,17 @@ async function verifyEmail(req, res, next) {
       data: { emailVerified: true },
     });
 
+    if (isPost) {
+      return res.json({ message: 'Email verified successfully.' });
+    }
+
     // Redirect to a success page on the frontend
     res.redirect(`${process.env.FRONTEND_URL}/auth/verify-email/success`);
   } catch (error) {
+    if (req.method === 'POST') {
+      console.error('Email verification failed:', error);
+      return res.status(500).json({ error: 'Failed to verify email.' });
+    }
     next(error);
   }
 }

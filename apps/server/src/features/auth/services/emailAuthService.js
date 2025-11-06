@@ -89,7 +89,9 @@ async function sendPasswordResetEmail(to, name, token, userId) {
  * @param {string} userId - The user's ID.
  */
 async function sendVerificationEmail(to, name, token, userId) {
-    const verificationLink = `${FRONTEND_URL}/auth/verify-email?token=${token}&uid=${userId}`;
+  const encodedToken = encodeURIComponent(token);
+  const encodedUserId = encodeURIComponent(userId);
+  const verificationLink = `${FRONTEND_URL}/auth/verify-email?token=${encodedToken}&uid=${encodedUserId}&userId=${encodedUserId}`;
     const { subject, htmlBody, textBody } = getEmailVerificationTemplate(name, verificationLink);
     await sendEmail({ to, subject, htmlBody, textBody });
 }
