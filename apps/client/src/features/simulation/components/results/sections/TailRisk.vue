@@ -367,7 +367,7 @@ function getTextColor(probability: number): string {
 
             <div class="p-4 bg-blue-50 rounded-xl border border-blue-200 shadow-sm">
               <div class="text-xs text-slate-600 mb-2 flex justify-between items-center">
-                Recommended Spend Rate
+                Sustainable Spend Rate
                 <div class="relative group cursor-help">
                   <span class="text-xs text-slate-400 font-bold ml-1">i</span>
                   <div class="absolute z-10 hidden group-hover:block w-64 p-3 text-xs text-white bg-slate-700 rounded-lg shadow-xl -mt-10 -ml-40 whitespace-normal">

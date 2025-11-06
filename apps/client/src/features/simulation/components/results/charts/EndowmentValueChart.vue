@@ -6,6 +6,7 @@ Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryS
 
 const props = defineProps<{ results: any }>();
 const canvasRef = ref<HTMLCanvasElement | null>(null);
+const legendRef = ref<HTMLElement | null>(null);
 let chart: Chart | null = null;
 
 const years = computed(() => props.results?.simulations?.[0]?.length ?? 0);
@@ -24,6 +25,45 @@ function formatMoney(num: number): string {
   if (Math.abs(num) >= 1_000_000) return `$${(num / 1_000_000).toFixed(1)}M`;
   if (Math.abs(num) >= 1_000) return `$${(num / 1_000).toFixed(1)}K`;
   return `$${num.toFixed(0)}`;
+}
+
+function renderHtmlLegend() {
+  if (!legendRef.value || !chart) return;
+  const container = legendRef.value;
+  container.innerHTML = '';
+  // Determine which labels to show
+  const items = (chart.data.datasets || [])
+    .map((ds: any, idx: number) => ({
+      text: String(ds.label || ''),
+      strokeStyle: ds.borderColor || ds.backgroundColor || '#999',
+      hidden: chart?.getDatasetMeta(idx).hidden,
+      index: idx
+    }));
+
+  const allowedSet = new Set(['Median (50th percentile)',
+    (props.results?.benchmark?.label || 'Benchmark (CPI + 6%)'),
+    'Corpus (CPI Growth)']);
+  const filtered = items.filter(i => allowedSet.has(i.text));
+
+  for (const it of filtered) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium transition-colors ${it.hidden ? 'opacity-50' : ''}`;
+    const dot = document.createElement('span');
+    dot.className = 'inline-block w-3 h-3 rounded-full';
+    (dot as any).style = `background:${it.strokeStyle}`;
+    const label = document.createElement('span');
+    label.textContent = it.text;
+    btn.appendChild(dot);
+    btn.appendChild(label);
+    btn.onclick = () => {
+      const meta = chart!.getDatasetMeta(it.index);
+      meta.hidden = meta.hidden === null ? true : !meta.hidden;
+      chart!.update();
+      renderHtmlLegend();
+    };
+    container.appendChild(btn);
+  }
 }
 
 function buildChart() {
@@ -149,10 +189,7 @@ function buildChart() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'top', labels: { filter: (item) => {
-            const allowed = [ 'Median (50th percentile)', benchmarkLabel, 'Corpus (CPI Growth)' ];
-            return allowed.includes(item.text);
-          }, usePointStyle: true, padding: 20, color: '#6B7280', font: { weight: 600 } } },
+        legend: { display: false },
         tooltip: {
           mode: 'index', intersect: false,
           backgroundColor: 'rgba(255,255,255,0.95)', titleColor: '#1F2937', bodyColor: '#6B7280', borderColor: '#E5E7EB', borderWidth: 1,
@@ -205,10 +242,13 @@ function buildChart() {
           }
         }
       },
-      scales: { y: { title: { display: true, text: 'Endowment Value (USD)', color: '#6B7280' }, ticks: { color: '#6B7280', callback: (v) => formatMoney(Number(v)) }, grid: { color: '#E5E7EB' } }, x: { title: { display: true, text: (props.results?.yearLabels?.[0] && !props.results.yearLabels[0].startsWith('Year')) ? 'Calendar Year' : 'Year', color: '#6B7280' }, ticks: { color: '#6B7280' }, grid: { display: false } } },
+      scales: { y: { title: { display: true, text: 'Endowment Value (USD)', color: '#6B7280', font: { size: 12 } }, ticks: { color: '#6B7280', font: { size: 10 }, callback: (v) => formatMoney(Number(v)) }, grid: { color: '#E5E7EB' } }, x: { title: { display: true, text: (props.results?.yearLabels?.[0] && !props.results.yearLabels[0].startsWith('Year')) ? 'Calendar Year' : 'Year', color: '#6B7280', font: { size: 12 } }, ticks: { color: '#6B7280', font: { size: 10 } }, grid: { display: false } } },
       interaction: { mode: 'index', intersect: false },
     }
   });
+
+  // Build the external legend after the chart is ready
+  renderHtmlLegend();
 }
 
 onMounted(buildChart);
@@ -229,6 +269,7 @@ watch(() => props.results, buildChart, { deep: true });
         </span>
       </div>
     </div>
+    <div ref="legendRef" class="flex flex-wrap gap-3 mb-2 text-gray-700"></div>
     <div class="relative h-full">
       <canvas v-if="hasPathData" ref="canvasRef" class="w-full h-full"></canvas>
       <div v-else class="flex items-center justify-center h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border-2 border-dashed border-gray-300">

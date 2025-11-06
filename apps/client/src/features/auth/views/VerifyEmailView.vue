@@ -134,7 +134,7 @@ const messageClasses = computed(() => {
     : 'text-red-700'
 })
 
-const verifyEmail = async (token: string) => {
+const verifyEmail = async (token: string, userId: string) => {
   isVerifying.value = true
   
   try {
@@ -143,7 +143,7 @@ const verifyEmail = async (token: string) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ token, userId }),
     })
 
     const data = await response.json()
@@ -220,11 +220,16 @@ const resendVerification = async () => {
 }
 
 onMounted(() => {
-  const token = route.query.token as string
+  const token = route.query.token as string | undefined
+  const userId = (route.query.uid as string | undefined) || (route.query.userId as string | undefined)
+  const prefilledEmail = route.query.email as string | undefined
+  if (prefilledEmail) {
+    email.value = prefilledEmail
+  }
   
-  if (token) {
+  if (token && userId) {
     // Verify the email with the token from URL
-    verifyEmail(token)
+    verifyEmail(token, userId)
   } else {
     // No token provided, show resend option
     showResendOption.value = true

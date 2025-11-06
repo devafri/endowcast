@@ -6,6 +6,7 @@ Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryS
 
 const props = defineProps<{ results: any }>();
 const canvasRef = ref<HTMLCanvasElement | null>(null);
+const legendRef = ref<HTMLElement | null>(null);
 let chart: Chart | null = null;
 
 const years = computed(() => props.results?.spendingPolicy?.[0]?.length ?? 0);
@@ -22,6 +23,39 @@ function percentile(values: number[], p: number): number {
   const sorted = [...values].sort((a, b) => a - b);
   const idx = Math.floor((p / 100) * (sorted.length - 1));
   return sorted[idx];
+}
+
+function renderHtmlLegend() {
+  if (!legendRef.value || !chart) return;
+  const container = legendRef.value;
+  container.innerHTML = '';
+  const items = (chart.data.datasets || []).map((ds: any, idx: number) => ({
+    text: String(ds.label || ''),
+    strokeStyle: ds.borderColor || ds.backgroundColor || '#999',
+    hidden: chart?.getDatasetMeta(idx).hidden,
+    index: idx
+  }));
+  const allowed = new Set(['90th percentile','75th percentile','Median Spending','25th percentile','10th percentile']);
+  const filtered = items.filter(i => allowed.has(i.text));
+  for (const it of filtered) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium transition-colors ${it.hidden ? 'opacity-50' : ''}`;
+    const dot = document.createElement('span');
+    dot.className = 'inline-block w-3 h-3 rounded-full';
+    (dot as any).style = `background:${it.strokeStyle}`;
+    const label = document.createElement('span');
+    label.textContent = it.text;
+    btn.appendChild(dot);
+    btn.appendChild(label);
+    btn.onclick = () => {
+      const meta = chart!.getDatasetMeta(it.index);
+      meta.hidden = meta.hidden === null ? true : !meta.hidden;
+      chart!.update();
+      renderHtmlLegend();
+    };
+    container.appendChild(btn);
+  }
 }
 
 function buildChart() {
@@ -98,8 +132,8 @@ function buildChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-  legend: { position: 'top', labels: { usePointStyle: true, padding: 20, color: '#6B7280', font: { weight: 600 } } },
+    plugins: {
+  legend: { display: false },
   tooltip: {
           mode: 'index', intersect: false,
           backgroundColor: 'rgba(255,255,255,0.95)', titleColor: '#1F2937', bodyColor: '#6B7280', borderColor: '#E5E7EB', borderWidth: 1,
@@ -107,12 +141,14 @@ function buildChart() {
         }
       },
       scales: {
-  y: { title: { display: true, text: 'Total Organization Spending (USD)', color: '#6B7280' }, ticks: { color: '#6B7280', callback: (v) => formatMoney(Number(v)) }, grid: { color: '#E5E7EB' } },
-  x: { title: { display: true, text: (props.results?.yearLabels?.[0] && !props.results.yearLabels[0].startsWith('Year')) ? 'Calendar Year' : 'Year', color: '#6B7280' }, ticks: { color: '#6B7280' }, grid: { display: false } },
+  y: { title: { display: true, text: 'Total Organization Spending (USD)', color: '#6B7280', font: { size: 12 } }, ticks: { color: '#6B7280', font: { size: 10 }, callback: (v) => formatMoney(Number(v)) }, grid: { color: '#E5E7EB' } },
+  x: { title: { display: true, text: (props.results?.yearLabels?.[0] && !props.results.yearLabels[0].startsWith('Year')) ? 'Calendar Year' : 'Year', color: '#6B7280', font: { size: 12 } }, ticks: { color: '#6B7280', font: { size: 10 } }, grid: { display: false } },
       },
       interaction: { mode: 'index', intersect: false },
     }
   });
+
+  renderHtmlLegend();
 }
 
 onMounted(buildChart);
@@ -125,6 +161,7 @@ watch(() => props.results, buildChart, { deep: true });
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold">Total Organization Spending Projection</h3>
     </div>
+    <div ref="legendRef" class="flex flex-wrap gap-3 mb-2 text-gray-700"></div>
     <canvas ref="canvasRef"></canvas>
   </div>
 </template>

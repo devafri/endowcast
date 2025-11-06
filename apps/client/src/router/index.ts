@@ -22,8 +22,9 @@ const router = createRouter({
   { path: '/register', name: 'Signup', component: SignupView, meta: { requiresGuest: true } },
   { path: '/auth/forgot-password', name: 'ForgotPassword', component: ForgotPasswordView, meta: { requiresGuest: true } },
   { path: '/auth/reset-password', name: 'ResetPassword', component: ResetPasswordView, meta: { requiresGuest: true } },
+  { path: '/auth/verify-email', name: 'VerifyEmail', component: () => import('../features/auth/views/VerifyEmailView.vue'), meta: { requiresGuest: true } },
   { path: '/auth/verify-email/:status', name: 'VerifyEmailStatus', component: EmailVerificationStatusView, props: true },
-  { path: '/verify-email', name: 'VerifyEmail', component: EmailVerificationStatusView },
+  { path: '/verify-email', redirect: (to) => ({ path: '/auth/verify-email', query: to.query }) },
   { path: '/accept-invitation', name: 'AcceptInvitation', component: () => import('../features/organization/views/AcceptInvitationView.vue') },
   
   // Billing
