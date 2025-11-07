@@ -262,9 +262,9 @@ router.get('/usage', authenticateToken, requireUserOrAdmin, async (req, res) => 
 
     const limits = {
       FREE: 10,
-      ANALYST_PRO: 100,
-      FOUNDATION: 500,
-      FOUNDATION_PRO: -1 // unlimited
+      ANALYST_PRO: 50,
+      FOUNDATION: 250,
+      FOUNDATION_PRO: 500
     };
 
     const monthlyLimit = limits[subscription?.planType] || 10;

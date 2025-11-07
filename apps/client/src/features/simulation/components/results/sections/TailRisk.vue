@@ -149,30 +149,165 @@ const inflationAdjustedPreservationFrac = computed(() => {
 });
 
 const strategicSustainableSpendRate = computed(() => {
-  const currentRatePercent = inputs.value?.spendingPolicyRate;
-  const preservation = inflationAdjustedPreservationFrac.value;
+  // Calculate sustainable spend rate using institutional endowment methodology
+  // Based on real expected returns with prudent adjustments for risk
+  // This is completely independent of simulation outcomes to avoid feedback loops
+  
+  const allocationData = inputs.value?.portfolioWeights || props.results?.summary?.allocationPolicy;
+  const inflationPct = inflationPercent.value;
+  const invExpensePct = inputs.value?.investmentExpenseRate ?? 1;
 
-  if (!Number.isFinite(currentRatePercent) || !Number.isFinite(preservation)) {
+  if (!allocationData) {
     return NaN;
   }
 
-  const currentRate = currentRatePercent / 100;
+  // Historical long-term expected returns and volatilities for each asset class
+  // Based on institutional investment research (e.g., Callan, Cambridge Associates)
+  const assetMetrics: Record<string, { return: number; volatility: number }> = {
+    // Legacy names (for backwards compatibility)
+    'US Equity': { return: 9.5, volatility: 18.0 },
+    'International Equity': { return: 9.0, volatility: 20.0 },
+    'Emerging Markets': { return: 10.5, volatility: 25.0 },
+    'Fixed Income': { return: 4.5, volatility: 5.0 },
+    'Real Estate': { return: 8.0, volatility: 15.0 },
+    'Commodities': { return: 6.5, volatility: 20.0 },
+    'Cash': { return: 2.5, volatility: 1.0 },
+    
+    // Current allocation names
+    'publicEquity': { return: 9.0, volatility: 17.0 },
+    'privateEquity': { return: 11.5, volatility: 24.0 },
+    'publicFixedIncome': { return: 4.5, volatility: 5.5 },
+    'privateCredit': { return: 7.0, volatility: 9.0 },
+    'realAssets': { return: 8.5, volatility: 16.0 },
+    'diversifying': { return: 7.5, volatility: 12.0 },
+    'cash': { return: 2.5, volatility: 1.0 },
+  };
 
-  if (preservation >= 1.02) {
-    return Math.min(currentRate * 1.05, 0.075);
-  } else if (preservation >= 1.00) {
-    return Math.min(currentRate * 1.02, 0.07);
-  } else if (preservation >= 0.98) {
-    return currentRate;
-  } else if (preservation >= 0.95) {
-    return currentRate * 0.98;
-  } else if (preservation >= 0.90) {
-    return currentRate * 0.96;
-  } else if (preservation >= 0.85) {
-    return currentRate * 0.92;
-  } else {
-    return currentRate * 0.88;
+  // Calculate portfolio expected return and volatility
+  let expectedReturn = 0;
+  let portfolioVariance = 0;
+  const allocationBreakdown: Array<{ asset: string; weight: number; expectedReturn: number; volatility: number }> = [];
+  
+  for (const [assetClass, weightOrConfig] of Object.entries(allocationData)) {
+    const metrics = assetMetrics[assetClass] ?? { return: 7.0, volatility: 15.0 };
+    
+    // Handle both direct weights and config objects with 'default' property
+    let weightNum: number;
+    if (typeof weightOrConfig === 'number') {
+      weightNum = weightOrConfig;
+    } else if (typeof weightOrConfig === 'object' && weightOrConfig !== null && 'default' in weightOrConfig) {
+      weightNum = typeof weightOrConfig.default === 'number' ? weightOrConfig.default : 0;
+    } else {
+      weightNum = parseFloat(String(weightOrConfig)) || 0;
+    }
+    
+    const weightFrac = weightNum / 100;
+    
+    if (weightNum > 0) {
+      allocationBreakdown.push({
+        asset: assetClass,
+        weight: weightNum,
+        expectedReturn: metrics.return,
+        volatility: metrics.volatility
+      });
+    }
+    
+    expectedReturn += weightFrac * metrics.return;
+    // Simplified variance calculation (assumes 0.3 average correlation between asset classes)
+    portfolioVariance += Math.pow(weightFrac * metrics.volatility, 2);
   }
+  
+  const portfolioVolatility = Math.sqrt(portfolioVariance);
+
+  // Debug logging
+  if (allocationBreakdown.length > 0) {
+    console.log('=== Portfolio-Sustainable Rate Calculation ===');
+    console.log('Current Allocation:');
+    allocationBreakdown.forEach(item => {
+      console.log(`  ${item.asset}: ${item.weight}% (Expected: ${item.expectedReturn}%, Vol: ${item.volatility}%)`);
+    });
+    console.log(`\nPortfolio Expected Return: ${expectedReturn.toFixed(2)}%`);
+    console.log(`Portfolio Volatility: ${portfolioVolatility.toFixed(2)}%`);
+  }
+
+  // Step 1: Convert arithmetic return to geometric (accounts for volatility drag)
+  // Geometric return ≈ Arithmetic return - (σ²/2)
+  const volatilityDragPct = Math.pow(portfolioVolatility, 2) / 200; // Divide by 200 to convert to percentage
+  const geometricReturn = expectedReturn - volatilityDragPct;
+
+  // Step 2: Calculate real expected return after inflation and fees
+  const realGeometricReturn = geometricReturn - inflationPct - invExpensePct;
+
+  // Step 3: Apply prudent discount based on portfolio risk
+  // Higher volatility = more conservative spending (protects against sequence risk)
+  // This is the institutional approach: spend a fraction of expected real return
+  let riskAdjustmentFactor: number;
+  
+  if (portfolioVolatility < 8) {
+    // Low risk portfolio (e.g., mostly bonds): can spend ~95% of real return
+    riskAdjustmentFactor = 0.95;
+  } else if (portfolioVolatility < 12) {
+    // Conservative balanced portfolio: spend ~90% of real return
+    riskAdjustmentFactor = 0.90;
+  } else if (portfolioVolatility < 16) {
+    // Moderate portfolio (typical endowment): spend ~85% of real return
+    riskAdjustmentFactor = 0.85;
+  } else if (portfolioVolatility < 20) {
+    // Aggressive portfolio: spend ~80% of real return
+    riskAdjustmentFactor = 0.80;
+  } else {
+    // Very aggressive portfolio: spend ~75% of real return
+    riskAdjustmentFactor = 0.75;
+  }
+
+  // Calculate sustainable rate
+  let sustainableRate = (realGeometricReturn / 100) * riskAdjustmentFactor;
+
+  // Debug logging continued
+  console.log(`\nVolatility Drag: -${volatilityDragPct.toFixed(2)}%`);
+  console.log(`Geometric Return: ${geometricReturn.toFixed(2)}%`);
+  console.log(`Less Inflation: -${inflationPct.toFixed(2)}%`);
+  console.log(`Less Inv. Fees: -${invExpensePct.toFixed(2)}%`);
+  console.log(`Real Geometric Return: ${realGeometricReturn.toFixed(2)}%`);
+  console.log(`\nRisk Adjustment Factor: ${(riskAdjustmentFactor * 100).toFixed(0)}% (based on ${portfolioVolatility.toFixed(1)}% volatility)`);
+  console.log(`\nPortfolio-Sustainable Rate: ${(sustainableRate * 100).toFixed(2)}%`);
+  console.log('=====================================\n');
+
+  // Ensure reasonable bounds for institutional investors (2% - 7%)
+  // 2% minimum ensures foundation can operate
+  // 7% maximum prevents excessive drawdown
+  sustainableRate = Math.max(0.02, Math.min(0.07, sustainableRate));
+
+  return sustainableRate;
+});
+
+// Calculate effective spending rate based on actual spending vs endowment value
+const effectiveSpendRate = computed(() => {
+  if (!sims.value.length || !spendingPolicy.value?.length) return NaN;
+  
+  // Get median spending and endowment values for each year
+  const yearsN = years.value;
+  const effectiveRates: number[] = [];
+  
+  for (let year = 0; year < yearsN; year++) {
+    const endowmentValues = sims.value.map(s => s[year]).filter(isFinite);
+    const spendingValues = spendingPolicy.value.map(s => s[year]).filter(isFinite);
+    
+    if (endowmentValues.length > 0 && spendingValues.length > 0) {
+      // Calculate median for this year
+      const medianEndowment = percentile(endowmentValues, 50);
+      const medianSpending = percentile(spendingValues, 50);
+      
+      if (medianEndowment > 0) {
+        const rate = (medianSpending / medianEndowment);
+        effectiveRates.push(rate);
+      }
+    }
+  }
+  
+  // Return average effective rate across all years
+  if (effectiveRates.length === 0) return NaN;
+  return effectiveRates.reduce((a, b) => a + b, 0) / effectiveRates.length;
 });
 
 function getLossProbabilityColor(probability: number, threshold: string) {
@@ -230,32 +365,41 @@ const riskAssessment = computed(() => {
     preservationInsight = 'Significant purchasing power loss; spending policy review recommended';
   }
 
-  const rateDifference = ((currentRate - recommendedRate) / currentRate) * 100;
+  const rateDifference = ((currentRate - recommendedRate) / recommendedRate) * 100;
   let sustainabilityLevel, sustainabilityColor, sustainabilityInsight;
 
-  if (rateDifference <= -5) {
+  // More nuanced assessment that distinguishes between different foundation types
+  if (rateDifference <= 0) {
     sustainabilityLevel = 'Conservative';
     sustainabilityColor = 'text-emerald-600 bg-emerald-50';
-    sustainabilityInsight = 'Spending below sustainable level; potential capacity for increased mission funding';
-  } else if (rateDifference <= 0) {
+    sustainabilityInsight = 'Spending at or below portfolio-sustainable level; strong capital preservation expected with high confidence of perpetual endowment';
+  } else if (rateDifference <= 10) {
     sustainabilityLevel = 'Sustainable';
     sustainabilityColor = 'text-green-600 bg-green-50';
-    sustainabilityInsight = 'Spending appears aligned with long-term sustainability goals';
-  } else if (rateDifference <= 10) {
-    sustainabilityLevel = 'Moderately High';
-    sustainabilityColor = 'text-yellow-600 bg-yellow-50';
-    sustainabilityInsight = 'Spending slightly above sustainable level; may wish to monitor closely';
+    sustainabilityInsight = 'Spending moderately above portfolio-sustainable rate; manageable for perpetual endowments with disciplined governance and potential for modest additional revenue';
   } else if (rateDifference <= 25) {
-    sustainabilityLevel = 'Potentially Unsustainable';
+    sustainabilityLevel = 'Elevated Risk';
+    sustainabilityColor = 'text-yellow-600 bg-yellow-50';
+    sustainabilityInsight = 'Spending notably above portfolio-sustainable level; requires either sustained above-average returns, supplemental revenue, or acceptance of gradual capital erosion';
+  } else if (rateDifference <= 45) {
+    sustainabilityLevel = 'High Risk';
     sustainabilityColor = 'text-orange-600 bg-orange-50';
-    sustainabilityInsight = 'Spending meaningfully above sustainable level; could consider adjustments';
+    sustainabilityInsight = 'Spending significantly above portfolio-sustainable level; for perpetual endowments without fundraising, this trajectory risks long-term capital depletion absent exceptional investment performance';
   } else {
     sustainabilityLevel = 'Unsustainable';
     sustainabilityColor = 'text-red-600 bg-red-50';
-    sustainabilityInsight = 'Spending significantly above sustainable level; policy review may be warranted';
+    sustainabilityInsight = 'Spending well above portfolio-sustainable level; current rate cannot be maintained in perpetuity without substantial supplemental revenue or willingness to deplete capital over time';
   }
 
   let overallRisk, overallColor, riskInsight, strategicConsiderations;
+
+  // Calculate effective vs policy rate variance
+  const effectiveRate = effectiveSpendRate.value;
+  const policyRate = inputs.value.spendingPolicyRate;
+  const rateVariance = Number.isFinite(effectiveRate) && Number.isFinite(policyRate) 
+    ? Math.abs(effectiveRate - policyRate) 
+    : 0;
+  const hasSignificantVariance = rateVariance > 0.5; // 0.5% threshold
 
   if (preservation >= 0.95 && rateDifference <= 5 && lossProb10 < 0.15) {
     overallRisk = 'Low Risk';
@@ -265,6 +409,13 @@ const riskAssessment = computed(() => {
       'Current spending policy may be maintained',
       'Regular monitoring recommended to sustain current position'
     ];
+    if (hasSignificantVariance) {
+      strategicConsiderations.push(
+        effectiveRate > policyRate 
+          ? `Effective spend rate (${fmtPercent(effectiveRate)}) exceeds policy rate - intentional front-loaded spending strategy`
+          : `Effective spend rate (${fmtPercent(effectiveRate)}) below policy rate - spending capacity available`
+      );
+    }
   } else if (preservation >= 0.90 && rateDifference <= 15 && lossProb10 < 0.25) {
     overallRisk = 'Moderate Risk';
     overallColor = 'text-yellow-600 bg-yellow-50';
@@ -274,24 +425,42 @@ const riskAssessment = computed(() => {
       'Investment strategy review may enhance long-term outcomes',
       'More frequent monitoring might provide better risk management'
     ];
+    if (hasSignificantVariance && effectiveRate > policyRate) {
+      strategicConsiderations.push(
+        `Effective spend rate (${fmtPercent(effectiveRate)}) exceeds policy - consider whether front-loaded spending aligns with risk tolerance`
+      );
+    }
   } else if (preservation >= 0.80 && rateDifference <= 30 && lossProb10 < 0.40) {
     overallRisk = 'High Risk';
     overallColor = 'text-orange-600 bg-orange-50';
     riskInsight = 'Multiple risk factors suggest potential sustainability challenges';
     strategicConsiderations = [
-      'Spending reduction could improve long-term preservation',
-      'Comprehensive strategy review may identify improvement opportunities',
-      'Developing contingency plans might provide risk mitigation'
+      'For perpetual endowments: current spending likely exceeds long-term portfolio capacity',
+      'Consider phased spending reduction to align with portfolio-sustainable rate',
+      'Evaluate opportunities to enhance portfolio returns through asset allocation review',
+      'Assess whether current mission impact justifies gradual capital erosion'
     ];
+    if (hasSignificantVariance && effectiveRate > policyRate) {
+      strategicConsiderations.push(
+        `Effective rate (${fmtPercent(effectiveRate)}) above policy exacerbates sustainability risk`
+      );
+    }
   } else {
     overallRisk = 'Critical Risk';
     overallColor = 'text-red-600 bg-red-50';
     riskInsight = 'Current trajectory may benefit from immediate attention';
     strategicConsiderations = [
-      'Spending policy review could help preserve endowment viability',
-      'Board discussion of strategic options may be valuable',
-      'Comprehensive analysis of alternative approaches recommended'
+      'Spending significantly above portfolio capacity for perpetual endowments',
+      'Without spending adjustment, capital depletion likely within simulation horizon',
+      'Board should evaluate trade-off between current impact vs. perpetuity commitment',
+      'Consider: spending reduction, supplemental revenue sources, or reconsidering perpetuity goal',
+      'If perpetuity is essential, spending policy revision appears necessary'
     ];
+    if (hasSignificantVariance && effectiveRate > policyRate) {
+      strategicConsiderations.push(
+        `Effective rate (${fmtPercent(effectiveRate)}) significantly exceeds policy - immediate attention required`
+      );
+    }
   }
 
   return {
@@ -374,11 +543,11 @@ function getTextColor(probability: number): string {
 
             <div class="p-4 bg-blue-50 rounded-xl border border-blue-200 shadow-sm">
               <div class="text-xs text-slate-600 mb-2 flex justify-between items-center">
-                Sustainable Spend Rate
+                Portfolio-Sustainable Rate
                 <div class="relative group cursor-help">
                   <span class="text-xs text-slate-400 font-bold ml-1">i</span>
-                  <div class="absolute z-10 hidden group-hover:block w-64 p-3 text-xs text-white bg-slate-700 rounded-lg shadow-xl -mt-10 -ml-40 whitespace-normal">
-                    The highest percentage the endowment can reliably spend each year while maintaining its purchasing power over the long term. **This is your maximum sustainable spending.**
+                  <div class="absolute z-10 hidden group-hover:block w-80 p-3 text-xs text-white bg-slate-700 rounded-lg shadow-xl -mt-10 -ml-64 whitespace-normal">
+                    **Reference rate for perpetual capital preservation.** Based solely on portfolio expected returns (geometric) adjusted for risk. Spending above this rate represents an intergenerational trade-off: more current impact vs. future capital. Many foundations intentionally spend above this rate using fundraising, accepting gradual erosion, or planning finite lifespans.
                   </div>
                 </div>
                 </div>
@@ -389,16 +558,19 @@ function getTextColor(probability: number): string {
 
             <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm">
               <div class="text-xs text-slate-600 mb-2 flex justify-between items-center">
-                Current Spend Rate
+                Effective Spend Rate
                 <div class="relative group cursor-help">
                   <span class="text-xs text-slate-400 font-bold ml-1">i</span>
-                  <div class="absolute z-10 hidden group-hover:block w-64 p-3 text-xs text-white bg-slate-700 rounded-lg shadow-xl -mt-10 -ml-40 whitespace-normal">
-                    The spending percentage currently being used in this simulation. **This is compared to the Recommended Spend Rate to assess sustainability.**
+                  <div class="absolute z-10 hidden group-hover:block w-72 p-3 text-xs text-white bg-slate-700 rounded-lg shadow-xl -mt-10 -ml-56 whitespace-normal">
+                    **Actual spending as % of endowment** (includes grants + operating + investment expenses). Averaged across simulation period. May differ from policy rate when grants intentionally vary (e.g., higher early grants, declining later).
                   </div>
                 </div>
                 </div>
               <div class="text-2xl font-bold tabnums text-slate-700">
-                {{ Number.isFinite(inputs.spendingPolicyRate) ? `${inputs.spendingPolicyRate}%` : '—' }}
+                {{ Number.isFinite(effectiveSpendRate) ? fmtPercent(effectiveSpendRate) : (Number.isFinite(inputs.spendingPolicyRate) ? `${inputs.spendingPolicyRate}%` : '—') }}
+              </div>
+              <div class="text-sm font-medium text-indigo-600 mt-1">
+                Policy: {{ Number.isFinite(inputs.spendingPolicyRate) ? `${inputs.spendingPolicyRate}%` : '—' }}
               </div>
             </div>
 

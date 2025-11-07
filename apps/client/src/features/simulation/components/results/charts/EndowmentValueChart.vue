@@ -85,6 +85,14 @@ function buildChart() {
   const corpusEnabled = props.results.corpus?.enabled !== false;
   const Y = years.value;
   
+  console.log('DEBUG EndowmentValueChart:', {
+    benchmark: props.results.benchmark,
+    benchmarksArray: benchmarks,
+    benchmarkEnabled,
+    benchmarksLength: benchmarks?.length,
+    benchmarkLabel
+  });
+  
   const initialValue = props.results.inputs?.initialValue || props.results.inputs?.initialEndowment || 0;
 
   function getPercentile(arrs: number[][], pct: number) {
@@ -117,6 +125,14 @@ function buildChart() {
     const arr = corpus.map(c => c[i]);
     return arr.reduce((a, b) => a + b, 0) / arr.length;
   }) : [];
+
+  console.log('DEBUG benchmarkMean:', {
+    benchmarkMean,
+    benchmarkMeanLength: benchmarkMean.length,
+    Y,
+    hasFiniteValues: benchmarkMean.some((v: any) => Number.isFinite(v)),
+    condition: benchmarkEnabled && benchmarkMean.length === Y && benchmarkMean.some((v: any) => Number.isFinite(v))
+  });
 
   // yearLabels should be length Y (2025, 2026, ..., 2034 for Y=10)
   // These represent the years during which simulation occurs
@@ -181,10 +197,15 @@ function buildChart() {
 
   if (benchmarkEnabled && benchmarkMean.length === Y && benchmarkMean.some((v: any) => Number.isFinite(v))) {
     datasets.push({ label: benchmarkLabel, data: benchmarkMean, borderColor: '#7C3AED', borderWidth: 2, borderDash: [5,5], pointRadius: 0, fill: false, tension: 0.4, order: 51 });
+    console.log('DEBUG: Benchmark dataset added to chart');
+  } else {
+    console.log('DEBUG: Benchmark dataset NOT added to chart');
   }
   if (hasCorpus) {
     datasets.push({ label: 'Corpus (CPI Growth)', data: corpusMean, borderColor: '#F97316', borderWidth: 2, borderDash: [5,5], pointRadius: 0, fill: false, tension: 0.4, order: 52 });
   }
+
+  console.log('DEBUG final datasets:', datasets.map(ds => ds.label));
 
   chart = new Chart(ctx, {
     type: 'line',

@@ -227,7 +227,7 @@ onUnmounted(() => {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-10-4h.01M19 10h.01M15 21v-1a2 2 0 00-2-2h-2a2 2 0 00-2 2v1"></path>
           </svg>
           <span v-if="!authStore.canRunSimulation">
-            Simulation Limit Reached ({{ authStore.remainingSimulations }}/{{ authStore.currentPlanLimits.simulations === -1 ? 'unlimited' : authStore.currentPlanLimits.simulations }})
+            Simulation Limit Reached ({{ authStore.remainingSimulations }}/{{ authStore.usageStats?.monthlyLimit === -1 ? 'unlimited' : (authStore.usageStats?.monthlyLimit ?? authStore.currentPlanLimits.simulations) }})
           </span>
           <span v-else>
             {{ sim.isLoading ? 'Running Analysis...' : 'Run Monte Carlo Analysis' }}
@@ -237,7 +237,7 @@ onUnmounted(() => {
         <!-- Simulation count info -->
         <div v-if="authStore.isAuthenticated && authStore.user" class="mt-4">
           <p class="text-sm text-gray-600 text-center">
-            Simulations remaining: {{ authStore.remainingSimulations }}/{{ authStore.currentPlanLimits.simulations === -1 ? 'unlimited' : authStore.currentPlanLimits.simulations }}
+            Simulations remaining: {{ authStore.remainingSimulations }}/{{ authStore.usageStats?.monthlyLimit === -1 ? 'unlimited' : (authStore.usageStats?.monthlyLimit ?? authStore.currentPlanLimits.simulations) }}
             <span v-if="authStore.subscription?.planType === 'FREE'" class="ml-2">
               <RouterLink to="/pricing" class="text-blue-600 hover:text-blue-700 underline">Upgrade for more</RouterLink>
             </span>

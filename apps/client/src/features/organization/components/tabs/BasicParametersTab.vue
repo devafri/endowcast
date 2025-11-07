@@ -448,11 +448,7 @@ const benchmarkSummary = computed(() => {
     case 'fixed':
       return `Fixed ${(cfg.value ?? 0)}%`;
     case 'asset_class':
-      if (cfg.assetKey) {
-        const label = assetClassOptions.value.find(a => a.key === cfg.assetKey)?.label;
-        return label ? `Asset: ${label}` : `Asset: ${cfg.assetKey}`;
-      }
-      return 'Asset class';
+      return cfg.assetKey ? `Asset: ${cfg.assetKey}` : 'Asset class';
     case 'blended':
       return 'Blended portfolio';
     default:

@@ -227,11 +227,13 @@ async function handleLogout() {
                 class="text-center px-3 py-1 bg-gray-50 rounded-md"
               >
                 <div class="text-xs font-medium text-gray-900">
-                  {{ authStore.usageStats?.monthlySimulations || 0 }}/{{
-                    authStore.currentPlanLimits.simulations
+                  {{ authStore.remainingSimulations === 'unlimited' ? '∞' : (authStore.remainingSimulations || 0) }}/{{
+                    authStore.usageStats?.monthlyLimit === -1
+                      ? '∞'
+                      : (authStore.usageStats?.monthlyLimit ?? authStore.currentPlanLimits.simulations)
                   }}
                 </div>
-                <div class="text-xs text-gray-500">simulations</div>
+                <div class="text-xs text-gray-500">remaining</div>
               </div>
 
               <!-- Sign Out -->

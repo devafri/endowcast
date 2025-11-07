@@ -2,7 +2,7 @@
  * Monte Carlo Simulation Service
  * Handles portfolio projections using stochastic modeling
  *
- * 🎯 REWRITE: Upgraded from 2-Factor (Equity/Bond) to 7-Factor Correlated Model
+ * 7-Factor Correlated Model
  */
 
 const jStat = require('jstat').jStat;
@@ -162,7 +162,7 @@ class SimulationService {
             portRets.push(portfolioReturnEffective);
 
 
-            // 7. Calculate Spending: Policy + OpEx + Grants (matching frontend calculation)
+            // 7. Calculate Spending: Policy + OpEx + Grants 
             const policySpending = portfolioValue * spendingRate; // Use CURRENT portfolio value, not initial
             const operatingExpense = initialOperatingExpense * Math.pow(1 + inflation, y); // Inflated OpEx
             const grantAmount = Array.isArray(grantTargets) && grantTargets.length > y && grantTargets[y] > 0
@@ -221,7 +221,7 @@ class SimulationService {
      */
     static runSimulation(params) {
         const {
-            numSimulations = 1000,
+            numSimulations = 10000,
             years,
             ...otherParams
         } = params;

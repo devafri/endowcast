@@ -43,6 +43,9 @@ router.post('/execute', trackSimulationUsage, [
       return res.status(400).json({ error: 'Validation failed', details: errors.array() });
     }
 
+    console.log('🔍 [SERVER] RAW REQUEST BODY benchmark:', req.body.benchmark);
+    console.log('🔍 [SERVER] RAW REQUEST BODY corpus:', req.body.corpus);
+
     const userId = req.user.userId;
     const organizationId = req.user.organizationId;
 
@@ -58,17 +61,33 @@ router.post('/execute', trackSimulationUsage, [
       assetAssumptions,
       correlationMatrix,
       portfolioWeights,
+  inflationRate = null,
       
       equityShock = 0,
       cpiShift = 0,
       grantTargets = null,
       investmentExpenseRate = 0.005, // Default 0.5%
-      numSimulations = 5000
+      numSimulations = 10000,
+      
+      // Additional spending parameters
+      initialOperatingExpense = 0,
+      initialGrant = 0,
+      
+      // Benchmark and corpus configuration
+      benchmark = null,
+      corpus = null
     } = req.body;
     
     // Safety check for riskFreeRate from another input field, falling back to 2%
     const rfPct = typeof req.body.riskFreeRate === 'number' ? req.body.riskFreeRate : 2;
     const rf = rfPct > 1 ? rfPct / 100 : rfPct;
+    const inflPct = typeof inflationRate === 'number'
+      ? inflationRate
+      : (typeof req.body.inflationRate === 'number' ? req.body.inflationRate : rfPct);
+    const infl = inflPct > 1 ? inflPct / 100 : inflPct;
+
+    console.log('🔍 [SERVER] RECEIVED BENCHMARK:', benchmark);
+    console.log('🔍 [SERVER] RECEIVED CORPUS:', corpus);
 
     console.log(`[Simulations] Executing ${numSimulations} paths for ${years} years (7-Factor Model)`);
     const startTime = Date.now();
@@ -90,11 +109,23 @@ router.post('/execute', trackSimulationUsage, [
       cpiShift: parseFloat(cpiShift),
       grantTargets: grantTargets ? grantTargets.map(v => parseFloat(v)) : [],
       opExRate: parseFloat(investmentExpenseRate), // Operating expense rate
-      numSimulations: parseInt(numSimulations)
+      numSimulations: parseInt(numSimulations),
+      
+      // Spending parameters for benchmark comparison
+      initialOperatingExpense: parseFloat(initialOperatingExpense) || 0,
+      initialGrant: parseFloat(initialGrant) || 0,
+      
+      // Pass through benchmark and corpus configuration
+      riskFreeRate: rf,
+      inflationRate: infl,
+      benchmark: benchmark,
+      corpus: corpus
     };
 
     // NOTE: The `monteCarlo.runSimulation` utility must be updated to use 7-factor params internally.
     const results = monteCarlo.runSimulation(simulationParams);
+    console.log('🔍 [SERVER] MONTE CARLO RESULTS - benchmarks:', results.benchmarks?.length || 0, 'paths');
+    console.log('🔍 [SERVER] MONTE CARLO RESULTS - corpusPaths:', results.corpusPaths?.length || 0, 'paths');
     const elapsedMs = Date.now() - startTime;
 
     // Calculate year-by-year success
@@ -211,7 +242,7 @@ router.post('/execute', trackSimulationUsage, [
     const probabilityOfLoss = finals.length ? finals.filter(v => v < simulationParams.initialValue).length / finals.length : 0;
 
     // Inflation-adjusted preservation (median final vs inflation growth of initial)
-    const inflFactor = Math.pow(1 + rf, simulationParams.years);
+  const inflFactor = Math.pow(1 + infl, simulationParams.years);
     const medianFinalValue = percentile(sortedFinals, 50);
     const inflationPreservationPct = (isFinite(medianFinalValue) && inflFactor > 0)
       ? (medianFinalValue / (simulationParams.initialValue * inflFactor)) * 100
@@ -233,8 +264,13 @@ router.post('/execute', trackSimulationUsage, [
       inputs: {
         initialEndowment: initialValue,
         horizon: years,
-        riskFreeRate: rfPct
+        riskFreeRate: rfPct,
+        inflationRate: inflPct
       },
+      benchmark: benchmark || undefined,
+      corpus: corpus || undefined,
+      benchmarks: results.benchmarks || [],
+      corpusPaths: results.corpusPaths || [],
       summary: {
         medianFinalValue: Math.round(results.median * 100) / 100,
         probabilityOfLoss: Number((probabilityOfLoss).toFixed(4)),
@@ -261,6 +297,7 @@ router.post('/execute', trackSimulationUsage, [
         medianMaxDrawdown: Number(medianMDD.toFixed(4)),
         cvar95: Math.round(cvar95 * 100) / 100,
         riskFreeRate: rfPct,
+  inflationRate: inflPct,
         inflationPreservationPct: Number(inflationPreservationPct.toFixed(1)),
         finalValues: {
           percentile10: Math.round(results.percentile10 * 100) / 100,

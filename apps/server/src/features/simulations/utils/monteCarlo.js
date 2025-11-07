@@ -191,8 +191,89 @@ function simulatePath(params, simIndex = 0) {
  * @param {Object} params - Simulation parameters (includes numSimulations)
  * @returns {Object} Aggregated results from all paths
  */
+/**
+ * Generate benchmark paths for comparison
+ * @param {Object} params - Benchmark parameters
+ * @returns {Array<Array<number>>} Array of benchmark paths
+ */
+function generateBenchmarkPaths({ years, numSimulations, initialValue, benchmarkType, benchmarkValue, inflationRate, spendingRate, investmentExpenseRate }) {
+  const paths = [];
+  
+  // Calculate net growth rate: benchmark return - spending rate - investment expense rate
+  const spendingRateDecimal = spendingRate || 0;
+  const invExpenseRate = investmentExpenseRate || 0;
+  const totalDragRate = spendingRateDecimal + invExpenseRate;
+  
+  for (let i = 0; i < numSimulations; i++) {
+    const path = [initialValue];
+    
+    for (let year = 0; year < years; year++) {
+      const prevValue = path[year];
+      
+      // Calculate benchmark growth rate
+      let benchmarkGrowthRate;
+      if (benchmarkType === 'cpi_plus') {
+        // CPI + fixed percentage (e.g., CPI + 6%)
+        const cpiRate = inflationRate || 0.02;
+        benchmarkGrowthRate = cpiRate + benchmarkValue;
+      } else if (benchmarkType === 'fixed') {
+        // Fixed percentage
+        benchmarkGrowthRate = benchmarkValue;
+      } else {
+        // Default to CPI + benchmark value
+        benchmarkGrowthRate = (inflationRate || 0.02) + benchmarkValue;
+      }
+      
+      // Subtract spending and investment expense rates from benchmark
+      // Example: CPI + 6% - 4.5% spending - 1% inv expense = CPI + 0.5%
+      const netGrowthRate = benchmarkGrowthRate - totalDragRate;
+      
+      // Add some randomness (±0.5% standard deviation) to make it more realistic
+      const noise = generateNormal() * 0.005;
+      const nextValue = prevValue * (1 + netGrowthRate + noise);
+      
+      path.push(Math.max(0, nextValue));
+    }
+    
+    paths.push(path);
+  }
+  
+  return paths;
+}
+
+/**
+ * Generate corpus paths (CPI growth only)
+ * @param {Object} params - Corpus parameters
+ * @returns {Array<Array<number>>} Array of corpus paths
+ */
+function generateCorpusPaths({ years, numSimulations, initialValue, inflationRate }) {
+  const paths = [];
+  const cpiRate = inflationRate || 0.02;
+  
+  for (let i = 0; i < numSimulations; i++) {
+    const path = [initialValue];
+    
+    for (let year = 0; year < years; year++) {
+      const prevValue = path[year];
+      // CPI growth with small noise
+      const noise = generateNormal() * 0.002;
+      const nextValue = prevValue * (1 + cpiRate + noise);
+      path.push(nextValue);
+    }
+    
+    paths.push(path);
+  }
+  
+  return paths;
+}
+
+/**
+ * Run multiple Monte Carlo simulations for a given set of parameters.
+ * @param {Object} params - Simulation parameters
+ * @returns {Object} Aggregated simulation results
+ */
 function runSimulation(params) {
-  const { numSimulations = 1000, years, ...otherParams } = params;
+  const { numSimulations = 10000, years, benchmark, corpus, ...otherParams } = params;
 
   const paths = [];
   const finalValues = [];
@@ -209,6 +290,34 @@ function runSimulation(params) {
     if (result.success) {
       successCount++;
     }
+  }
+
+  // Generate benchmark paths if enabled
+  let benchmarkPaths = [];
+  if (benchmark && benchmark.enabled) {
+    console.log('[MonteCarlo] Generating benchmark paths:', benchmark);
+    benchmarkPaths = generateBenchmarkPaths({
+      years,
+      numSimulations,
+      initialValue: params.initialValue,
+      benchmarkType: benchmark.type,
+      benchmarkValue: benchmark.value,
+      inflationRate: params.inflationRate || params.riskFreeRate || 0.02,
+      spendingRate: params.spendingRate || 0,
+      investmentExpenseRate: params.opExRate || 0
+    });
+  }
+
+  // Generate corpus paths if enabled
+  let corpusPaths = [];
+  if (corpus && corpus.enabled && corpus.initialValue > 0) {
+    console.log('[MonteCarlo] Generating corpus paths:', corpus);
+    corpusPaths = generateCorpusPaths({
+      years,
+      numSimulations,
+      initialValue: corpus.initialValue,
+      inflationRate: params.inflationRate || params.riskFreeRate || 0.02
+    });
   }
 
   const sortedValues = [...finalValues].sort((a, b) => a - b);
@@ -237,6 +346,8 @@ function runSimulation(params) {
     finalValues,
     portfolioReturns: allPortfolioReturns,
     spendingPaths: allSpendingPaths,
+    benchmarks: benchmarkPaths,
+    corpusPaths: corpusPaths,
     median: percentile(sortedValues, 50),
     percentile10: percentile(sortedValues, 10),
     percentile25: percentile(sortedValues, 25),

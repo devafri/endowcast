@@ -137,6 +137,9 @@ export const useSimulationStore = defineStore('simulation', () => {
     try {
       // REFACTORED: Call backend API instead of using Web Worker
       
+      console.log('🔍 [BEFORE CONSTRUCTION] options.benchmark:', options.benchmark);
+      console.log('🔍 [BEFORE CONSTRUCTION] options.corpus:', options.corpus);
+      
       // Map frontend inputs to the 7-factor backend request parameters
       const simulationExecuteParams : Record<string, any> = {
         name: `Simulation ${new Date().toLocaleString()}`,
@@ -167,6 +170,19 @@ export const useSimulationStore = defineStore('simulation', () => {
   riskFreeRate: Number(payload.riskFreeRate) || 2,
   inflationRate: Number(payload.inflationRate) || Number(payload.riskFreeRate) || 2,
         
+        // Benchmark and corpus configuration
+        benchmark: options.benchmark ? {
+          enabled: options.benchmark.enabled !== false,
+          type: options.benchmark.type || 'cpi_plus',
+          value: Number(options.benchmark.value) || 0.06,
+          label: options.benchmark.label || 'Benchmark (CPI + 6%)'
+        } : { enabled: false, type: 'cpi_plus', value: 0.06, label: 'Benchmark (CPI + 6%)' },
+        
+        corpus: options.corpus ? {
+          enabled: options.corpus.enabled !== false,
+          initialValue: Number(options.corpus.initialValue) || 0
+        } : { enabled: false, initialValue: 0 },
+        
         // Default number of Monte Carlo paths to request from backend.
         // NOTE: the backend currently includes full simulation `paths` in the response
         // only when `numSimulations <= 500` to avoid extremely large payloads.
@@ -177,7 +193,12 @@ export const useSimulationStore = defineStore('simulation', () => {
 
 
       console.log('Executing simulation on backend with 7-factor params:', simulationExecuteParams);
+      console.log('🔍 BENCHMARK CONFIG BEING SENT:', simulationExecuteParams.benchmark);
+      console.log('🔍 CORPUS CONFIG BEING SENT:', simulationExecuteParams.corpus);
       const backendResponse = await apiService.executeSimulation(simulationExecuteParams);
+
+      console.log('🔍 BACKEND RESPONSE BENCHMARK:', backendResponse.benchmark);
+      console.log('🔍 BACKEND RESPONSE BENCHMARKS ARRAY:', backendResponse.benchmarks?.length || 0, 'paths');
 
       // REFACTORED: Backend now calculates all metrics, just map response to frontend format
       
@@ -362,6 +383,12 @@ export const useSimulationStore = defineStore('simulation', () => {
       investmentExpenses,
   totalSpendings,        // Include year labels for charts (normalized to Y+1 to match endowment value paths)
   yearLabels: normalizedYearLabels,
+        
+        // Include benchmark and corpus data from backend
+        benchmark: backendResponse.benchmark,
+        benchmarks: backendResponse.benchmarks || [],
+        corpus: backendResponse.corpus,
+        corpusPaths: backendResponse.corpusPaths || [],
         
         // Include metadata
         metadata: backendResponse.metadata || {},

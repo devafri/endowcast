@@ -41,7 +41,7 @@ class SimulationController {
         initialOperatingExpense = 0,
         initialGrant = 0,
         riskFreeRate = 2,
-        numSimulations = 1000
+        numSimulations = 10000
       } = req.body;
 
       // Run the simulation
