@@ -47,10 +47,12 @@ class ApiService {
     };
 
     try {
+      console.log('[API] Requesting:', url);
       const response = await fetch(url, config);
       const data = await response.json();
 
       if (!response.ok) {
+        console.error('[API] Error response:', response.status, data);
         throw new ApiError(response.status, data.error || 'An error occurred', data);
       }
 
@@ -59,6 +61,7 @@ class ApiService {
       if (error instanceof ApiError) {
         throw error;
       }
+      console.error('[API] Network error:', error);
       throw new ApiError(0, 'Network error or server unavailable');
     }
   }
