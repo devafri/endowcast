@@ -431,12 +431,38 @@ router.get('/', async (req, res) => {
 
     // Transform simulations to match frontend expectations
     const parsedSimulations = simulations.map(sim => {
-      // Parse JSON fields
-      const results = typeof sim.results === 'string' ? JSON.parse(sim.results) : sim.results;
-      const summary = typeof sim.summary === 'string' ? JSON.parse(sim.summary) : sim.summary;
-      const assetAssumptions = typeof sim.assetAssumptions === 'string' ? JSON.parse(sim.assetAssumptions) : sim.assetAssumptions;
-      const correlationMatrix = typeof sim.correlationMatrix === 'string' ? JSON.parse(sim.correlationMatrix) : sim.correlationMatrix;
-      const grantTargets = typeof sim.grantTargets === 'string' ? JSON.parse(sim.grantTargets) : sim.grantTargets;
+      // Parse JSON fields with error handling
+      let results, summary, assetAssumptions, correlationMatrix, grantTargets;
+      try {
+        results = typeof sim.results === 'string' ? JSON.parse(sim.results) : sim.results;
+      } catch (e) {
+        console.warn(`Failed to parse results for simulation ${sim.id}:`, e.message);
+        results = null;
+      }
+      try {
+        summary = typeof sim.summary === 'string' ? JSON.parse(sim.summary) : sim.summary;
+      } catch (e) {
+        console.warn(`Failed to parse summary for simulation ${sim.id}:`, e.message);
+        summary = null;
+      }
+      try {
+        assetAssumptions = typeof sim.assetAssumptions === 'string' ? JSON.parse(sim.assetAssumptions) : sim.assetAssumptions;
+      } catch (e) {
+        console.warn(`Failed to parse assetAssumptions for simulation ${sim.id}:`, e.message);
+        assetAssumptions = null;
+      }
+      try {
+        correlationMatrix = typeof sim.correlationMatrix === 'string' ? JSON.parse(sim.correlationMatrix) : sim.correlationMatrix;
+      } catch (e) {
+        console.warn(`Failed to parse correlationMatrix for simulation ${sim.id}:`, e.message);
+        correlationMatrix = null;
+      }
+      try {
+        grantTargets = typeof sim.grantTargets === 'string' ? JSON.parse(sim.grantTargets) : sim.grantTargets;
+      } catch (e) {
+        console.warn(`Failed to parse grantTargets for simulation ${sim.id}:`, e.message);
+        grantTargets = null;
+      }
       
       // Build portfolio weights from the portfolio relation
       const portfolioWeights = sim.portfolio ? {
@@ -503,9 +529,22 @@ router.get('/', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get simulations error:', error);
-    res.status(500).json({ 
-      error: 'Failed to get simulations' 
+    // Enhanced logging for debugging production 500s
+    try {
+      console.error('[Simulations] Get simulations error:', error && error.message ? error.message : String(error));
+      console.error('[Simulations] Stack:', error && error.stack ? error.stack : 'no-stack');
+      console.error('[Simulations] Request context:', {
+        userId: req.user?.id || null,
+        organizationId: req.user?.organizationId || null,
+        query: req.query
+      });
+    } catch (logErr) {
+      console.error('[Simulations] Failed while logging error details:', logErr);
+    }
+
+    // Return a safe error message to the client while ensuring logs contain details
+    res.status(500).json({
+      error: 'Failed to get simulations'
     });
   }
 });
@@ -531,11 +570,37 @@ router.get('/:id', async (req, res) => {
     }
 
     // Parse JSON fields and transform to match frontend expectations
-    const results = typeof simulation.results === 'string' ? JSON.parse(simulation.results) : simulation.results;
-    const summary = typeof simulation.summary === 'string' ? JSON.parse(simulation.summary) : simulation.summary;
-    const assetAssumptions = typeof simulation.assetAssumptions === 'string' ? JSON.parse(simulation.assetAssumptions) : simulation.assetAssumptions;
-    const correlationMatrix = typeof simulation.correlationMatrix === 'string' ? JSON.parse(simulation.correlationMatrix) : simulation.correlationMatrix;
-    const grantTargets = typeof simulation.grantTargets === 'string' ? JSON.parse(simulation.grantTargets) : simulation.grantTargets;
+    let results, summary, assetAssumptions, correlationMatrix, grantTargets;
+    try {
+      results = typeof simulation.results === 'string' ? JSON.parse(simulation.results) : simulation.results;
+    } catch (e) {
+      console.warn(`Failed to parse results for simulation ${simulation.id}:`, e.message);
+      results = null;
+    }
+    try {
+      summary = typeof simulation.summary === 'string' ? JSON.parse(simulation.summary) : simulation.summary;
+    } catch (e) {
+      console.warn(`Failed to parse summary for simulation ${simulation.id}:`, e.message);
+      summary = null;
+    }
+    try {
+      assetAssumptions = typeof simulation.assetAssumptions === 'string' ? JSON.parse(simulation.assetAssumptions) : simulation.assetAssumptions;
+    } catch (e) {
+      console.warn(`Failed to parse assetAssumptions for simulation ${simulation.id}:`, e.message);
+      assetAssumptions = null;
+    }
+    try {
+      correlationMatrix = typeof simulation.correlationMatrix === 'string' ? JSON.parse(simulation.correlationMatrix) : simulation.correlationMatrix;
+    } catch (e) {
+      console.warn(`Failed to parse correlationMatrix for simulation ${simulation.id}:`, e.message);
+      correlationMatrix = null;
+    }
+    try {
+      grantTargets = typeof simulation.grantTargets === 'string' ? JSON.parse(simulation.grantTargets) : simulation.grantTargets;
+    } catch (e) {
+      console.warn(`Failed to parse grantTargets for simulation ${simulation.id}:`, e.message);
+      grantTargets = null;
+    }
     
     // Build portfolio weights from the portfolio relation
     const portfolioWeights = simulation.portfolio ? {
