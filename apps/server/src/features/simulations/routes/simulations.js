@@ -432,7 +432,7 @@ router.get('/', async (req, res) => {
           runCount: true,
           createdAt: true,
           updatedAt: true,
-          portfolio: true
+          // portfolio: true  // REMOVED: causes errors on DBs without new portfolio columns
         },
         orderBy,
         skip,
@@ -603,7 +603,7 @@ router.get('/:id', async (req, res) => {
         runCount: true,
         createdAt: true,
         updatedAt: true,
-        portfolio: true
+        // portfolio: true  // REMOVED: causes errors on DBs without new portfolio columns
       }
     });
 
