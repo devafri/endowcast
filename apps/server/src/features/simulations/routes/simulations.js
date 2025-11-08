@@ -414,48 +414,93 @@ router.get('/', async (req, res) => {
     const orderBy = { [mappedSortBy]: sortOrder };
 
     // Use explicit select to avoid querying columns that may not exist in older DB schema
-    const [simulations, total] = await Promise.all([
-      // Use an explicit nested select for portfolio to avoid schema mismatches and
-      // to only pull the portfolio fields the frontend needs. This is more robust
-      // than using `portfolio: true` which can surface schema differences.
-      prisma.simulation.findMany({
-        where: { organizationId: req.user.organizationId },
-        select: {
-          id: true,
-          name: true,
-          userId: true,
-          organizationId: true,
-          years: true,
-          startYear: true,
-          initialValue: true,
-          spendingRate: true,
-          results: true,
-          summary: true,
-          isCompleted: true,
-          runCount: true,
-          createdAt: true,
-          updatedAt: true,
-          portfolio: {
-            select: {
-              id: true,
-              publicEquity: true,
-              privateEquity: true,
-              publicFixedIncome: true,
-              privateCredit: true,
-              realAssets: true,
-              diversifying: true,
-              cashShortTerm: true,
-              assetAssumptions: true,
-              correlationMatrix: true
+    let simulations = [];
+    let total = 0;
+
+    // Try the detailed select first. If the production DB hasn't been migrated
+    // to include the JSON columns on `portfolios`, this query may fail. In that
+    // case, fall back to a safer minimal select that omits the JSON fields.
+    try {
+      [simulations, total] = await Promise.all([
+        prisma.simulation.findMany({
+          where: { organizationId: req.user.organizationId },
+          select: {
+            id: true,
+            name: true,
+            userId: true,
+            organizationId: true,
+            years: true,
+            startYear: true,
+            initialValue: true,
+            spendingRate: true,
+            results: true,
+            summary: true,
+            isCompleted: true,
+            runCount: true,
+            createdAt: true,
+            updatedAt: true,
+            portfolio: {
+              select: {
+                id: true,
+                publicEquity: true,
+                privateEquity: true,
+                publicFixedIncome: true,
+                privateCredit: true,
+                realAssets: true,
+                diversifying: true,
+                cashShortTerm: true,
+                assetAssumptions: true,
+                correlationMatrix: true
+              }
             }
-          }
-        },
-        orderBy,
-        skip,
-        take: parseInt(limit),
-      }),
-      prisma.simulation.count({ where: { organizationId: req.user.organizationId } })
-    ]);
+          },
+          orderBy,
+          skip,
+          take: parseInt(limit),
+        }),
+        prisma.simulation.count({ where: { organizationId: req.user.organizationId } })
+      ]);
+    } catch (err) {
+      // Log the error and retry with a minimal portfolio select (no JSON columns)
+      console.warn('[Simulations] Detailed portfolio select failed, retrying safe fallback:', err && err.message ? err.message : String(err));
+      [simulations, total] = await Promise.all([
+        prisma.simulation.findMany({
+          where: { organizationId: req.user.organizationId },
+          select: {
+            id: true,
+            name: true,
+            userId: true,
+            organizationId: true,
+            years: true,
+            startYear: true,
+            initialValue: true,
+            spendingRate: true,
+            results: true,
+            summary: true,
+            isCompleted: true,
+            runCount: true,
+            createdAt: true,
+            updatedAt: true,
+            portfolio: {
+              select: {
+                id: true,
+                publicEquity: true,
+                privateEquity: true,
+                publicFixedIncome: true,
+                privateCredit: true,
+                realAssets: true,
+                diversifying: true,
+                cashShortTerm: true
+              }
+            }
+          },
+          orderBy,
+          skip,
+          take: parseInt(limit),
+        }),
+        prisma.simulation.count({ where: { organizationId: req.user.organizationId } })
+      ]);
+    }
 
     // Transform simulations to match frontend expectations
     const parsedSimulations = simulations.map(sim => {
@@ -599,42 +644,81 @@ router.get('/:id', async (req, res) => {
   // No change needed here, as it fetches from the DB using the organization ID.
   try {
     // Use explicit select to avoid schema mismatches on older DBs
-    const simulation = await prisma.simulation.findFirst({
-      where: {
-        id: req.params.id,
-        organizationId: req.user.organizationId
-      },
-      select: {
-        id: true,
-        name: true,
-        userId: true,
-        organizationId: true,
-        years: true,
-        startYear: true,
-        initialValue: true,
-        spendingRate: true,
-        results: true,
-        summary: true,
-        isCompleted: true,
-        runCount: true,
-        createdAt: true,
-        updatedAt: true,
-        portfolio: {
-          select: {
-            id: true,
-            publicEquity: true,
-            privateEquity: true,
-            publicFixedIncome: true,
-            privateCredit: true,
-            realAssets: true,
-            diversifying: true,
-            cashShortTerm: true,
-            assetAssumptions: true,
-            correlationMatrix: true
+    let simulation = null;
+    try {
+      simulation = await prisma.simulation.findFirst({
+        where: {
+          id: req.params.id,
+          organizationId: req.user.organizationId
+        },
+        select: {
+          id: true,
+          name: true,
+          userId: true,
+          organizationId: true,
+          years: true,
+          startYear: true,
+          initialValue: true,
+          spendingRate: true,
+          results: true,
+          summary: true,
+          isCompleted: true,
+          runCount: true,
+          createdAt: true,
+          updatedAt: true,
+          portfolio: {
+            select: {
+              id: true,
+              publicEquity: true,
+              privateEquity: true,
+              publicFixedIncome: true,
+              privateCredit: true,
+              realAssets: true,
+              diversifying: true,
+              cashShortTerm: true,
+              assetAssumptions: true,
+              correlationMatrix: true
+            }
           }
         }
-      }
-    });
+      });
+    } catch (err) {
+      console.warn('[Simulations] Detailed get by id failed, retrying safe fallback:', err && err.message ? err.message : String(err));
+      simulation = await prisma.simulation.findFirst({
+        where: {
+          id: req.params.id,
+          organizationId: req.user.organizationId
+        },
+        select: {
+          id: true,
+          name: true,
+          userId: true,
+          organizationId: true,
+          years: true,
+          startYear: true,
+          initialValue: true,
+          spendingRate: true,
+          results: true,
+          summary: true,
+          isCompleted: true,
+          runCount: true,
+          createdAt: true,
+          updatedAt: true,
+          portfolio: {
+            select: {
+              id: true,
+              publicEquity: true,
+              privateEquity: true,
+              publicFixedIncome: true,
+              privateCredit: true,
+              realAssets: true,
+              diversifying: true,
+              cashShortTerm: true
+            }
+          }
+        }
+      });
+    }
 
     if (!simulation) {
       return res.status(404).json({ 
