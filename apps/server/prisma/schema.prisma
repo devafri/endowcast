@@ -201,6 +201,10 @@ model Portfolio {
   diversifying      Float
   cashShortTerm     Float
 
+  // 7-factor model data
+  assetAssumptions Json?
+  correlationMatrix Json?
+
   // Portfolio metadata
   description String?
   isDefault   Boolean @default(false)

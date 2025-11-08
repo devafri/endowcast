@@ -1,10 +1,9 @@
-const AWS = require('aws-sdk');
+const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const crypto = require('crypto');
 
-// Initialize SES
-const ses = new AWS.SES({ 
-  region: process.env.SES_REGION || 'us-east-1',
-  apiVersion: '2010-12-01'
+// Initialize SES v3 client
+const ses = new SESClient({
+  region: process.env.SES_REGION || 'us-east-1'
 });
 
 class EmailService {
@@ -42,9 +41,10 @@ class EmailService {
     };
 
     try {
-      const result = await ses.sendEmail(params).promise();
-      console.log('Verification email sent:', result.MessageId);
-      return { success: true, messageId: result.MessageId };
+  const command = new SendEmailCommand(params);
+  const result = await ses.send(command);
+  console.log('Verification email sent:', result.MessageId || result.MessageIdDelivery);
+  return { success: true, messageId: result.MessageId || result.MessageIdDelivery };
     } catch (error) {
       console.error('Failed to send verification email:', error);
       throw new Error('Failed to send verification email');
@@ -81,9 +81,10 @@ class EmailService {
     };
 
     try {
-      const result = await ses.sendEmail(params).promise();
-      console.log('Password reset email sent:', result.MessageId);
-      return { success: true, messageId: result.MessageId };
+  const command = new SendEmailCommand(params);
+  const result = await ses.send(command);
+  console.log('Password reset email sent:', result.MessageId || result.MessageIdDelivery);
+  return { success: true, messageId: result.MessageId || result.MessageIdDelivery };
     } catch (error) {
       console.error('Failed to send password reset email:', error);
       throw new Error('Failed to send password reset email');
@@ -118,9 +119,10 @@ class EmailService {
     };
 
     try {
-      const result = await ses.sendEmail(params).promise();
-      console.log('Welcome email sent:', result.MessageId);
-      return { success: true, messageId: result.MessageId };
+  const command = new SendEmailCommand(params);
+  const result = await ses.send(command);
+  console.log('Welcome email sent:', result.MessageId || result.MessageIdDelivery);
+  return { success: true, messageId: result.MessageId || result.MessageIdDelivery };
     } catch (error) {
       console.error('Failed to send welcome email:', error);
       // Don't throw error for welcome email - it's not critical
@@ -160,9 +162,10 @@ class EmailService {
     };
 
     try {
-      const result = await ses.sendEmail(params).promise();
-      console.log('Payment confirmation email sent:', result.MessageId);
-      return { success: true, messageId: result.MessageId };
+  const command = new SendEmailCommand(params);
+  const result = await ses.send(command);
+  console.log('Payment confirmation email sent:', result.MessageId || result.MessageIdDelivery);
+  return { success: true, messageId: result.MessageId || result.MessageIdDelivery };
     } catch (error) {
       console.error('Failed to send payment confirmation email:', error);
       throw new Error('Failed to send payment confirmation email');
@@ -197,9 +200,10 @@ class EmailService {
     };
 
     try {
-      const result = await ses.sendEmail(params).promise();
-      console.log('Cancellation email sent:', result.MessageId);
-      return { success: true, messageId: result.MessageId };
+  const command = new SendEmailCommand(params);
+  const result = await ses.send(command);
+  console.log('Cancellation email sent:', result.MessageId || result.MessageIdDelivery);
+  return { success: true, messageId: result.MessageId || result.MessageIdDelivery };
     } catch (error) {
       console.error('Failed to send cancellation email:', error);
       throw new Error('Failed to send cancellation email');
@@ -240,9 +244,10 @@ class EmailService {
     };
 
     try {
-      const result = await ses.sendEmail(params).promise();
-      console.log('Invitation email sent:', result.MessageId);
-      return { success: true, messageId: result.MessageId };
+  const command = new SendEmailCommand(params);
+  const result = await ses.send(command);
+  console.log('Invitation email sent:', result.MessageId || result.MessageIdDelivery);
+  return { success: true, messageId: result.MessageId || result.MessageIdDelivery };
     } catch (error) {
       console.error('Failed to send invitation email:', error);
       throw new Error('Failed to send invitation email');

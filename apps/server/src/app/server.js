@@ -16,6 +16,7 @@ const webhookRoutes = require('../features/billing/routes/webhooks');
 const subscriptionRoutes = require('../features/billing/routes/subscription');
 const invoiceRoutes = require('../features/billing/routes/invoices');
 const organizationRoutes = require('../features/organizations/routes/organization');
+const debugRoutes = require('../features/debug/routes/debug');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -87,6 +88,12 @@ app.use('/api/payments', paymentRoutes); // Keep legacy path for compatibility
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/billing/webhooks', webhookRoutes); // Add this for the correct path
+
+// Temporary debug routes: enable by setting ENABLE_WHOAMI=true in env,
+// or automatically enabled in non-production environments.
+if (process.env.ENABLE_WHOAMI === 'true' || (process.env.NODE_ENV || 'development') !== 'production') {
+  app.use('/api/debug', debugRoutes);
+}
 
 // 404 handler for any remaining routes
 app.use((req, res) => {
