@@ -324,6 +324,10 @@ router.post('/execute', trackSimulationUsage, [
     let savedSimulationId = customId;
     
     try {
+      // Avoid writing new schema fields (assetAssumptions/correlationMatrix) into Simulation
+      // if the production database hasn't been migrated yet. Save core fields and create
+      // the portfolio relation with weights; advanced 7-factor objects are stored on the
+      // Portfolio model in newer schemas.
       const savedSimulation = await prisma.simulation.create({
         data: {
           name,
@@ -334,8 +338,7 @@ router.post('/execute', trackSimulationUsage, [
           initialValue: simulationParams.initialValue,
           spendingRate: simulationParams.spendingRate,
           spendingGrowth: simulationParams.spendingGrowth,
-          assetAssumptions: simulationParams.assetAssumptions,
-          correlationMatrix: simulationParams.correlationMatrix,
+          // Don't set assetAssumptions/correlationMatrix here to remain compatible with older DBs
           equityShock: simulationParams.equityShock || null,
           cpiShift: simulationParams.cpiShift || null,
           grantTargets: grantTargets ? JSON.stringify(grantTargets) : null,
@@ -410,23 +413,32 @@ router.get('/', async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const orderBy = { [mappedSortBy]: sortOrder };
 
+    // Use explicit select to avoid querying columns that may not exist in older DB schema
     const [simulations, total] = await Promise.all([
       prisma.simulation.findMany({
-        where: { 
-          organizationId: req.user.organizationId
-        },
-        include: {
-          portfolio: true // Include the related portfolio data
+        where: { organizationId: req.user.organizationId },
+        select: {
+          id: true,
+          name: true,
+          userId: true,
+          organizationId: true,
+          years: true,
+          startYear: true,
+          initialValue: true,
+          spendingRate: true,
+          results: true,
+          summary: true,
+          isCompleted: true,
+          runCount: true,
+          createdAt: true,
+          updatedAt: true,
+          portfolio: true
         },
         orderBy,
         skip,
         take: parseInt(limit),
       }),
-      prisma.simulation.count({
-        where: { 
-          organizationId: req.user.organizationId
-        }
-      })
+      prisma.simulation.count({ where: { organizationId: req.user.organizationId } })
     ]);
 
     // Transform simulations to match frontend expectations
@@ -451,11 +463,28 @@ router.get('/', async (req, res) => {
         console.warn(`Failed to parse assetAssumptions for simulation ${sim.id}:`, e.message);
         assetAssumptions = null;
       }
+      // Fallback: some deployments store 7-factor objects on the related portfolio record
+      if (!assetAssumptions && sim.portfolio && sim.portfolio.assetAssumptions) {
+        try {
+          assetAssumptions = typeof sim.portfolio.assetAssumptions === 'string' ? JSON.parse(sim.portfolio.assetAssumptions) : sim.portfolio.assetAssumptions;
+        } catch (e) {
+          console.warn(`Failed to parse assetAssumptions from portfolio for simulation ${sim.id}:`, e.message);
+          assetAssumptions = null;
+        }
+      }
       try {
         correlationMatrix = typeof sim.correlationMatrix === 'string' ? JSON.parse(sim.correlationMatrix) : sim.correlationMatrix;
       } catch (e) {
         console.warn(`Failed to parse correlationMatrix for simulation ${sim.id}:`, e.message);
         correlationMatrix = null;
+      }
+      if (!correlationMatrix && sim.portfolio && sim.portfolio.correlationMatrix) {
+        try {
+          correlationMatrix = typeof sim.portfolio.correlationMatrix === 'string' ? JSON.parse(sim.portfolio.correlationMatrix) : sim.portfolio.correlationMatrix;
+        } catch (e) {
+          console.warn(`Failed to parse correlationMatrix from portfolio for simulation ${sim.id}:`, e.message);
+          correlationMatrix = null;
+        }
       }
       try {
         grantTargets = typeof sim.grantTargets === 'string' ? JSON.parse(sim.grantTargets) : sim.grantTargets;
@@ -553,13 +582,28 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   // No change needed here, as it fetches from the DB using the organization ID.
   try {
+    // Use explicit select to avoid schema mismatches on older DBs
     const simulation = await prisma.simulation.findFirst({
-      where: { 
+      where: {
         id: req.params.id,
         organizationId: req.user.organizationId
       },
-      include: {
-        portfolio: true // Include the related portfolio data
+      select: {
+        id: true,
+        name: true,
+        userId: true,
+        organizationId: true,
+        years: true,
+        startYear: true,
+        initialValue: true,
+        spendingRate: true,
+        results: true,
+        summary: true,
+        isCompleted: true,
+        runCount: true,
+        createdAt: true,
+        updatedAt: true,
+        portfolio: true
       }
     });
 
@@ -589,11 +633,27 @@ router.get('/:id', async (req, res) => {
       console.warn(`Failed to parse assetAssumptions for simulation ${simulation.id}:`, e.message);
       assetAssumptions = null;
     }
+    if (!assetAssumptions && simulation.portfolio && simulation.portfolio.assetAssumptions) {
+      try {
+        assetAssumptions = typeof simulation.portfolio.assetAssumptions === 'string' ? JSON.parse(simulation.portfolio.assetAssumptions) : simulation.portfolio.assetAssumptions;
+      } catch (e) {
+        console.warn(`Failed to parse assetAssumptions from portfolio for simulation ${simulation.id}:`, e.message);
+        assetAssumptions = null;
+      }
+    }
     try {
       correlationMatrix = typeof simulation.correlationMatrix === 'string' ? JSON.parse(simulation.correlationMatrix) : simulation.correlationMatrix;
     } catch (e) {
       console.warn(`Failed to parse correlationMatrix for simulation ${simulation.id}:`, e.message);
       correlationMatrix = null;
+    }
+    if (!correlationMatrix && simulation.portfolio && simulation.portfolio.correlationMatrix) {
+      try {
+        correlationMatrix = typeof simulation.portfolio.correlationMatrix === 'string' ? JSON.parse(simulation.portfolio.correlationMatrix) : simulation.portfolio.correlationMatrix;
+      } catch (e) {
+        console.warn(`Failed to parse correlationMatrix from portfolio for simulation ${simulation.id}:`, e.message);
+        correlationMatrix = null;
+      }
     }
     try {
       grantTargets = typeof simulation.grantTargets === 'string' ? JSON.parse(simulation.grantTargets) : simulation.grantTargets;
