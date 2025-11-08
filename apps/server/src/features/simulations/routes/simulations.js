@@ -415,6 +415,9 @@ router.get('/', async (req, res) => {
 
     // Use explicit select to avoid querying columns that may not exist in older DB schema
     const [simulations, total] = await Promise.all([
+      // Use an explicit nested select for portfolio to avoid schema mismatches and
+      // to only pull the portfolio fields the frontend needs. This is more robust
+      // than using `portfolio: true` which can surface schema differences.
       prisma.simulation.findMany({
         where: { organizationId: req.user.organizationId },
         select: {
@@ -432,7 +435,20 @@ router.get('/', async (req, res) => {
           runCount: true,
           createdAt: true,
           updatedAt: true,
-          portfolio: true
+          portfolio: {
+            select: {
+              id: true,
+              publicEquity: true,
+              privateEquity: true,
+              publicFixedIncome: true,
+              privateCredit: true,
+              realAssets: true,
+              diversifying: true,
+              cashShortTerm: true,
+              assetAssumptions: true,
+              correlationMatrix: true
+            }
+          }
         },
         orderBy,
         skip,
@@ -603,7 +619,20 @@ router.get('/:id', async (req, res) => {
         runCount: true,
         createdAt: true,
         updatedAt: true,
-        portfolio: true
+        portfolio: {
+          select: {
+            id: true,
+            publicEquity: true,
+            privateEquity: true,
+            publicFixedIncome: true,
+            privateCredit: true,
+            realAssets: true,
+            diversifying: true,
+            cashShortTerm: true,
+            assetAssumptions: true,
+            correlationMatrix: true
+          }
+        }
       }
     });
 
