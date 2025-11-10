@@ -357,6 +357,12 @@ router.post('/execute', trackSimulationUsage, [
             create: {
               name: `Portfolio for ${name}`,
               userId,
+              // Legacy 2-factor model fields (required in production DB)
+              equityAllocation: (simulationParams.portfolioWeights.publicEquity || 0) + 
+                               (simulationParams.portfolioWeights.privateEquity || 0),
+              bondAllocation: (simulationParams.portfolioWeights.publicFixedIncome || 0) + 
+                             (simulationParams.portfolioWeights.privateCredit || 0),
+              // 7-factor model fields (may not exist in production DB yet)
               publicEquity: simulationParams.portfolioWeights.publicEquity || 0,
               privateEquity: simulationParams.portfolioWeights.privateEquity || 0,
               publicFixedIncome: simulationParams.portfolioWeights.publicFixedIncome || 0,
