@@ -357,12 +357,12 @@ router.post('/execute', trackSimulationUsage, [
             create: {
               name: `Portfolio for ${name}`,
               userId,
-              // Legacy 2-factor model fields (required in production DB)
+              // Legacy 2-factor model fields (for backward compatibility)
               equityAllocation: (simulationParams.portfolioWeights.publicEquity || 0) + 
                                (simulationParams.portfolioWeights.privateEquity || 0),
               bondAllocation: (simulationParams.portfolioWeights.publicFixedIncome || 0) + 
                              (simulationParams.portfolioWeights.privateCredit || 0),
-              // 7-factor model fields (may not exist in production DB yet)
+              // 7-factor model fields (now fully supported after DB migration)
               publicEquity: simulationParams.portfolioWeights.publicEquity || 0,
               privateEquity: simulationParams.portfolioWeights.privateEquity || 0,
               publicFixedIncome: simulationParams.portfolioWeights.publicFixedIncome || 0,
@@ -370,6 +370,9 @@ router.post('/execute', trackSimulationUsage, [
               realAssets: simulationParams.portfolioWeights.realAssets || 0,
               diversifying: simulationParams.portfolioWeights.diversifying || 0,
               cashShortTerm: simulationParams.portfolioWeights.cashShortTerm || 0,
+              // Asset assumptions and correlation matrix for detailed 7-factor analysis
+              assetAssumptions: simulationParams.assetAssumptions ? JSON.stringify(simulationParams.assetAssumptions) : null,
+              correlationMatrix: simulationParams.correlationMatrix ? JSON.stringify(simulationParams.correlationMatrix) : null,
             }
           }
         }
