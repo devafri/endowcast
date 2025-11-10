@@ -4,9 +4,7 @@
  */
 
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('../../../shared/db/prisma');
 
 /**
  * Middleware to authenticate requests via JWT token

@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { authenticateToken, prisma } = require('../middleware/auth');
+const { authenticateToken, prisma } = require('../../../shared/middleware/auth');
 const { trackSimulationUsage } = require('../../../shared/middleware/usage');
 const monteCarlo = require('../utils/monteCarlo');
 
