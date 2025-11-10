@@ -340,8 +340,11 @@ router.post('/execute', trackSimulationUsage, [
           spendingGrowth: simulationParams.spendingGrowth,
           // Legacy 2-factor model fields (NOT NULL in older production schemas)
           // Provide defaults so creation doesn't fail on old DB schema
-          equityReturn: 0.07, // Default 7% for backward compatibility
-          bondReturn: 0.03,   // Default 3% for backward compatibility
+          equityReturn: 0.07,      // Default 7% for backward compatibility
+          bondReturn: 0.03,        // Default 3% for backward compatibility
+          equityVolatility: 0.15,  // Default 15% volatility
+          bondVolatility: 0.05,    // Default 5% volatility
+          correlation: 0.3,        // Default 0.3 correlation between equity and bonds
           // Don't set assetAssumptions/correlationMatrix here to remain compatible with older DBs
           equityShock: simulationParams.equityShock || null,
           cpiShift: simulationParams.cpiShift || null,
