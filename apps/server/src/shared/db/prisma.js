@@ -12,6 +12,23 @@ try {
 	// ignore if dotenv is not available or already loaded
 }
 
+// Normalize database URL env vars: strip surrounding quotes and trim whitespace.
+// Some CI / deploy systems (or accidental edits) may wrap the URL in quotes which
+// can cause Prisma to complain that the URL doesn't start with postgres://.
+function normalizeEnvUrl(key) {
+	const v = process.env[key];
+	if (!v || typeof v !== 'string') return;
+	const trimmed = v.trim();
+	// Remove surrounding single or double quotes
+	const unquoted = trimmed.replace(/^['"]|['"]$/g, '');
+	if (unquoted !== v) {
+		process.env[key] = unquoted;
+		console.log(`[prisma] normalized env ${key}`);
+	}
+}
+
+['DATABASE_POSTGRES_PRISMA_URL', 'DATABASE_POSTGRES_URL_NON_POOLING', 'DATABASE_POSTGRES_URL', 'DATABASE_URL'].forEach(normalizeEnvUrl);
+
 // Prefer a non-pooling direct URL for Prisma if available to avoid pooler/prepared-statement issues.
 // For example, Vercel env may provide DATABASE_POSTGRES_URL_NON_POOLING for direct port 5432.
 if (!process.env.DATABASE_POSTGRES_PRISMA_URL) {
