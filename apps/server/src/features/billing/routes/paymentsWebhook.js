@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../../../shared/db/prisma');
 
 // This endpoint expects the raw body (signature verification), so it should be
 // mounted with raw body parser in server.js for the /api/payments/webhook path.

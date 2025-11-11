@@ -1,7 +1,6 @@
 const crypto = require('crypto');
-const { PrismaClient, TokenType } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('../../../shared/db/prisma');
+const { TokenType } = require('@prisma/client');
 
 /**
  * Generates a cryptographically secure random token.

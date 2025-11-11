@@ -1,6 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('../db/prisma');
 
 // Track simulation usage for the organization
 const trackSimulationUsage = async (req, res, next) => {

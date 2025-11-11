@@ -1,9 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
 const { authenticateToken, requireAdmin } = require('../../auth/middleware/auth');
-
-const prisma = new PrismaClient();
+const prisma = require('../../../shared/db/prisma');
 
 // Get current subscription details
 router.get('/current', authenticateToken, async (req, res) => {

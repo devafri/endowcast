@@ -1,12 +1,10 @@
 const express = require('express');
 const { body } = require('express-validator');
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
 const authController = require('../controllers/authController');
 const { forgotPassword, resetPassword } = require('../controllers/passwordController');
 const { verifyEmail, resendVerificationEmail } = require('../controllers/emailVerificationController');
-
-const prisma = new PrismaClient();
+const prisma = require('../../../shared/db/prisma');
 const router = express.Router();
 
 // Validation middleware

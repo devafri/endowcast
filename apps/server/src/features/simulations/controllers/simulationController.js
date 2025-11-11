@@ -4,9 +4,7 @@
  */
 
 const SimulationService = require('../services/simulationService');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('../../../shared/db/prisma');
 
 class SimulationController {
   /**

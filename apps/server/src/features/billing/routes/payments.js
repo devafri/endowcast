@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateForPayments } = require('../../auth/middleware/auth');
-const { PrismaClient } = require('@prisma/client');
+// Use the shared Prisma client to avoid multiple instances in the same process
 const emailService = require('../../../infrastructure/email/emailService');
-
-const prisma = new PrismaClient();
+const prisma = require('../../../shared/db/prisma');
 
 // Create checkout session for plan purchase
 router.post('/create-checkout-session', authenticateForPayments, async (req, res) => {
@@ -236,8 +235,7 @@ router.post('/confirm-session', authenticateForPayments, async (req, res) => {
     }
 
     // Upsert subscription record
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
+  const prisma = require('../../../shared/db/prisma');
 
     if (planType || subscriptionId) {
       const upsertData = {

@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { authenticateToken, prisma } = require('../../../shared/middleware/auth');
+const { authenticateToken, prisma } = require('../middleware/auth');
 const { trackSimulationUsage } = require('../../../shared/middleware/usage');
 const monteCarlo = require('../utils/monteCarlo');
 
@@ -364,15 +364,27 @@ router.post('/execute', trackSimulationUsage, [
               correlationMatrix: simulationParams.correlationMatrix ? JSON.stringify(simulationParams.correlationMatrix) : null,
             }
           }
-        }
+        },
+        // Only return the id to avoid Prisma attempting to select columns that may
+        // not exist in partially-migrated production databases (e.g. assetAssumptions)
+        select: { id: true }
       });
 
-      savedSimulationId = savedSimulation.id; 
+      savedSimulationId = savedSimulation.id;
       responseData.id = savedSimulationId;
 
       console.log(`[Simulations] Saved simulation to DB in ${Date.now() - startTime}ms`);
     } catch (dbErr) {
-      console.error('[Simulations] DB error (non-blocking):', dbErr.message);
+      // Surface full DB error details so we can diagnose failures in production.
+      console.error('[Simulations] DB error while saving simulation:', dbErr);
+      try {
+        // Prisma errors often include useful metadata
+        if (dbErr && dbErr.meta) console.error('Prisma meta:', dbErr.meta);
+      } catch (metaErr) {
+        console.error('Failed to log dbErr.meta:', metaErr);
+      }
+      // Re-throw so the outer catch returns 500 and the client/console show the failure.
+      throw dbErr;
     }
 
     res.status(200).json(responseData);

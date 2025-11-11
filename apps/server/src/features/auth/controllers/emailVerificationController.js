@@ -1,8 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
 const { verifyAndConsumeToken, createToken, TokenType } = require('../services/tokenService');
 const { sendVerificationEmail } = require('../services/emailAuthService');
 
-const prisma = new PrismaClient();
+const prisma = require('../../../shared/db/prisma');
 
 /**
  * Verifies a user's email address using a token.

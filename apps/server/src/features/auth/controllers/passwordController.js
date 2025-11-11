@@ -1,10 +1,8 @@
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../../../shared/db/prisma');
 const bcrypt = require('bcryptjs');
 const { createToken, verifyAndConsumeToken, TokenType } = require('../services/tokenService');
 const { sendPasswordResetEmail } = require('../services/emailAuthService');
 const securityService = require('../services/securityService');
-
-const prisma = new PrismaClient();
 
 /**
  * Handles the request to initiate a password reset.

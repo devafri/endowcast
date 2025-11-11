@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../../../shared/db/prisma');
 
 // Stripe webhook handler - requires raw body for signature verification
 router.post('/stripe', async (req, res) => {

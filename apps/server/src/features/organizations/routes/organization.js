@@ -1,8 +1,6 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../../../shared/db/prisma');
 const { authenticateToken, requireAdmin, requireUserOrAdmin } = require('../../auth/middleware/auth');
-
-const prisma = new PrismaClient();
 const router = express.Router();
 
 // Get current organization details

@@ -7,6 +7,17 @@ const rateLimit = require('express-rate-limit');
 // Load environment variables - .env for local dev
 require('dotenv').config();
 
+// Ensure Prisma sees the correct connection env var. Some files instantiate
+// `new PrismaClient()` directly (legacy). Fall back so Prisma uses DATABASE_URL
+// when DATABASE_POSTGRES_PRISMA_URL is not set, and disable prepared statements
+// by default for pooled connections (PgBouncer/Supabase pooler).
+if (!process.env.DATABASE_POSTGRES_PRISMA_URL && process.env.DATABASE_URL) {
+  process.env.DATABASE_POSTGRES_PRISMA_URL = process.env.DATABASE_URL;
+}
+if (!process.env.PRISMA_DISABLE_PREPARED_STATEMENTS) {
+  process.env.PRISMA_DISABLE_PREPARED_STATEMENTS = 'true';
+}
+
 const authRoutes = require('../features/auth/routes/auth');
 const userRoutes = require('../features/users/routes/users');
 const simulationRoutes = require('../features/simulations/routes/simulations');

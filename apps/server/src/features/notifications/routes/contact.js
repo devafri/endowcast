@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../../../shared/db/prisma');
 const nodemailer = require('nodemailer');
 
 // POST /api/contact

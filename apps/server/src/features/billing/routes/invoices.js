@@ -1,9 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../../auth/middleware/auth');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('../../../shared/db/prisma');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Create and send a one-time invoice (root POST route)
