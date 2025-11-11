@@ -1,18 +1,10 @@
-const { PrismaClient } = require('@prisma/client');
+// Use shared Prisma client to ensure consistent env and disabled prepared statements
+const prisma = require('../shared/db/prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const emailService = require('../services/emailService');
 const securityService = require('../services/securityService');
-
-// Initialize Prisma with optimized connection for Lambda
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-});
 
 // Common CORS headers
 const corsHeaders = {

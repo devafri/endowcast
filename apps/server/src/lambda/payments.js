@@ -1,16 +1,9 @@
-const { PrismaClient } = require('@prisma/client');
+// Use shared Prisma client for consistency (env and prepared statements)
+const prisma = require('../shared/db/prisma');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const emailService = require('../services/emailService');
 const { authenticateToken } = require('../middleware/auth');
 
-// Initialize Prisma
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-});
 
 // Common CORS headers
 const corsHeaders = {

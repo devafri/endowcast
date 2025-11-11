@@ -11,8 +11,13 @@ require('dotenv').config();
 // `new PrismaClient()` directly (legacy). Fall back so Prisma uses DATABASE_URL
 // when DATABASE_POSTGRES_PRISMA_URL is not set, and disable prepared statements
 // by default for pooled connections (PgBouncer/Supabase pooler).
-if (!process.env.DATABASE_POSTGRES_PRISMA_URL && process.env.DATABASE_URL) {
-  process.env.DATABASE_POSTGRES_PRISMA_URL = process.env.DATABASE_URL;
+// Prefer a non-pooling direct URL when available to avoid PgBouncer prepared statement issues
+if (!process.env.DATABASE_POSTGRES_PRISMA_URL) {
+  if (process.env.DATABASE_POSTGRES_URL_NON_POOLING) {
+    process.env.DATABASE_POSTGRES_PRISMA_URL = process.env.DATABASE_POSTGRES_URL_NON_POOLING;
+  } else if (process.env.DATABASE_URL) {
+    process.env.DATABASE_POSTGRES_PRISMA_URL = process.env.DATABASE_URL;
+  }
 }
 if (!process.env.PRISMA_DISABLE_PREPARED_STATEMENTS) {
   process.env.PRISMA_DISABLE_PREPARED_STATEMENTS = 'true';

@@ -29,19 +29,33 @@ function normalizeEnvUrl(key) {
 
 ['DATABASE_POSTGRES_PRISMA_URL', 'DATABASE_POSTGRES_URL_NON_POOLING', 'DATABASE_POSTGRES_URL', 'DATABASE_URL'].forEach(normalizeEnvUrl);
 
-// Prefer a non-pooling direct URL for Prisma if available to avoid pooler/prepared-statement issues.
-// For example, Vercel env may provide DATABASE_POSTGRES_URL_NON_POOLING for direct port 5432.
-if (!process.env.DATABASE_POSTGRES_PRISMA_URL) {
-	if (process.env.DATABASE_POSTGRES_URL_NON_POOLING) {
-		process.env.DATABASE_POSTGRES_PRISMA_URL = process.env.DATABASE_POSTGRES_URL_NON_POOLING;
-	} else if (process.env.DATABASE_URL) {
-		process.env.DATABASE_POSTGRES_PRISMA_URL = process.env.DATABASE_URL;
+// Build an effective connection URL, preferring a non-pooling URL when available.
+function buildEffectiveDbUrl() {
+	let url = process.env.DATABASE_POSTGRES_PRISMA_URL
+		|| process.env.DATABASE_POSTGRES_URL_NON_POOLING
+		|| process.env.DATABASE_POSTGRES_URL
+		|| process.env.DATABASE_URL
+		|| '';
+
+	// Fix accidental double prefix like "DATABASE_URL=postgres..." in the value
+	if (url.startsWith('DATABASE_URL=')) {
+		url = url.replace(/^DATABASE_URL=/, '');
 	}
+
+	// If using a Supabase pooler host, ensure pgbouncer=true to disable prepared statements
+	const isPooler = /pooler\.supabase\.com/.test(url);
+	if (isPooler && !/([?&])pgbouncer=true/.test(url)) {
+		url += (url.includes('?') ? '&' : '?') + 'pgbouncer=true';
+	}
+	return url;
 }
+
+const EFFECTIVE_DB_URL = buildEffectiveDbUrl();
+process.env.DATABASE_POSTGRES_PRISMA_URL = EFFECTIVE_DB_URL;
 
 // Diagnostic: log which DB URL variant we're using (mask password)
 try {
-	const url = process.env.DATABASE_POSTGRES_PRISMA_URL || '<none>';
+	const url = EFFECTIVE_DB_URL || '<none>';
 	const masked = url.replace(/:(?:[^:@]+)@/, ':****@');
 	console.log(`[prisma] using DATABASE_POSTGRES_PRISMA_URL=${masked}`);
 } catch (e) {
@@ -56,6 +70,13 @@ if (!process.env.PRISMA_DISABLE_PREPARED_STATEMENTS) {
 
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient();
+// Always instantiate Prisma with the effective URL so we don't depend on external env timing
+const prisma = new PrismaClient({
+	datasources: {
+		db: {
+			url: EFFECTIVE_DB_URL,
+		}
+	}
+});
 
 module.exports = prisma;

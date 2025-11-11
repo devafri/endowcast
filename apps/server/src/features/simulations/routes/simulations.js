@@ -36,8 +36,8 @@ router.post('/execute', trackSimulationUsage, [
 ], async (req, res) => {
   console.log('*** 7-FACTOR ROUTE IS ACTIVE! ***')
   try {
-    // Check validation
     const errors = validationResult(req);
+    // Check validation
     if (!errors.isEmpty()) {
       console.error('[Validation Failed] Errors:', errors.array());
       return res.status(400).json({ error: 'Validation failed', details: errors.array() });
@@ -66,10 +66,8 @@ router.post('/execute', trackSimulationUsage, [
       equityShock = 0,
       cpiShift = 0,
       grantTargets = null,
-      investmentExpenseRate = 0.005, // Default 0.5%
-      numSimulations = 10000,
-      
-      // Additional spending parameters
+  investmentExpenseRate = 0.005, // Default 0.5%
+  // Additional spending parameters
       initialOperatingExpense = 0,
       initialGrant = 0,
       
@@ -80,153 +78,118 @@ router.post('/execute', trackSimulationUsage, [
     
     // Safety check for riskFreeRate from another input field, falling back to 2%
     const rfPct = typeof req.body.riskFreeRate === 'number' ? req.body.riskFreeRate : 2;
-    try {
-      // Attempt to save with the advanced 7-factor portfolio fields. If the
-      // production DB hasn't been migrated to include the JSON columns on the
-      // Portfolio model, Prisma can raise a P2022 (missing column). We'll catch
-      // that specific error below and retry a safe fallback that omits the
-      // advanced JSON fields.
-      const savedSimulation = await prisma.simulation.create({
-        data: {
-          name,
-          userId,
-          organizationId,
-          years,
-          startYear,
-          initialValue: simulationParams.initialValue,
-          spendingRate: simulationParams.spendingRate,
-          spendingGrowth: simulationParams.spendingGrowth,
+    const rf = rfPct / 100;
 
-          // Don't set assetAssumptions/correlationMatrix on Simulation model
-          equityShock: simulationParams.equityShock || null,
-          cpiShift: simulationParams.cpiShift || null,
-          grantTargets: grantTargets ? JSON.stringify(grantTargets) : null,
-          results: JSON.stringify(responseData), // Save the full response
-          summary: JSON.stringify(responseData.summary),
-          isCompleted: true,
-          runCount: 1,
-          portfolio: {
-            create: {
-              name: `Portfolio for ${name}`,
-              userId,
-              // 7-factor model fields (now fully supported after DB migration)
-              publicEquity: simulationParams.portfolioWeights.publicEquity || 0,
-              privateEquity: simulationParams.portfolioWeights.privateEquity || 0,
-              publicFixedIncome: simulationParams.portfolioWeights.publicFixedIncome || 0,
-              privateCredit: simulationParams.portfolioWeights.privateCredit || 0,
-              realAssets: simulationParams.portfolioWeights.realAssets || 0,
-              diversifying: simulationParams.portfolioWeights.diversifying || 0,
-              cashShortTerm: simulationParams.portfolioWeights.cashShortTerm || 0,
-              // Asset assumptions and correlation matrix for detailed 7-factor analysis
-              assetAssumptions: simulationParams.assetAssumptions ? JSON.stringify(simulationParams.assetAssumptions) : null,
-              correlationMatrix: simulationParams.correlationMatrix ? JSON.stringify(simulationParams.correlationMatrix) : null,
-            }
-          }
-        },
-        // Only return the id to avoid Prisma attempting to select columns that may
-        // not exist in partially-migrated production databases (e.g. assetAssumptions)
-        select: { id: true }
-      });
+    // Ensure inflation variables are defined
+    const infl = (typeof inflationRate === 'number' ? inflationRate : (req.body.inflationRate || 0.02));
+    const inflPct = infl * 100;
 
-      savedSimulationId = savedSimulation.id;
-      responseData.id = savedSimulationId;
+    // Ensure numSimulations/defaults
+    const numSimulations = typeof req.body.numSimulations === 'number' ? req.body.numSimulations : 1000;
+    const grantTargetsArr = Array.isArray(grantTargets) ? grantTargets : [];
 
-      console.log(`[Simulations] Saved simulation to DB in ${Date.now() - startTime}ms`);
-    } catch (dbErr) {
-      // Surface full DB error details so we can diagnose failures in production.
-      console.error('[Simulations] DB error while saving simulation (first attempt):', dbErr && dbErr.message ? dbErr.message : dbErr);
-      try {
-        if (dbErr && dbErr.meta) console.error('Prisma meta:', dbErr.meta);
-      } catch (metaErr) {
-        console.error('Failed to log dbErr.meta:', metaErr);
-      }
+    // Build simulation params for the Monte Carlo engine
+    const startTime = Date.now();
+    const simulationParams = {
+      years,
+      startYear,
+      initialValue,
+      spendingRate,
+      spendingGrowth,
+      assetAssumptions,
+      correlationMatrix,
+      portfolioWeights,
+      equityShock,
+      cpiShift,
+      grantTargets: grantTargetsArr,
+      investmentExpenseRate,
+      numSimulations,
+      benchmark: (benchmark && typeof benchmark === 'object') ? { enabled: true, type: benchmark.type, value: benchmark.value } : null,
+      corpus: (corpus && typeof corpus === 'object') ? { enabled: true, initialValue: corpus.initialValue } : null,
+      riskFreeRate: rf,
+      inflationRate: infl
+    };
 
-      // If the error indicates a missing column (P2022) for one of the
-      // portfolio JSON fields, retry without those fields so older DBs can
-      // still persist core simulation data.
-      const errMsg = dbErr && dbErr.message ? String(dbErr.message) : '';
-      const missingAdvancedField = errMsg.includes('assetAssumptions') || errMsg.includes('correlationMatrix') || (dbErr && dbErr.code === 'P2022');
+    // Run Monte Carlo
+    const results = monteCarlo.runSimulation(simulationParams);
+    const elapsedMs = Date.now() - startTime;
 
-      if (missingAdvancedField) {
-        console.warn('[Simulations] Detected missing portfolio JSON columns; retrying save without advanced fields.');
-        try {
-          const fallbackSaved = await prisma.simulation.create({
-            data: {
-              name,
-              userId,
-              organizationId,
-              years,
-              startYear,
-              initialValue: simulationParams.initialValue,
-              spendingRate: simulationParams.spendingRate,
-              spendingGrowth: simulationParams.spendingGrowth,
-              equityShock: simulationParams.equityShock || null,
-              cpiShift: simulationParams.cpiShift || null,
-              grantTargets: grantTargets ? JSON.stringify(grantTargets) : null,
-              results: JSON.stringify(responseData),
-              summary: JSON.stringify(responseData.summary),
-              isCompleted: true,
-              runCount: 1,
-              portfolio: {
-                create: {
-                  name: `Portfolio for ${name}`,
-                  userId,
-                  publicEquity: simulationParams.portfolioWeights.publicEquity || 0,
-                  privateEquity: simulationParams.portfolioWeights.privateEquity || 0,
-                  publicFixedIncome: simulationParams.portfolioWeights.publicFixedIncome || 0,
-                  privateCredit: simulationParams.portfolioWeights.privateCredit || 0,
-                  realAssets: simulationParams.portfolioWeights.realAssets || 0,
-                  diversifying: simulationParams.portfolioWeights.diversifying || 0,
-                  cashShortTerm: simulationParams.portfolioWeights.cashShortTerm || 0,
-                  // Intentionally omit assetAssumptions & correlationMatrix for compatibility
-                }
-              }
-            },
-            select: { id: true }
-          });
+  const paths = results.paths || [];
+    const perSimReturns = results.portfolioReturns || [];
 
-          savedSimulationId = fallbackSaved.id;
-          responseData.id = savedSimulationId;
-          console.log(`[Simulations] Saved simulation to DB using fallback in ${Date.now() - startTime}ms`);
-        } catch (fallbackErr) {
-          console.error('[Simulations] Fallback DB save also failed:', fallbackErr && fallbackErr.message ? fallbackErr.message : fallbackErr);
-          try { if (fallbackErr && fallbackErr.meta) console.error('Fallback Prisma meta:', fallbackErr.meta); } catch (m) {}
-          // Re-throw the original DB error to preserve context for upstream logs/alerts
-          throw dbErr;
-        }
-      } else {
-        // Unknown DB error: re-throw so outer catch returns 500 and we can inspect logs
-        throw dbErr;
-      }
+  // Compute year-by-year success probabilities (fallback to zeros if missing)
+  const successByYear = monteCarlo.calculateSuccessByYear(paths, grantTargetsArr) || Array.from({ length: years }, () => 0);
+
+    // Helper stats
+    function annualizedReturn(returnsArr = []) {
+      if (!Array.isArray(returnsArr) || returnsArr.length === 0) return 0;
+      const prod = returnsArr.reduce((acc, v) => acc * (1 + v), 1);
+      return Math.pow(prod, 1 / returnsArr.length) - 1;
     }
+    function stdev(arr = []) {
+      if (!Array.isArray(arr) || arr.length === 0) return 0;
+      const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+      const sq = arr.map(v => Math.pow(v - mean, 2));
+      return Math.sqrt(sq.reduce((a, b) => a + b, 0) / arr.length);
+    }
+    function sortinoRatio(returnsArr = [], rfLocal = 0) {
+      if (!Array.isArray(returnsArr) || returnsArr.length === 0) return NaN;
+      const dr = returnsArr.filter(r => r < rfLocal).map(r => Math.pow(r - rfLocal, 2));
+      const downside = dr.length ? Math.sqrt(dr.reduce((a, b) => a + b, 0) / dr.length) : 0;
+      const ann = annualizedReturn(returnsArr);
+      return downside > 0 ? (ann - rfLocal) / downside : NaN;
+    }
+
+    // Per-simulation metrics
+    const perSimCAGRs = perSimReturns.map(r => annualizedReturn(r));
+    const perSimVols = perSimReturns.map(r => stdev(r));
+
+    perSimCAGRs.sort((a, b) => a - b);
+    const medianCAGR = perSimCAGRs.length ? perSimCAGRs[Math.floor(perSimCAGRs.length / 2)] : 0;
+    const cagr10 = monteCarlo.percentile(perSimCAGRs, 10);
+    const cagr25 = monteCarlo.percentile(perSimCAGRs, 25);
+    const cagr75 = monteCarlo.percentile(perSimCAGRs, 75);
+    const cagr90 = monteCarlo.percentile(perSimCAGRs, 90);
+
+    perSimVols.sort((a, b) => a - b);
+    const medianVol = perSimVols.length ? perSimVols[Math.floor(perSimVols.length / 2)] : 0;
+    const vol10 = monteCarlo.percentile(perSimVols, 10);
+    const vol25 = monteCarlo.percentile(perSimVols, 25);
+    const vol75 = monteCarlo.percentile(perSimVols, 75);
+    const vol90 = monteCarlo.percentile(perSimVols, 90);
+
     // Sharpe and Sortino (risk-free as decimal)
-    const perSimSharpe = perSimReturns.map((r) => {
-      const ar = annualizedReturn(r);
-      const sd = stdev(r);
+    const perSimSharpe = perSimCAGRs.map((ar, idx) => {
+      const sd = perSimVols[idx] || 0;
       return (isFinite(ar) && isFinite(sd) && sd > 0) ? (ar - rf) / sd : NaN;
     }).filter((x) => isFinite(x));
     perSimSharpe.sort((a, b) => a - b);
     const sharpeMedian = perSimSharpe.length ? perSimSharpe[Math.floor(perSimSharpe.length / 2)] : 0;
-    const sharpe10 = percentile(perSimSharpe, 10);
-    const sharpe25 = percentile(perSimSharpe, 25);
-    const sharpe75 = percentile(perSimSharpe, 75);
-    const sharpe90 = percentile(perSimSharpe, 90);
-    
-    console.log('[DEBUG] perSimSharpe length:', perSimSharpe.length);
-    console.log('[DEBUG] sharpe10, sharpe25, sharpe75, sharpe90:', { sharpe10, sharpe25, sharpe75, sharpe90 });
+    const sharpe10 = monteCarlo.percentile(perSimSharpe, 10);
+    const sharpe25 = monteCarlo.percentile(perSimSharpe, 25);
+    const sharpe75 = monteCarlo.percentile(perSimSharpe, 75);
+    const sharpe90 = monteCarlo.percentile(perSimSharpe, 90);
 
     const perSimSortino = perSimReturns.map((r) => sortinoRatio(r, rf)).filter((x) => isFinite(x));
     perSimSortino.sort((a, b) => a - b);
     const sortinoMedian = perSimSortino.length ? perSimSortino[Math.floor(perSimSortino.length / 2)] : 0;
-    const sortino10 = percentile(perSimSortino, 10);
-    const sortino25 = percentile(perSimSortino, 25);
-    const sortino75 = percentile(perSimSortino, 75);
-    const sortino90 = percentile(perSimSortino, 90);
-    
-    console.log('[DEBUG] perSimSortino length:', perSimSortino.length);
-    console.log('[DEBUG] sortino10, sortino25, sortino75, sortino90:', { sortino10, sortino25, sortino75, sortino90 });
+    const sortino10 = monteCarlo.percentile(perSimSortino, 10);
+    const sortino25 = monteCarlo.percentile(perSimSortino, 25);
+    const sortino75 = monteCarlo.percentile(perSimSortino, 75);
+    const sortino90 = monteCarlo.percentile(perSimSortino, 90);
 
     // Median max drawdown
+    function maxDrawdown(path = []) {
+      if (!Array.isArray(path) || path.length === 0) return 0;
+      let peak = path[0];
+      let maxDD = 0;
+      for (let i = 1; i < path.length; i++) {
+        if (path[i] > peak) peak = path[i];
+        const dd = (peak - path[i]) / (peak || 1);
+        if (dd > maxDD) maxDD = dd;
+      }
+      return maxDD;
+    }
     const perSimMDD = paths.map(maxDrawdown).filter((x) => isFinite(x));
     perSimMDD.sort((a, b) => a - b);
     const medianMDD = perSimMDD.length ? perSimMDD[Math.floor(perSimMDD.length / 2)] : 0;
@@ -242,8 +205,8 @@ router.post('/execute', trackSimulationUsage, [
     const probabilityOfLoss = finals.length ? finals.filter(v => v < simulationParams.initialValue).length / finals.length : 0;
 
     // Inflation-adjusted preservation (median final vs inflation growth of initial)
-  const inflFactor = Math.pow(1 + infl, simulationParams.years);
-    const medianFinalValue = percentile(sortedFinals, 50);
+    const inflFactor = Math.pow(1 + infl, simulationParams.years);
+    const medianFinalValue = monteCarlo.percentile(sortedFinals, 50);
     const inflationPreservationPct = (isFinite(medianFinalValue) && inflFactor > 0)
       ? (medianFinalValue / (simulationParams.initialValue * inflFactor)) * 100
       : 0;
