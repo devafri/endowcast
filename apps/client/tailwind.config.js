@@ -6,6 +6,8 @@ export default {
     './src/**/*.{vue,js,ts,jsx,tsx}',
   ],
   theme: {
+    // Force RGB color format instead of oklch for compatibility with html2canvas
+    colorFormat: 'rgb',
     extend: {
       colors: {
         // Semantic colors backed by CSS variables

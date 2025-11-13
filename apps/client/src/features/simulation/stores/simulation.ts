@@ -222,9 +222,15 @@ export const useSimulationStore = defineStore('simulation', () => {
       const opEx0 = Number(payload.initialOperatingExpense) || 0;
       const grants0 = Number(payload.initialGrant) || 0;
   const rfPct = Number(payload.riskFreeRate);
-  const inflationPct = Number(payload.inflationRate);
-  const inflationBasis = isFinite(inflationPct) ? inflationPct : (isFinite(rfPct) ? rfPct : 2);
-  const inflation = (isFinite(inflationBasis) ? inflationBasis : 2) / 100;
+  let inflationPctRaw = Number(payload.inflationRate);
+  // Normalize inflation: if user entered fraction (<1) convert to percent; if inflated (>50) assume accidental multiplier and scale down.
+  if (isFinite(inflationPctRaw)) {
+    if (inflationPctRaw < 1) inflationPctRaw = inflationPctRaw * 100;
+    else if (inflationPctRaw > 50 && inflationPctRaw <= 200) inflationPctRaw = inflationPctRaw / 100; // guard for 100x error
+  } else {
+    inflationPctRaw = isFinite(rfPct) ? rfPct : 2;
+  }
+  const inflation = (isFinite(inflationPctRaw) ? inflationPctRaw : 2) / 100;
 
       const perYearOpEx = Array.from({ length: derivedYears }, (_, y) => opEx0 * Math.pow(1 + inflation, y));
       const perYearGrants = Array.from({ length: derivedYears }, (_, y) => {

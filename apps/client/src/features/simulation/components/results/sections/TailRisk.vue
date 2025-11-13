@@ -154,8 +154,15 @@ const strategicSustainableSpendRate = computed(() => {
   // This is completely independent of simulation outcomes to avoid feedback loops
   
   const allocationData = inputs.value?.portfolioWeights || props.results?.summary?.allocationPolicy;
-  const inflationPct = inflationPercent.value;
-  const invExpensePct = inputs.value?.investmentExpenseRate ?? 1;
+  // Raw inputs may appear in either percent form (e.g. 2) or already scaled (e.g. 0.02) depending on history normalization.
+  // Normalize so we always work with PERCENT units for return arithmetic, then convert to decimal only once at the end.
+  const inflationPctRaw = inflationPercent.value;
+  const invExpensePctRaw = inputs.value?.investmentExpenseRate ?? 1; // Stored as percent in inputs
+
+  // If an upstream normalization multiplied by 100 erroneously we can detect extreme values (> 50%) and scale back.
+  // Realistic long‑term inflation and investment expense assumptions rarely exceed these thresholds.
+  const inflationPct = inflationPctRaw > 50 ? inflationPctRaw / 100 : inflationPctRaw;
+  const invExpensePct = invExpensePctRaw > 25 ? invExpensePctRaw / 100 : invExpensePctRaw;
 
   if (!allocationData) {
     return NaN;
@@ -235,7 +242,7 @@ const strategicSustainableSpendRate = computed(() => {
   const volatilityDragPct = Math.pow(portfolioVolatility, 2) / 200; // Divide by 200 to convert to percentage
   const geometricReturn = expectedReturn - volatilityDragPct;
 
-  // Step 2: Calculate real expected return after inflation and fees
+  // Step 2: Calculate real expected return after inflation and fees (all in percent space)
   const realGeometricReturn = geometricReturn - inflationPct - invExpensePct;
 
   // Step 3: Apply prudent discount based on portfolio risk
@@ -263,11 +270,16 @@ const strategicSustainableSpendRate = computed(() => {
   // Calculate sustainable rate
   let sustainableRate = (realGeometricReturn / 100) * riskAdjustmentFactor;
 
+  // If real expected return is negative, sustainable spending should not force a floor that hides risk.
+  if (realGeometricReturn <= 0) {
+    sustainableRate = 0; // Will be clamped upwards to the institutional minimum later, but we preserve log accuracy.
+  }
+
   // Debug logging continued
   console.log(`\nVolatility Drag: -${volatilityDragPct.toFixed(2)}%`);
   console.log(`Geometric Return: ${geometricReturn.toFixed(2)}%`);
-  console.log(`Less Inflation: -${inflationPct.toFixed(2)}%`);
-  console.log(`Less Inv. Fees: -${invExpensePct.toFixed(2)}%`);
+  console.log(`Less Inflation: -${inflationPct.toFixed(2)}% (raw: ${inflationPctRaw})`);
+  console.log(`Less Inv. Fees: -${invExpensePct.toFixed(2)}% (raw: ${invExpensePctRaw})`);
   console.log(`Real Geometric Return: ${realGeometricReturn.toFixed(2)}%`);
   console.log(`\nRisk Adjustment Factor: ${(riskAdjustmentFactor * 100).toFixed(0)}% (based on ${portfolioVolatility.toFixed(1)}% volatility)`);
   console.log(`\nPortfolio-Sustainable Rate: ${(sustainableRate * 100).toFixed(2)}%`);
@@ -558,7 +570,10 @@ function getTextColor(probability: number): string {
 
             <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm">
               <div class="text-xs text-slate-600 mb-2 flex justify-between items-center">
-                Effective Spend Rate
+                <span
+                  class="inline-block"
+                  title="Effective Spend Rate: Average across projection years of (median policy spending + operating expenses + grants) divided by the median beginning-of-year endowment. Excludes investment management fees. Can exceed the stated policy % if the endowment declines. Board Use: signals actual capital draw pressure inclusive of mission & operating allocations; compare with Portfolio-Sustainable Rate to assess long-term viability."
+                >Effective Spend Rate</span>
                 <div class="relative group cursor-help">
                   <span class="text-xs text-slate-400 font-bold ml-1">i</span>
                   <div class="absolute z-10 hidden group-hover:block w-72 p-3 text-xs text-white bg-slate-700 rounded-lg shadow-xl -mt-10 -ml-56 whitespace-normal">
@@ -568,6 +583,11 @@ function getTextColor(probability: number): string {
                 </div>
               <div class="text-2xl font-bold tabnums text-slate-700">
                 {{ Number.isFinite(effectiveSpendRate) ? fmtPercent(effectiveSpendRate) : (Number.isFinite(inputs.spendingPolicyRate) ? `${inputs.spendingPolicyRate}%` : '—') }}
+                <div v-if="Number.isFinite(effectiveSpendRate) && Number.isFinite(inputs.spendingPolicyRate)" class="mt-1 text-[11px] text-slate-500">
+                  Policy vs Effective Delta: <span :class="(effectiveSpendRate > (inputs.spendingPolicyRate/100)) ? 'text-red-600' : 'text-emerald-600'">
+                    {{ ((effectiveSpendRate - (inputs.spendingPolicyRate/100)) * 100).toFixed(2) }}%
+                  </span>
+                </div>
               </div>
               <div class="text-sm font-medium text-indigo-600 mt-1">
                 Policy: {{ Number.isFinite(inputs.spendingPolicyRate) ? `${inputs.spendingPolicyRate}%` : '—' }}

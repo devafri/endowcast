@@ -34,18 +34,42 @@
 /* Utility shims for semantic colors (ensure availability regardless of Tailwind config behavior) */
 @layer utilities {
 	/* Sage accent for Organization */
-	.bg-accent { background-color: rgb(var(--color-accent) / 1); }
-	.text-accent { color: rgb(var(--color-accent) / 1); }
-	.border-accent { border-color: rgb(var(--color-accent) / 1); }
-		.bg-accent-soft { background-color: color-mix(in oklab, rgb(var(--color-accent)) 12%, white); }
+	.bg-accent { 
+		background-color: rgb(122, 143, 106); /* Fallback for html2canvas */
+		background-color: rgb(var(--color-accent) / 1); 
+	}
+	.text-accent { 
+		color: rgb(122, 143, 106); /* Fallback for html2canvas */
+		color: rgb(var(--color-accent) / 1); 
+	}
+	.border-accent { 
+		border-color: rgb(122, 143, 106); /* Fallback for html2canvas */
+		border-color: rgb(var(--color-accent) / 1); 
+	}
+	.bg-accent-soft { 
+		background-color: rgba(122, 143, 106, 0.12); /* Fallback for html2canvas */
+		background-color: color-mix(in srgb, rgb(var(--color-accent)) 12%, white); /* Using srgb instead of oklab */
+	}
 
 	/* Brand primary (blue) helpers for completeness */
-	.bg-brand { background-color: rgb(var(--color-primary) / 1); }
-	.text-brand { color: rgb(var(--color-primary) / 1); }
-	.border-brand { border-color: rgb(var(--color-primary) / 1); }
+	.bg-brand { 
+		background-color: rgb(47, 102, 180); /* Fallback for html2canvas */
+		background-color: rgb(var(--color-primary) / 1); 
+	}
+	.text-brand { 
+		color: rgb(47, 102, 180); /* Fallback for html2canvas */
+		color: rgb(var(--color-primary) / 1); 
+	}
+	.border-brand { 
+		border-color: rgb(47, 102, 180); /* Fallback for html2canvas */
+		border-color: rgb(var(--color-primary) / 1); 
+	}
 
 	/* Soft brand tint for subtle hovers/backgrounds */
-	.bg-brand-soft { background-color: color-mix(in oklab, rgb(var(--color-primary)) 10%, white); }
+	.bg-brand-soft { 
+		background-color: rgba(47, 102, 180, 0.1); /* Fallback for html2canvas */
+		background-color: color-mix(in srgb, rgb(var(--color-primary)) 10%, white); /* Using srgb instead of oklab */
+	}
 
 	/* Global primary CTA utility so components can use .btn-primary consistently */
 	.btn-primary {

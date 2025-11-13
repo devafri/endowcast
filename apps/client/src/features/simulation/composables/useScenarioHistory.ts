@@ -377,7 +377,17 @@ export function useScenarioHistory() {
           if (r.inputs.riskFreeRate == null && typeof r?.summary?.riskFreeRate === 'number') r.inputs.riskFreeRate = r.summary.riskFreeRate;
           if (r.inputs.spendingPolicyRate == null && typeof merged.spendingRate === 'number') r.inputs.spendingPolicyRate = merged.spendingRate * 100;
           if (r.inputs.investmentExpenseRate == null && typeof (merged as any).investmentExpenseRate === 'number') r.inputs.investmentExpenseRate = (merged as any).investmentExpenseRate * 100;
-          if (r.inputs.inflationRate == null && typeof r?.summary?.inflationRate === 'number') r.inputs.inflationRate = r.summary.inflationRate * 100;
+          // Inflation rate in summary may be stored either as a fraction (0.02) or a percent (2).
+          // Only scale up when it's clearly a fractional value (< 1). Prevents accidental 100x inflation (e.g. 2 -> 200%).
+          if (r.inputs.inflationRate == null && typeof r?.summary?.inflationRate === 'number') {
+            const infl = r.summary.inflationRate;
+            r.inputs.inflationRate = infl < 1 ? infl * 100 : infl;
+          }
+          // Same protection for investment expense rate normalization: multiply only if < 1
+          if (typeof r.inputs.investmentExpenseRate === 'number' && r.inputs.investmentExpenseRate < 0) {
+            // Guard against negative junk values; reset to 0.5% default
+            r.inputs.investmentExpenseRate = 0.5;
+          }
           // Portfolio weights from stored portfolio
           if (!r.inputs.portfolioWeights && merged.portfolio) {
             r.inputs.portfolioWeights = {

@@ -3,12 +3,45 @@ import { onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSimulationStore } from '../../simulation/stores/simulation';
 import { useAuthStore } from '@/features/auth/stores/auth';
+import { useExport } from '../composables/useExport';
 import SimulationResults from '../components/results/layouts/SimulationResults.vue';
 
 const route = useRoute();
 const router = useRouter();
 const sim = useSimulationStore();
 const authStore = useAuthStore();
+const { isExporting, exportProgress, exportElement } = useExport();
+
+// Reference to the results container for export
+const resultsContainer = ref<HTMLElement | null>(null);
+
+// Mark results as ready for export once data is loaded
+function markExportReady() {
+  nextTick(() => {
+    if (resultsContainer.value && sim.results) {
+      // Check if data arrays exist
+      const hasSimulations = Array.isArray((sim.results as any).simulations) && (sim.results as any).simulations.length > 0;
+      console.log('🔍 markExportReady called:', {
+        hasContainer: !!resultsContainer.value,
+        hasResults: !!sim.results,
+        hasSimulations,
+        simulationsLength: (sim.results as any).simulations?.length || 0,
+        resultsId: sim.results.id
+      });
+      if (hasSimulations) {
+        resultsContainer.value.setAttribute('data-export-ready', 'true');
+        console.log('✅ Export ready: data fully loaded');
+      } else {
+        console.warn('⚠️ Export NOT ready: simulations array missing or empty');
+      }
+    } else {
+      console.warn('⚠️ Export NOT ready: missing container or results', {
+        hasContainer: !!resultsContainer.value,
+        hasResults: !!sim.results
+      });
+    }
+  });
+}
 
 function run() { 
   // Await the store run so we can react after completion if needed
@@ -36,6 +69,24 @@ function run() {
 const isCopying = ref(false);
 const copySuccess = ref(false);
 const shareUrl = ref('');
+
+// Export functions
+async function handleExport(format: 'png' | 'pdf') {
+  if (!resultsContainer.value || !sim.results) return;
+  
+  try {
+    const filename = `endowcast-${sim.results.id || 'results'}-${new Date().toISOString().split('T')[0]}`;
+    await exportElement(resultsContainer.value, {
+      filename,
+      format,
+      quality: 0.95,
+      scale: 2
+    });
+  } catch (error) {
+    console.error('Export error:', error);
+    alert('Failed to export results. Please try again.');
+  }
+}
 
 async function handleCopyLink() {
   if (!sim.results) return;
@@ -99,15 +150,24 @@ watch(() => route.params.scenarioId as string | undefined, async (newScenarioId)
     // for this ID, do not load it again. This handles the initial route push.
     if (sim.results && sim.results.id === newScenarioId) {
         console.log('Store already has results for this ID. Skipping loadScenario.');
+        markExportReady();
         return;
     }
     try {
       await sim.loadScenario(newScenarioId);
+      markExportReady();
     } catch (error) {
       console.error('Error loading scenario from route:', error);
     }
   }
 });
+
+// Watch for results changes to mark as ready
+watch(() => sim.results, (newResults) => {
+  if (newResults) {
+    markExportReady();
+  }
+}, { deep: true });
 
 // Check for scenarioId query parameter and load scenario on mount
 onMounted(async () => {
@@ -122,6 +182,7 @@ onMounted(async () => {
       //Check before calling loadScenario on mount as well.
       if (sim.results && sim.results.id === scenarioId) return;
       await sim.loadScenario(scenarioId);
+      markExportReady();
       // If the id came from query, replace URL with canonical path route
       if (!pathId && queryId) {
         router.replace({ name: 'ResultsById', params: { scenarioId } });
@@ -131,6 +192,7 @@ onMounted(async () => {
 
     // If no id was provided, but there's in-memory results (user ran simulation), prefer that
     if (!scenarioId && sim.results) {
+      markExportReady();
       // Don't schedule cleanup on mount - keep arrays for chart rendering
       return;
     }
@@ -287,19 +349,56 @@ onUnmounted(() => {
           </p>
         </div>
 
-<SimulationResults :results="sim.results" />
+        <!-- Exportable Results Container -->
+        <div ref="resultsContainer" data-export-target data-export-ready="false">
+          <SimulationResults :results="sim.results" />
+        </div>
+
         <!-- Export & Share Options -->
         <div class="card p-6 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200">
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 mb-2">Share Your Analysis</h3>
-              <p class="text-gray-600 text-sm">Export results for presentations or share with stakeholders</p>
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">Share & Export Analysis</h3>
+              <p class="text-gray-600 text-sm">Save results for presentations or share with stakeholders</p>
             </div>
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center flex-wrap gap-3">
+              <!-- Export PDF Button -->
+              <button
+                @click="handleExport('pdf')"
+                :disabled="isExporting"
+                class="inline-flex items-center gap-2 py-2.5 px-5 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-md shadow-sm"
+              >
+                <svg v-if="!isExporting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                <svg v-else class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span>{{ isExporting ? `Exporting... ${exportProgress}%` : 'Export PDF' }}</span>
+              </button>
+
+              <!-- Export PNG Button -->
+              <button
+                @click="handleExport('png')"
+                :disabled="isExporting"
+                class="inline-flex items-center gap-2 py-2.5 px-5 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-md shadow-sm"
+              >
+                <svg v-if="!isExporting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <svg v-else class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span>{{ isExporting ? `Exporting... ${exportProgress}%` : 'Export PNG' }}</span>
+              </button>
+
+              <!-- Copy Link Button -->
               <button
                 @click="handleCopyLink"
-                :disabled="isCopying"
-                class="inline-flex items-center gap-2 py-2 px-4 text-sm bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors rounded-md"
+                :disabled="isCopying || isExporting"
+                class="inline-flex items-center gap-2 py-2.5 px-5 text-sm font-medium bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-md shadow-sm"
                 aria-live="polite"
               >
                 <svg v-if="!isCopying && !copySuccess" class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">

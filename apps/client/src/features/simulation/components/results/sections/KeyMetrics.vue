@@ -25,8 +25,12 @@ const inflationPercent = computed(() => {
   const summaryInfl = props.results?.summary?.inflationRate;
   const inputInfl = props.results?.inputs?.inflationRate;
   const fallback = props.results?.summary?.riskFreeRate ?? props.results?.inputs?.riskFreeRate ?? 2;
-  const candidate = summaryInfl != null ? summaryInfl : (inputInfl != null ? inputInfl : fallback);
-  return typeof candidate === 'number' && isFinite(candidate) ? candidate : 2;
+  let candidate = summaryInfl != null ? summaryInfl : (inputInfl != null ? inputInfl : fallback);
+  if (!(typeof candidate === 'number' && isFinite(candidate))) return 2;
+  // Normalize: ensure value is in PERCENT units (e.g., 2 == 2%)
+  if (candidate < 1) candidate = candidate * 100; // fraction -> percent
+  else if (candidate > 50 && candidate <= 200) candidate = candidate / 100; // guard against 100x error
+  return candidate;
 });
 
 // --- New Computed Properties ---

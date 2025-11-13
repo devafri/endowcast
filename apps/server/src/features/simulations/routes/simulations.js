@@ -3,8 +3,12 @@ const { body, validationResult } = require('express-validator');
 const { authenticateToken, prisma } = require('../middleware/auth');
 const { trackSimulationUsage } = require('../../../shared/middleware/usage');
 const monteCarlo = require('../utils/monteCarlo');
+const exportRouter = require('./export');
 
 const router = express.Router();
+
+// Export routes (server-side rendering with Puppeteer)
+router.use('/', exportRouter);
 
 // All simulation routes require authentication
 router.use(authenticateToken);
@@ -81,7 +85,16 @@ router.post('/execute', trackSimulationUsage, [
     const rf = rfPct / 100;
 
     // Ensure inflation variables are defined
-    const infl = (typeof inflationRate === 'number' ? inflationRate : (req.body.inflationRate || 0.02));
+    // Accept inflation as either percent (e.g. 2) or decimal (0.02). Normalize to decimal internally.
+    let inflCandidate = (typeof inflationRate === 'number' ? inflationRate : (req.body.inflationRate ?? 0.02));
+    if (inflCandidate > 10 && inflCandidate <= 100) {
+      // Unlikely large percent (e.g. 200 from earlier bug); scale back if clearly mis-entered.
+      inflCandidate = inflCandidate / 100;
+    } else if (inflCandidate >= 1 && inflCandidate <= 25) {
+      // Typical percent entry like 2, 3.5, 7 -> convert to decimal
+      inflCandidate = inflCandidate / 100;
+    }
+    const infl = inflCandidate;
     const inflPct = infl * 100;
 
     // Ensure numSimulations/defaults
