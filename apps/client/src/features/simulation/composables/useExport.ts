@@ -173,14 +173,14 @@ export function useExport() {
     // Get the dataURL using html-to-image (which supports modern CSS)
   setPerFormatProgress(format, 30);
     
-    // Constrain render size to keep PNG smaller and avoid massive canvases
-    const naturalWidth = element.scrollWidth || element.clientWidth || 1200;
-    const maxWidth = 1600; // cap width for reasonable file size
-    const effectiveWidth = Math.min(naturalWidth, maxWidth);
-    const effectiveScale = Math.min(scale, 2);
-    const canvasWidth = Math.round(effectiveWidth * effectiveScale);
-    const aspect = (element.scrollHeight || element.clientHeight || effectiveWidth) / (naturalWidth || 1);
-    const canvasHeight = Math.round(canvasWidth * aspect);
+  // Render at the element's actual on-screen size for fidelity, then scale via pixelRatio
+  // This preserves text layout and wrapping exactly "like the browser"
+  const rect = element.getBoundingClientRect();
+  const naturalWidth = Math.max(rect.width || 0, element.scrollWidth || 0, element.clientWidth || 0) || 1200;
+  const naturalHeight = Math.max(rect.height || 0, element.scrollHeight || 0, element.clientHeight || 0) || 800;
+  const effectiveScale = Math.min(scale ?? (window.devicePixelRatio || 1), 2);
+  const canvasWidth = Math.round(naturalWidth * effectiveScale);
+  const canvasHeight = Math.round(naturalHeight * effectiveScale);
 
     // Use toPng with settings optimized for layout preservation
     let dataUrl: string | null = null;
@@ -193,6 +193,11 @@ export function useExport() {
         cacheBust: true,
         canvasWidth,
         canvasHeight,
+        style: {
+          // Ensure we capture at the same visual width to avoid reflow during render
+          width: `${naturalWidth}px`,
+          height: `${naturalHeight}px`,
+        },
         filter: (node) => {
           if (node instanceof Element) {
             return !node.classList.contains('no-export');
@@ -211,6 +216,10 @@ export function useExport() {
         cacheBust: true,
         canvasWidth,
         canvasHeight,
+        style: {
+          width: `${naturalWidth}px`,
+          height: `${naturalHeight}px`,
+        },
         filter: (node) => {
           if (node instanceof Element) {
             return !node.classList.contains('no-export');
