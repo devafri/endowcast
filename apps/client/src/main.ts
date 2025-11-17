@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 // Tailwind first, so our custom styles can override
 import './shared/assets/tailwind.css'
 import './shared/assets/main.css'
+import './shared/assets/fonts.css'
 import App from './App.vue'
 import router from './router'
 

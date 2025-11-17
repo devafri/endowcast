@@ -1,5 +1,72 @@
 import { ref } from 'vue';
 
+const FONT_FILES = [
+  {
+    id: 'source-sans-3-normal',
+    url: '/fonts/SourceSans3-VariableFont_wght.woff2',
+    style: 'normal' as const,
+  },
+  {
+    id: 'source-sans-3-italic',
+    url: '/fonts/SourceSans3-Italic-VariableFont_wght.woff2',
+    style: 'italic' as const,
+  },
+];
+
+const fontDataUrlCache = new Map<string, string>();
+let fontEmbedCssPromise: Promise<string> | null = null;
+let fontEmbedCssCache: string | null = null;
+
+async function bufferToDataUrl(buffer: ArrayBuffer, mime = 'font/woff2') {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64 = btoa(binary);
+  return `data:${mime};base64,${base64}`;
+}
+
+async function getFontDataUrl(fontPath: string) {
+  if (fontDataUrlCache.has(fontPath)) {
+    return fontDataUrlCache.get(fontPath)!;
+  }
+  const response = await fetch(fontPath);
+  if (!response.ok) {
+    throw new Error(`Failed to load font: ${fontPath}`);
+  }
+  const buffer = await response.arrayBuffer();
+  const dataUrl = await bufferToDataUrl(buffer);
+  fontDataUrlCache.set(fontPath, dataUrl);
+  return dataUrl;
+}
+
+async function getFontEmbedCSS() {
+  if (fontEmbedCssCache) {
+    return fontEmbedCssCache;
+  }
+  if (fontEmbedCssPromise) {
+    return fontEmbedCssPromise;
+  }
+
+  fontEmbedCssPromise = (async () => {
+    const rules: string[] = [];
+    for (const font of FONT_FILES) {
+      try {
+        const dataUrl = await getFontDataUrl(font.url);
+        rules.push(`@font-face {\n  font-family: "Source Sans 3";\n  font-style: ${font.style};\n  font-weight: 200 900;\n  font-display: swap;\n  src: url('${dataUrl}') format('woff2-variations');\n}`);
+      } catch (error) {
+        console.error('[export] Failed to build font data URL', font.url, error);
+      }
+    }
+    fontEmbedCssCache = rules.join('\n');
+    return fontEmbedCssCache;
+  })();
+
+  return fontEmbedCssPromise;
+}
+
 export interface ExportOptions {
   filename?: string;
   format?: 'png' | 'pdf';
@@ -134,8 +201,11 @@ export function useExport() {
       scale = 1.5
     } = options;
 
-    // Dynamically import html-to-image only when needed
-    const htmlToImage = await import('html-to-image');
+  // Dynamically import html-to-image only when needed
+  const htmlToImage = await import('html-to-image');
+
+  // Build inline font CSS for html-to-image so it doesn't try to parse the live stylesheets
+  const fontEmbedCSS = await getFontEmbedCSS();
 
     // Ensure all fonts are fully loaded to avoid reflow during capture
   setPerFormatProgress(format, 5);
@@ -171,18 +241,13 @@ export function useExport() {
     await waitForStableLayout(element);
     
     // Get the dataURL using html-to-image (which supports modern CSS)
-  setPerFormatProgress(format, 30);
+    setPerFormatProgress(format, 30);
     
-  // Render at the element's actual on-screen size for fidelity, then scale via pixelRatio
-  // This preserves text layout and wrapping exactly "like the browser"
-  const rect = element.getBoundingClientRect();
-  const naturalWidth = Math.max(rect.width || 0, element.scrollWidth || 0, element.clientWidth || 0) || 1200;
-  const naturalHeight = Math.max(rect.height || 0, element.scrollHeight || 0, element.clientHeight || 0) || 800;
-  const effectiveScale = Math.min(scale ?? (window.devicePixelRatio || 1), 2);
-  const canvasWidth = Math.round(naturalWidth * effectiveScale);
-  const canvasHeight = Math.round(naturalHeight * effectiveScale);
+    const effectiveScale = Math.min(scale ?? 1.5, 2);
 
-    // Use toPng with settings optimized for layout preservation
+    // Use toPng with settings optimized for layout preservation.
+    // We rely on pixelRatio for scaling and avoid setting canvasWidth/Height
+    // directly, as that can cause layout reflow and text misalignment.
     let dataUrl: string | null = null;
     try {
       dataUrl = await htmlToImage.toPng(element, {
@@ -191,13 +256,7 @@ export function useExport() {
         backgroundColor: '#ffffff',
         skipFonts: false, // attempt embedding fonts now that they should be same-origin
         cacheBust: true,
-        canvasWidth,
-        canvasHeight,
-        style: {
-          // Ensure we capture at the same visual width to avoid reflow during render
-          width: `${naturalWidth}px`,
-          height: `${naturalHeight}px`,
-        },
+        fontEmbedCSS,
         filter: (node) => {
           if (node instanceof Element) {
             return !node.classList.contains('no-export');
@@ -214,12 +273,7 @@ export function useExport() {
         backgroundColor: '#ffffff',
         skipFonts: true,
         cacheBust: true,
-        canvasWidth,
-        canvasHeight,
-        style: {
-          width: `${naturalWidth}px`,
-          height: `${naturalHeight}px`,
-        },
+        fontEmbedCSS,
         filter: (node) => {
           if (node instanceof Element) {
             return !node.classList.contains('no-export');
@@ -227,9 +281,7 @@ export function useExport() {
           return true;
         }
       });
-    }
-      
-    setPerFormatProgress(format, 60);
+    }    setPerFormatProgress(format, 60);
 
     if (format === 'png') {
       // Export as PNG - dataUrl is already in PNG format
@@ -260,19 +312,19 @@ export function useExport() {
 
       const pdf = new jsPDF('p', 'mm', 'a4');
       
-  setPerFormatProgress(format, 80);
+      setPerFormatProgress(format, 80);
 
-      // Add first page
-  pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
+      // Add first page using JPEG compression for massive file size reduction
+      pdf.addImage(dataUrl, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
       heightLeft -= pageHeight;
 
-  setPerFormatProgress(format, 90);
+      setPerFormatProgress(format, 90);
 
       // Add additional pages if needed
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(dataUrl, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
         heightLeft -= pageHeight;
       }
 
