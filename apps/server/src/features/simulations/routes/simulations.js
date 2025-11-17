@@ -34,7 +34,8 @@ router.post('/execute', trackSimulationUsage, [
   // --- OPTIONAL FIELDS ---
   body('equityShock').optional({ nullable: true }).isFloat({ min: -1, max: 0 }).withMessage('Equity shock must be between -1 and 0'),
   body('cpiShift').optional({ nullable: true }).isFloat({ min: -1, max: 1 }).withMessage('CPI shift must be between -1 and 1'),
-  body('grantTargets').optional().isArray().withMessage('Grant targets must be an array'),
+  // grantTargets may be omitted or explicitly null when the grants override is disabled in the UI
+  body('grantTargets').optional({ nullable: true }).isArray().withMessage('Grant targets must be an array'),
   body('numSimulations').optional().isInt({ min: 100, max: 10000 }).withMessage('Simulations must be 100-10000')
 
 ], async (req, res) => {

@@ -36,23 +36,61 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Set content types for proper caching
-echo "⚙️  Setting content types..."
-aws s3 cp s3://$BUCKET_NAME s3://$BUCKET_NAME --recursive --exclude "*" --include "*.js" --content-type="application/javascript"
-aws s3 cp s3://$BUCKET_NAME s3://$BUCKET_NAME --recursive --exclude "*" --include "*.css" --content-type="text/css"
-aws s3 cp s3://$BUCKET_NAME s3://$BUCKET_NAME --recursive --exclude "*" --include "*.html" --content-type="text/html"
+# Configure cache headers and content types
+echo "⚙️  Setting Cache-Control and content-type headers"
+
+# 1) Long cache for static, hashed assets (immutable)
+if [ -d "dist/assets" ]; then
+    echo "   - Applying long cache to assets/"
+    aws s3 cp dist/assets s3://$BUCKET_NAME/assets --recursive \
+        --cache-control "public, max-age=31536000, immutable"
+fi
+
+# 2) Long cache for fonts
+if [ -d "dist/fonts" ]; then
+    echo "   - Applying long cache to fonts/"
+    aws s3 cp dist/fonts s3://$BUCKET_NAME/fonts --recursive \
+        --cache-control "public, max-age=31536000, immutable"
+fi
+
+# 3) Short cache for HTML/root files so new deploys propagate quickly
+if [ -f "dist/index.html" ]; then
+    echo "   - Setting short cache on index.html"
+    aws s3 cp dist/index.html s3://$BUCKET_NAME/index.html \
+        --cache-control "public, max-age=300" --content-type "text/html"
+fi
+
+if [ -f "dist/manifest.webmanifest" ]; then
+    aws s3 cp dist/manifest.webmanifest s3://$BUCKET_NAME/manifest.webmanifest \
+        --cache-control "public, max-age=300" --content-type "application/manifest+json"
+fi
+
+# Ensure other top-level web manifests and PWA files get short cache
+for f in site.webmanifest favicon.ico icon.svg; do
+    if [ -f "dist/$f" ]; then
+        aws s3 cp "dist/$f" s3://$BUCKET_NAME/"$f" --cache-control "public, max-age=300"
+    fi
+done
 
 echo "🔧 Configuring S3 bucket for static website hosting..."
 aws s3 website s3://$BUCKET_NAME --index-document index.html --error-document index.html
 
 # Invalidate CloudFront if distribution ID is provided
+# Default: targeted invalidation for index/root only (fast, cheaper)
+# Pass a fourth parameter "full" to run a wildcard invalidation (/*)
+INVALIDATION_SCOPE=${4:-targeted}
 if [ -n "$CLOUDFRONT_ID" ]; then
-    echo "🔄 Creating CloudFront invalidation for distribution: $CLOUDFRONT_ID"
-    INVALIDATION_ID=$(aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*" --query 'Invalidation.Id' --output text)
+    echo "🔄 Creating CloudFront invalidation for distribution: $CLOUDFRONT_ID (scope: $INVALIDATION_SCOPE)"
+    if [ "$INVALIDATION_SCOPE" = "full" ]; then
+      INVALIDATION_ID=$(aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*" --query 'Invalidation.Id' --output text)
+    else
+      # Target index and root — this is sufficient when assets are immutable and only index.html changes
+      INVALIDATION_ID=$(aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/index.html" "/" --query 'Invalidation.Id' --output text)
+    fi
 
     if [ $? -eq 0 ]; then
         echo "✅ CloudFront invalidation created: $INVALIDATION_ID"
-        echo "⏳ Invalidation may take 5-10 minutes to complete"
+        echo "⏳ Invalidation may take several minutes to complete"
     else
         echo "❌ CloudFront invalidation failed!"
         exit 1
@@ -60,7 +98,7 @@ if [ -n "$CLOUDFRONT_ID" ]; then
 else
     echo "⚠️  No CloudFront distribution ID provided - skipping invalidation"
     echo "   To invalidate CloudFront cache, run:"
-    echo "   aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --paths '/*'"
+    echo "   aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --paths '/index.html' '/'"
 fi
 
 echo "✅ Deployment completed!"
