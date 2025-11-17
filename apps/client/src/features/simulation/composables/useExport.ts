@@ -12,6 +12,47 @@ export function useExport() {
   const isExporting = ref(false);
   const exportProgress = ref(0);
 
+  // Separate state per format so only the clicked button shows progress
+  const isExportingPng = ref(false);
+  const isExportingPdf = ref(false);
+  const pngProgress = ref(0);
+  const pdfProgress = ref(0);
+
+  function setPerFormatProgress(format: 'png' | 'pdf', value: number) {
+    if (format === 'png') {
+      pngProgress.value = value;
+    } else {
+      pdfProgress.value = value;
+    }
+    // Keep legacy aggregate for existing bindings
+    exportProgress.value = Math.max(pngProgress.value, pdfProgress.value, value);
+  }
+
+  function beginFormat(format: 'png' | 'pdf') {
+    if (format === 'png') {
+      isExportingPng.value = true;
+      pngProgress.value = 0;
+    } else {
+      isExportingPdf.value = true;
+      pdfProgress.value = 0;
+    }
+    isExporting.value = true;
+    exportProgress.value = 0;
+  }
+
+  function endFormat(format: 'png' | 'pdf') {
+    if (format === 'png') {
+      isExportingPng.value = false;
+      pngProgress.value = 0;
+    } else {
+      isExportingPdf.value = false;
+      pdfProgress.value = 0;
+    }
+    // Update aggregate exporter flag
+    isExporting.value = isExportingPng.value || isExportingPdf.value;
+    exportProgress.value = Math.max(pngProgress.value, pdfProgress.value);
+  }
+
   /**
    * Export an HTML element to PNG or PDF
    */
@@ -23,13 +64,13 @@ export function useExport() {
     filename = `endowcast-results-${new Date().toISOString().split('T')[0]}`,
     format = 'pdf',
     useServerSide = false, // Default to client-side since server can't access simulation arrays from database
-  } = options;    isExporting.value = true;
-    exportProgress.value = 0;
+  } = options;    
+    beginFormat(format);
 
     try {
       if (useServerSide) {
         // Server-side export using Puppeteer
-        exportProgress.value = 20;
+        setPerFormatProgress(format, 20);
         
         const currentUrl = window.location.href;
         
@@ -51,7 +92,7 @@ export function useExport() {
           })
         });
 
-        exportProgress.value = 80;
+        setPerFormatProgress(format, 80);
 
         if (!response.ok) {
           throw new Error('Server-side export failed');
@@ -63,7 +104,7 @@ export function useExport() {
         downloadFile(url, `${filename}.${format}`);
         URL.revokeObjectURL(url);
         
-        exportProgress.value = 100;
+        setPerFormatProgress(format, 100);
       } else {
         // Client-side export (fallback)
         await clientSideExport(element, { filename, format, ...options });
@@ -74,8 +115,7 @@ export function useExport() {
     } finally {
       // Reset state after a brief delay
       setTimeout(() => {
-        isExporting.value = false;
-        exportProgress.value = 0;
+        endFormat(format);
       }, 1000);
     }
   }
@@ -98,7 +138,7 @@ export function useExport() {
     const htmlToImage = await import('html-to-image');
 
     // Ensure all fonts are fully loaded to avoid reflow during capture
-    exportProgress.value = 5;
+  setPerFormatProgress(format, 5);
     try {
       // document.fonts.ready is widely supported in modern browsers
       // It resolves once all fonts used in the document are loaded
@@ -108,7 +148,7 @@ export function useExport() {
     } catch { /* ignore */ }
 
     // Wait for any charts to fully render and the layout to stabilize
-    exportProgress.value = 10;
+  setPerFormatProgress(format, 10);
     // Two animation frames + short delay for reflow after fonts
     await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     await new Promise(resolve => setTimeout(resolve, 250));
@@ -131,7 +171,7 @@ export function useExport() {
     await waitForStableLayout(element);
     
     // Get the dataURL using html-to-image (which supports modern CSS)
-    exportProgress.value = 30;
+  setPerFormatProgress(format, 30);
     
     // Constrain render size to keep PNG smaller and avoid massive canvases
     const naturalWidth = element.scrollWidth || element.clientWidth || 1200;
@@ -180,15 +220,15 @@ export function useExport() {
       });
     }
       
-    exportProgress.value = 60;
+    setPerFormatProgress(format, 60);
 
     if (format === 'png') {
       // Export as PNG - dataUrl is already in PNG format
       downloadFile(dataUrl, `${filename}.png`);
-      exportProgress.value = 100;
+      setPerFormatProgress(format, 100);
     } else {
       // Export as PDF
-      exportProgress.value = 70;
+      setPerFormatProgress(format, 70);
       
       // Dynamically import jsPDF
       const { default: jsPDF } = await import('jspdf');
@@ -211,13 +251,13 @@ export function useExport() {
 
       const pdf = new jsPDF('p', 'mm', 'a4');
       
-      exportProgress.value = 80;
+  setPerFormatProgress(format, 80);
 
       // Add first page
   pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      exportProgress.value = 90;
+  setPerFormatProgress(format, 90);
 
       // Add additional pages if needed
       while (heightLeft > 0) {
@@ -229,7 +269,7 @@ export function useExport() {
 
       // Save the PDF
       pdf.save(`${filename}.pdf`);
-      exportProgress.value = 100;
+      setPerFormatProgress(format, 100);
     }
   }
 
@@ -248,6 +288,11 @@ export function useExport() {
   return {
     isExporting,
     exportProgress,
+    // Per-format state (preferred for UI bindings)
+    isExportingPng,
+    isExportingPdf,
+    pngProgress,
+    pdfProgress,
     exportElement
   };
 }
