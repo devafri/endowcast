@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import apiService, { ApiError } from '@/shared/services/api';
 import router from '@/router';
+import { isTokenExpired, getTokenExpiration } from '@/shared/utils/tokenUtils';
 
 export interface User {
   id: string;
@@ -235,7 +236,19 @@ export const useAuthStore = defineStore('auth', () => {
   async function initializeAuth() {
     const token = localStorage.getItem('endowcast_token');
     if (token) {
-      // Ensure API service has the token
+      // Check if token is expired
+      if (isTokenExpired(token)) {
+        console.log('Token expired, logging out...');
+        const expiration = getTokenExpiration(token);
+        if (expiration) {
+          console.log('Token expired at:', expiration.toLocaleString());
+        }
+        // Clear expired token and log out
+        await logout();
+        return;
+      }
+
+      // Token is valid, proceed with verification
       apiService.setToken(token);
       await verifyToken();
     }

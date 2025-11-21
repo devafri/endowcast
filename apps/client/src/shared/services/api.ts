@@ -1,3 +1,5 @@
+import { isTokenExpired } from '@/shared/utils/tokenUtils';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export class ApiError extends Error {
@@ -36,6 +38,13 @@ class ApiService {
   }
 
   private async request(endpoint: string, options: RequestInit = {}) {
+    // Check if token is expired before making request
+    if (this.token && isTokenExpired(this.token)) {
+      console.warn('[API] Token expired, clearing token');
+      this.setToken(null);
+      throw new ApiError(401, 'Your session has expired. Please log in again.');
+    }
+
     const url = `${this.baseURL}${endpoint}`;
     const config: RequestInit = {
       headers: {
