@@ -294,26 +294,40 @@ const strategicSustainableSpendRate = computed(() => {
 });
 
 // Calculate effective spending rate based on actual spending vs endowment value
+// Effective = (operatingExpenses + grants) / endowment
+// This matches "Spending Policy Expense" shown in the table
 const effectiveSpendRate = computed(() => {
-  if (!sims.value.length || !spendingPolicy.value?.length) return NaN;
+  if (!sims.value.length) return NaN;
   
-  // Get median spending and endowment values for each year
   const yearsN = years.value;
   const effectiveRates: number[] = [];
   
+  const opex = props.results?.operatingExpenses;
+  const grantsData = props.results?.grants;
+  
+  // Need both operating expenses and grants to calculate spending policy expense
+  if (!opex?.length || !grantsData?.length) return NaN;
+  
   for (let year = 0; year < yearsN; year++) {
-    const endowmentValues = sims.value.map(s => s[year]).filter(isFinite);
-    const spendingValues = spendingPolicy.value.map(s => s[year]).filter(isFinite);
+    const endowmentValues = sims.value.map((s: number[]) => s[year]).filter(isFinite);
     
-    if (endowmentValues.length > 0 && spendingValues.length > 0) {
-      // Calculate median for this year
-      const medianEndowment = percentile(endowmentValues, 50);
-      const medianSpending = percentile(spendingValues, 50);
-      
-      if (medianEndowment > 0) {
-        const rate = (medianSpending / medianEndowment);
-        effectiveRates.push(rate);
-      }
+    if (endowmentValues.length === 0) continue;
+    
+    const medianEndowment = percentile(endowmentValues, 50);
+    if (medianEndowment <= 0) continue;
+    
+    // Calculate Spending Policy Expense = Operating Expenses + Grants
+    const opexValues = opex.map((s: number[]) => s[year]).filter(isFinite);
+    const grantValues = grantsData.map((s: number[]) => s[year]).filter(isFinite);
+    
+    const medianOpex = opexValues.length > 0 ? percentile(opexValues, 50) : 0;
+    const medianGrants = grantValues.length > 0 ? percentile(grantValues, 50) : 0;
+    
+    const medianSpending = medianOpex + medianGrants;
+    
+    const rate = medianSpending / medianEndowment;
+    if (isFinite(rate)) {
+      effectiveRates.push(rate);
     }
   }
   
@@ -572,12 +586,12 @@ function getTextColor(probability: number): string {
               <div class="text-xs text-slate-600 mb-2 flex justify-between items-center">
                 <span
                   class="inline-block"
-                  title="Effective Spend Rate: Average across projection years of (median policy spending + operating expenses + grants) divided by the median beginning-of-year endowment. Excludes investment management fees. Can exceed the stated policy % if the endowment declines. Board Use: signals actual capital draw pressure inclusive of mission & operating allocations; compare with Portfolio-Sustainable Rate to assess long-term viability."
-                >Effective Spend Rate</span>
+                  title="Effective Annual Spend Rate: Average across projection years of (median operating expenses + grants) divided by the median beginning-of-year endowment. Excludes investment management fees. Can differ from the stated policy % when using rolling average market value calculations. Board Use: signals actual capital draw pressure inclusive of mission & operating allocations; compare with Portfolio-Sustainable Rate to assess long-term viability."
+                >Effective Annual Spend Rate</span>
                 <div class="relative group cursor-help">
                   <span class="text-xs text-slate-400 font-bold ml-1">i</span>
                   <div class="absolute z-10 hidden group-hover:block w-72 p-3 text-xs text-white bg-slate-700 rounded-lg shadow-xl -mt-10 -ml-56 whitespace-normal">
-                    **Actual spending as % of endowment** (includes grants + operating + investment expenses). Averaged across simulation period. May differ from policy rate when grants intentionally vary (e.g., higher early grants, declining later).
+                    **Actual spending as % of endowment** (operating expenses + grants, excluding investment fees). Averaged across simulation period. May differ from policy rate when using rolling average market value or when grants intentionally vary.
                   </div>
                 </div>
                 </div>

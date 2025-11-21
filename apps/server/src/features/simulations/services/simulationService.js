@@ -370,6 +370,44 @@ class SimulationService {
             maxValue: Math.max(...finalValues)
         };
     }
+
+    /**
+     * Calculate percentile bands across all years for charting
+     * Returns year-by-year percentile values (10th, 25th, 50th, 75th, 90th)
+     * 
+     * @param {number[][]} paths - Array of simulation paths
+     * @returns {Object} Object with percentile arrays for each band
+     */
+    static calculatePercentileBands(paths) {
+        if (!paths || !paths.length) return null;
+
+        const numYears = paths[0].length;
+        const percentile10 = [];
+        const percentile25 = [];
+        const percentile50 = [];
+        const percentile75 = [];
+        const percentile90 = [];
+
+        // For each year, collect all values across simulations and calculate percentiles
+        for (let yearIndex = 0; yearIndex < numYears; yearIndex++) {
+            const valuesAtYear = paths.map(path => path[yearIndex]);
+            const sorted = [...valuesAtYear].sort((a, b) => a - b);
+
+            percentile10.push(this.percentile(sorted, 10));
+            percentile25.push(this.percentile(sorted, 25));
+            percentile50.push(this.percentile(sorted, 50));
+            percentile75.push(this.percentile(sorted, 75));
+            percentile90.push(this.percentile(sorted, 90));
+        }
+
+        return {
+            percentile10,
+            percentile25,
+            percentile50,
+            percentile75,
+            percentile90
+        };
+    }
 }
 
 module.exports = SimulationService;

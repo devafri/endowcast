@@ -28,7 +28,9 @@ const isAnalysisActive = () => {
 
 const isScenariosActive = () => {
   return (
-    route.path.startsWith('/simulation/history') || route.path.startsWith('/simulation/compare')
+    route.path.startsWith('/simulation/history') || 
+    route.path.startsWith('/simulation/compare') ||
+    route.path.startsWith('/comparison')
   )
 }
 

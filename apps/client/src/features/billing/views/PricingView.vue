@@ -15,9 +15,9 @@ const billingCycle = ref<'monthly' | 'annual'>('monthly');
 
 const plans = [
   { name: 'Free', planType: 'FREE', price: 0, description: 'Try EndowCast with limited features.', features: ['10 simulations per month'], buttonText: 'Start Free', popular: false },
-  { name: 'Analyst Pro', planType: 'ANALYST_PRO', price: 49, description: 'For individual analysts', features: ['50 simulations / month'], buttonText: 'Start Analyst Pro', popular: false },
-  { name: 'Foundation', planType: 'FOUNDATION', price: 249, description: 'For mid-size endowments', features: ['250 simulations / month'], buttonText: 'Start Foundation', popular: true },
-  { name: 'Foundation Pro', planType: 'FOUNDATION_PRO', price: 449, description: 'Enterprise features', features: ['500 simulations / month'], buttonText: 'Contact Sales', popular: false },
+  { name: 'Analyst Pro', planType: 'ANALYST_PRO', price: 199, description: 'For individual analysts', features: ['50 simulations / month'], buttonText: 'Start Analyst Pro', popular: false },
+  { name: 'Foundation', planType: 'FOUNDATION', price: 499, description: 'For mid-size endowments', features: ['250 simulations / month'], buttonText: 'Start Foundation', popular: true },
+  { name: 'Foundation Pro', planType: 'FOUNDATION_PRO', price: 899, description: 'Enterprise features', features: ['500 simulations / month'], buttonText: 'Contact Sales', popular: false },
 ];
 
 function annualPrice(monthly: number) {

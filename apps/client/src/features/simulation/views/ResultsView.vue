@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
+import { onMounted, onUnmounted, ref, watch, nextTick, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSimulationStore } from '../../simulation/stores/simulation';
 import { useAuthStore } from '@/features/auth/stores/auth';
 import { useExport } from '../composables/useExport';
+import { useComparison } from '../composables/useComparison';
 import SimulationResults from '../components/results/layouts/SimulationResults.vue';
 
 const route = useRoute();
@@ -19,6 +20,8 @@ const {
   pdfProgress, 
   exportElement 
 } = useExport();
+
+const { addCurrentScenario, scenarios } = useComparison();
 
 // Reference to the results container for export
 const resultsContainer = ref<HTMLElement | null>(null);
@@ -77,6 +80,40 @@ function run() {
 const isCopying = ref(false);
 const copySuccess = ref(false);
 const shareUrl = ref('');
+
+// Comparison state
+const addingToComparison = ref(false);
+const addedToComparison = ref(false);
+
+// Check if current simulation is already in comparison
+const isInComparison = computed(() => {
+  if (!sim.results) return false;
+  return scenarios.value.some(s => s.simulationId === sim.results?.id);
+});
+
+// Add to comparison function
+function handleAddToComparison() {
+  if (!sim.results || isInComparison.value) return;
+  
+  addingToComparison.value = true;
+  try {
+    const name = `Scenario ${scenarios.value.length + 1}`;
+    addCurrentScenario(name);
+    addedToComparison.value = true;
+    setTimeout(() => {
+      addedToComparison.value = false;
+    }, 3000);
+  } catch (error) {
+    console.error('Error adding to comparison:', error);
+    alert('Failed to add scenario to comparison');
+  } finally {
+    addingToComparison.value = false;
+  }
+}
+
+function goToComparison() {
+  router.push('/comparison');
+}
 
 // Export functions
 async function handleExport(format: 'png' | 'pdf') {
@@ -370,6 +407,40 @@ onUnmounted(() => {
               <p class="text-gray-600 text-sm">Save results for presentations or share with stakeholders</p>
             </div>
             <div class="flex items-center flex-wrap gap-3">
+              <!-- Add to Comparison Button -->
+              <button
+                @click="handleAddToComparison"
+                :disabled="addingToComparison || isInComparison"
+                class="inline-flex items-center gap-2 py-2.5 px-5 text-sm font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-md shadow-sm"
+                :title="isInComparison ? 'Already in comparison' : 'Add to scenario comparison'"
+              >
+                <svg v-if="!addingToComparison && !addedToComparison" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <svg v-else-if="addingToComparison" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <svg v-else-if="addedToComparison" class="w-4 h-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L9 11.586 6.707 9.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l7-7a1 1 0 000-1.414z" clip-rule="evenodd"/>
+                </svg>
+                <span v-if="isInComparison">In Comparison</span>
+                <span v-else-if="addedToComparison">Added!</span>
+                <span v-else>Add to Comparison</span>
+              </button>
+
+              <!-- Go to Comparison Button (shown when scenarios exist) -->
+              <button
+                v-if="scenarios.length > 0"
+                @click="goToComparison"
+                class="inline-flex items-center gap-2 py-2.5 px-5 text-sm font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-50 transition-colors rounded-md shadow-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span>View Comparison ({{ scenarios.length }})</span>
+              </button>
+
               <!-- Export PDF Button -->
               <button
                 @click="handleExport('pdf')"

@@ -86,10 +86,11 @@ const router = createRouter({
     alias: ['/simulation/history']
   },
   { 
-    path: '/simulation/compare', 
-    name: 'ScenarioComparison', 
-    component: () => import('../features/simulation/views/ScenarioComparison.vue'),
-    meta: { requiresAuth: true }
+    path: '/comparison', 
+    name: 'Comparison', 
+    component: () => import('../features/simulation/views/ComparisonView.vue'),
+    meta: { requiresAuth: true },
+    alias: ['/simulation/compare']
   },
   ],
 })

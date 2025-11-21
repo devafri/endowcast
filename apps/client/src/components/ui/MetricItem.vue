@@ -1,6 +1,24 @@
 <script setup lang="ts">
 import Tooltip from './Tooltip.vue';
-const props = defineProps<{ label: string; value: string | number; tip?: string; id?: string; compact?: boolean }>();
+
+interface MetricDiff {
+  value: number;
+  baselineValue: number;
+  absoluteDiff: number;
+  relativeDiff: number;
+  isBetter: boolean | null;
+  label: string;
+}
+
+const props = defineProps<{ 
+  label: string; 
+  value: string | number; 
+  tip?: string; 
+  id?: string; 
+  compact?: boolean;
+  diff?: MetricDiff | null;
+  isBaseline?: boolean;
+}>();
 </script>
 
 <template>
@@ -27,6 +45,18 @@ const props = defineProps<{ label: string; value: string | number; tip?: string;
 
     <div class="text-right">
       <strong class="text-sm text-gray-900">{{ typeof props.value === 'number' ? (isFinite(props.value as number) ? (props.value as number).toFixed(2) : '—') : props.value }}</strong>
+      
+      <!-- Diff indicator for comparison view -->
+      <div v-if="diff && !isBaseline" class="text-xs mt-0.5" :class="{
+        'text-green-600': diff.isBetter === true,
+        'text-red-600': diff.isBetter === false,
+        'text-gray-500': diff.isBetter === null
+      }">
+        <span v-if="diff.absoluteDiff > 0">+</span>{{ diff.relativeDiff.toFixed(1) }}%
+      </div>
+      <div v-else-if="isBaseline" class="text-xs text-gray-400 mt-0.5">
+        Baseline
+      </div>
     </div>
   </div>
 </template>

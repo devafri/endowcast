@@ -81,6 +81,9 @@ class SimulationController {
       // Calculate final value percentiles, success rate, and basic summary metrics from final values
       const finalValueSummary = SimulationService.getFinalValueSummary(fullResults.paths, parseFloat(initialValue), grantTargets);
 
+      // Calculate percentile bands for charting (10th, 25th, 50th, 75th, 90th across all years)
+      const percentileBands = SimulationService.calculatePercentileBands(fullResults.paths);
+
       // --- 🏆 FIX APPLIED HERE: Map all detailed metrics to the `summary` object ---
       const responseSummary = {
           // Basic final value stats (from SimulationService.getFinalValueSummary)
@@ -107,6 +110,9 @@ class SimulationController {
           cvar95: fullResults.cvar95,
           inflationPreservationPct: fullResults.inflationPreservationPct,
           riskFreeRate: parseFloat(req.body.riskFreeRate) || 0.02, // Pass RF rate for frontend context
+
+          // 🎯 NEW: Percentile bands for chart visualization
+          percentileBands: percentileBands
       };
       // --------------------------------------------------------------------------
 

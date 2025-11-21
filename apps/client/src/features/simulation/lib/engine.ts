@@ -21,6 +21,13 @@ export type SimulationOutputs = {
   portfolioReturns: number[][]; // [sim][year]
   cpiRates?: number[][]; // [sim][year] annual CPI rates used
   cpiIndex?: number[][]; // [sim][year] cumulative CPI index (base 1 at start of Year 0)
+  percentileBands?: {
+    percentile10: number[];
+    percentile25: number[];
+    percentile50: number[];
+    percentile75: number[];
+    percentile90: number[];
+  };
 };
 
 export type SpendingPolicyOptions = {

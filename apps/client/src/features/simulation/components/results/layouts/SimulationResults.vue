@@ -68,21 +68,40 @@ const dataToUse = computed(() => {
     <div v-if="dataToUse === undefined" class="text-sm text-gray-500">No results available</div>
     <div v-else-if="(props.forceMock || !props.results)" class="mb-2 p-2 text-xs bg-yellow-50 border border-yellow-200 text-yellow-700 rounded">Using mock results for layout preview (dev only)</div>
  
-    <section class="grid grid-cols-1 xl:grid-cols-4 gap-6">
-    <SimulationInputs :results="dataToUse" />
-    <KeyMetrics :results="dataToUse" />
- </section>
-  <PolicyRangeAndWeights :results="dataToUse" />
+    <!-- Page 1: Inputs, Metrics, Policy, and Charts -->
+    <section class="grid grid-cols-1 xl:grid-cols-4 gap-6" data-export-section="inputs-metrics" data-export-page="1">
+      <SimulationInputs :results="dataToUse" />
+      <KeyMetrics :results="dataToUse" />
+    </section>
+    <div data-export-section="policy-charts" data-export-page="1">
+      
+    </div>
     
-    <EndowmentValueChart :results="dataToUse" />
-    <SpendingPolicyAmount v-if="dataToUse?.spendingPolicy?.[0]?.length >= 1" :results="dataToUse" />
-    <StatisticalSummarySection :results="dataToUse" />
-    <SimulationDataByPercentile :results="dataToUse" />
-
+    <div data-export-section="policy-charts" data-export-page="1">
+      <PolicyRangeAndWeights :results="dataToUse" />
+      <div class="mt-8">
+        <EndowmentValueChart :results="dataToUse" />
+      </div>
+      <div class="mt-8">
+        <SpendingPolicyAmount v-if="dataToUse?.spendingPolicy?.[0]?.length >= 1" :results="dataToUse" />
+      </div>
+    </div>
     
-    <TailRisk :results="dataToUse" />
+    <!-- Page 2: Statistical Summary and Data Table -->
+    <div data-export-section="statistics" data-export-page="2">
+      <StatisticalSummarySection :results="dataToUse" />
+      <div class="mt-8">
+        <SimulationDataByPercentile :results="dataToUse" />
+      </div>
+    </div>
     
-    <MethodologyNotes :results="dataToUse" />
+    <!-- Page 3: Risk Analysis and Methodology -->
+    <div data-export-section="risk-methodology" data-export-page="3">
+      <TailRisk :results="dataToUse" />
+      <div class="mt-8">
+        <MethodologyNotes :results="dataToUse" />
+      </div>
+    </div>
 
   </div>
 </template>

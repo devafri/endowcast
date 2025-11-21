@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useScenarioHistory } from '@/features/simulation/composables/useScenarioHistory';
+import { useComparison } from '@/features/simulation/composables/useComparison';
 import SimulationResults from '../components/results/layouts/SimulationResults.vue';
 import ScenarioComparisonTable from '../components/results/tables/ScenarioComparisonTable.vue';
+
+const router = useRouter();
 
 // Use shared composable to ensure data comes from the database via apiService
 const {
@@ -43,12 +47,25 @@ const {
   serverPagination,
 } = useScenarioHistory();
 
+const { addScenarioFromHistory, scenarios: comparisonScenarios } = useComparison();
+
 // Local-only UI state
 const showComparisonModal = ref(false);
 
 function openComparisonModal() {
   if (selectedForComparison.value.size >= 2) {
     showComparisonModal.value = true;
+  }
+}
+
+function handleAddToComparison(scenario: any) {
+  try {
+    addScenarioFromHistory(scenario.id, scenario.name, scenario.description);
+    // Navigate to comparison page after adding
+    router.push('/comparison');
+  } catch (error) {
+    console.error('Error adding to comparison:', error);
+    alert('Failed to add scenario to comparison');
   }
 }
 
@@ -293,6 +310,17 @@ function handleToggleExpand(simulation: any) {
                     class="btn-secondary py-2 px-4 text-sm"
                   >
                     {{ expandedScenario === simulation.id ? 'Hide Details' : 'View Details' }}
+                  </button>
+                  <button
+                    v-if="simulation.isCompleted"
+                    @click="handleAddToComparison(simulation)"
+                    class="inline-flex items-center gap-1 py-2 px-4 text-sm font-medium bg-purple-600 text-white hover:bg-purple-700 rounded-md transition-colors"
+                    title="Add to comparison"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Compare
                   </button>
                   <button 
                     @click="deleteScenario(simulation.id)" 
